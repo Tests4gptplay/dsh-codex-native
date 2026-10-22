@@ -32,19 +32,38 @@ The plugin uses the official `account/read`, `account/login/start`, `account/log
 
 **Implementation is not the same as successful integration testing.** The real DSH + ChatGPT account sign-in flow is not yet verified. Reference: [OpenAI official app-server documentation](https://developers.openai.com/codex/app-server/).
 
-## Installation (development stage)
+## Install development prerelease from GitHub (DSH desktop)
 
-The repository contains the source and CI validation workflow; **no stable installer has been released**. Installing from a GitHub source spec may cause DSH to build dependencies locally. You need not keep a separate development checkout, but the installed plugin and Codex runtime still require some disk space.
+**Testing tag: `v0.2.1-alpha.0`.** The package is intended for hands-on testing against DSH `0.2.1-rc.2`; **real desktop installation, subscribed sign-in and E2E remain unverified**.
 
-Target installation command, **only after successful release validation**:
+1. Open DSH desktop → **Plugins → Add plugin**.
+2. Paste this complete GitHub package spec, then click **Install**:
+
+   ```text
+   github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.0
+   ```
+
+3. Enable the installed plugin and restart DSH.
+4. In **Settings → Codex official login**, select **Sign in with ChatGPT** or **Use device code** and authenticate with a ChatGPT account that has Codex access.
+5. Return to the chat model picker, select `codex-local` / **Codex (local login)** and an available model, then send a test message.
+
+No npm account or separate OpenAI API Key is required. GitHub-source installation may build dependencies inside the DSH plugin installation process; the installed plugin and official Codex runtime still use disk space, though no local development checkout is needed.
+
+### Web CLI
 
 ```bash
-dsh plugin --profile web add github:Tests4gptplay/dsh-codex-native
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.0'
 ```
 
-Prefer a reviewed commit/tag for repeatable installs. Restart DSH as requested, sign in through Settings, and choose `codex-local` in the main model picker. **Do not run this command yet as a production installation instruction.**
+The Web and Desktop DSH profiles are separate.
 
-[Successful hosted build and 124-unit-test run](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39786235347) · [Candidate tarball in the run's CI artifacts](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39786235347). **This is a build artifact, not a production-certified plugin release.**
+### GitHub Release fallback
+
+[Prerelease v0.2.1-alpha.0](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.0) distributes `dsh-codex-native-0.2.1-alpha.0.tgz`, a prebuilt npm-format package hosted by GitHub. If the release workflow has not completed, check [Actions](https://github.com/Tests4gptplay/dsh-codex-native/actions).
+
+### Test feedback
+
+On failure, record your exact DSH version, error and enablement state. Never share OAuth tokens, account data or device authorization codes. There is no `/persona` command: check the official-login settings, the `codex-local` model route, a real chat response and a DSH tool invocation.
 
 ## Implementation and test status
 
@@ -56,7 +75,7 @@ Prefer a reviewed commit/tag for repeatable installs. Restart DSH as requested, 
 | Official browser/device-code sign-in Settings UI | Implemented; real-host verification pending |
 | Native Codex quota reading | Implemented; live verification pending |
 | Live multi-turn Codex, real DSH installation, Windows host | Not verified |
-| Stable installable release | Not published |
+| GitHub testing prerelease | `v0.2.1-alpha.0`; real-install testing pending; not stable |
 
 See [docs/STATUS.md](docs/STATUS.md) for the actual CI record and known blockers.
 
