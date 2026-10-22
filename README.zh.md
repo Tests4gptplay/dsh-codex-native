@@ -64,7 +64,13 @@ dsh plugin --profile web add github:Tests4gptplay/dsh-codex-native
 
 ## 项目界面（自有截图）
 
-本仓库不使用上游作者的旧界面截图。新增截图只来自**这个插件版本**的可复现实测或隔离 UI 组件渲染，且注明真实 DSH 页面还是未登录/模拟预览。有关截图来源、生成方式与当前覆盖范围，见 [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md)。
+本仓库不使用上游作者的旧界面截图。下图由 [独立 GitHub Actions 运行](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39784055873)对**当前 `CodexNativeSection.tsx` React 组件**进行无账号浏览器渲染后生成。
+
+![DSH Codex Native 官方登录组件：中文未登录预览；非 DSH 实机界面](docs/screenshots/codex-native-login-zh.png)
+
+*图：本项目官方登录组件中文预览，未连接 DSH Host、未使用真实账号。外围导航是独立预览外壳，**不是 DSH 实机截图，也不是 OAuth 成功证明**。*
+
+英文版预览：[Codex official-login component (English)](docs/screenshots/codex-native-login-en.png)。生成命令、来源和后续实机截图验收条件见 [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md)。
 
 ## 实现边界
 
