@@ -1,6 +1,6 @@
 # Development and verification status / 开发及验收状态
 
-Updated: 2026-10-22 · Target: **DSH 0.2.1-rc.2** · Plugin: **0.2.1-alpha.0**
+Updated: 2026-10-22 · Target: **DSH 0.2.1-rc.2** · Plugin: **0.2.1-alpha.1**
 
 ## Authoritative status
 
@@ -20,7 +20,15 @@ Updated: 2026-10-22 · Target: **DSH 0.2.1-rc.2** · Plugin: **0.2.1-alpha.0**
 | DSH installation / Windows | Isolated DSH Web/Desktop with installed .tgz | **Not tested** |
 
 
-## Published testing prerelease
+## GitHub install fix in v0.2.1-alpha.1
+
+- User reproduced `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` installing `v0.2.1-alpha.0` in the DSH Desktop profile.
+- Root cause: the tagged Git repository had `scripts.prepare = "pnpm run build"` and no checked-in `lib/` files, so pnpm tried to run a build that was not approved by the DSH profile's `allowBuilds`.
+- `v0.2.1-alpha.1` fixes the package manifest by removing the `prepare` script and uses a release-only commit containing the checked-in, CI-built JavaScript and declaration files.
+- Publishing is gated on an actual `pnpm add github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.1` in an isolated consumer without relaxing its build policy. **This is an install-path smoke, not a real Desktop/Codex sign-in test.**
+- [Release workflow](https://github.com/Tests4gptplay/dsh-codex-native/actions/workflows/release-preview.yml).
+
+## Previous published testing prerelease
 
 - **GitHub tag:** [`v0.2.1-alpha.0`](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.0), pointing to commit `131b82ec9e013a71041df00eafd771f274a96c55`.
 - **Release workflow:** [run #39788765405 — success](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39788765405). The tagged source passed hosted typecheck, account-free unit tests, production build, package structure checks and prerelease upload.

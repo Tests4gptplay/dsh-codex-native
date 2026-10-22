@@ -1,6 +1,8 @@
 # 构建与发布（当前公库）
 
-**截至 2026-10-22，此项目仅有开发预览版 `0.2.1-alpha.0`，尚未发布稳定 npm 包或 GitHub Release。**
+**截至 2026-10-22，当前开发预览版为 `0.2.1-alpha.1`，还未发布稳定 npm 包。**
+
+GitHub 直接安装的测试标签必须包含编译好的 `lib/index.js`、`lib/client.js` 和类型声明文件，且发布标签中的 `package.json` **不能包含 `prepare`/`prepack`/`postinstall` 等安装构建脚本**。否则 DSH 的 pnpm 会按 `allowBuilds` 政策拒绝 Git 源码安装。
 
 发布归属：[`Tests4gptplay/dsh-codex-native`](https://github.com/Tests4gptplay/dsh-codex-native)，不是原作者的 `dsh-llm-codex-app-server`，不要沿用原作者的 npm Trusted Publisher 或 GitHub Actions 配置。
 

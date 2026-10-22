@@ -1,6 +1,8 @@
 # Build and release (this fork)
 
-**As of 2026-10-22 this repository contains only development preview `0.2.1-alpha.0`. There is no stable npm publication or GitHub Release.**
+**As of 2026-10-22 the development preview is `0.2.1-alpha.1`. There is no stable npm release.**
+
+A direct GitHub installer tag must contain precompiled `lib/index.js`, `lib/client.js` and declarations, and the tagged manifest must have **no install-time `prepare`, `prepack` or `postinstall` build script**. The previous alpha.0 Git installation was rejected by DSH pnpm's `allowBuilds` policy.
 
 Release identity belongs to [`Tests4gptplay/dsh-codex-native`](https://github.com/Tests4gptplay/dsh-codex-native), **not** the upstream `dsh-llm-codex-app-server` package. Upstream npm trusted publishing settings, tags and release workflows do not authorize a release from this fork.
 

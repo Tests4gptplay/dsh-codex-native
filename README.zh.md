@@ -2,7 +2,7 @@
 
 **基于 OpenAI 官方 Codex app-server 的 DeepSeek Harness 主模型插件** · 独立社区项目 · MIT
 
-> **开发预览版：0.2.1-alpha.0。** 目前面向 DSH `0.2.1-rc.2` 移植中。源码类型检查、124 项非账号单测和云端打包均已通过；真实 DSH 安装、登录及模型端到端验收尚未完成。**请勿当作正式稳定版安装或投入业务。** [查看当前 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/workflows/ci.yml)。
+> **开发预览版：0.2.1-alpha.1。** 目前面向 DSH `0.2.1-rc.2` 移植中。源码类型检查、124 项非账号单测和云端打包均已通过；真实 DSH 安装、登录及模型端到端验收尚未完成。**请勿当作正式稳定版安装或投入业务。** [查看当前 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/workflows/ci.yml)。
 
 [English](README.md) · [开发进度与验收边界](docs/STATUS.md) · [截图来源](docs/SCREENSHOTS.md)
 
@@ -36,32 +36,32 @@ DSH 设置 → Codex 官方登录
 
 ## 安装测试版（GitHub，DSH 桌面应用）
 
-**预发行版本：`v0.2.1-alpha.0`**。用于实际 DSH 安装和官方 ChatGPT/Codex 登录测试，**尚未通过 Windows 桌面端与真实账号 E2E 验收**。推荐使用 DSH `0.2.1-rc.2` 对照测试。
+**预发行版本：`v0.2.1-alpha.1`**（修复直接 GitHub 安装，无需启用构建脚本）。用于实际 DSH 安装和官方 ChatGPT/Codex 登录测试，**尚未通过 Windows 桌面端与真实账号 E2E 验收**。推荐使用 DSH `0.2.1-rc.2` 对照测试。
 
 1. 在 DSH 桌面应用侧栏打开 **插件 → 添加插件**。
 2. 将下面整行粘贴到 GitHub 插件安装框，点击 **安装**：
 
    ```text
-   github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.0
+   github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.1
    ```
 
 3. 安装后**启用插件并重启 DSH**。
 4. 打开 **设置 → Codex 官方登录**，选择 **Sign in with ChatGPT** 或 **Use device code**，用具有 Codex 权限的 ChatGPT 账号登录。
 5. 返回聊天窗口，在**主模型选择器**中查找 `codex-local` / **Codex (local login)**，选取当前账号实际可用的 Codex 模型，发送一条普通测试消息。
 
-此安装不需要 npm 账号或额外的 OpenAI API Key，但 GitHub 源码安装可能要求 DSH 在插件安装时执行依赖构建；**本地仍需保存已安装插件与官方 Codex 运行时**，只是无需保留项目开发源码。
+**v0.2.1-alpha.1 修复了 GitHub 安装被 `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` 拦截的问题。** 新标签中的 `lib/` 是 GitHub 托管 Runner 预编译的产物，包不再包含 `prepare` 安装生命周期脚本。DSH 无需为此修改本地 `allowBuilds`，也无需本地构建 TypeScript；已安装插件及官方 Codex 运行时仍会占用一定磁盘空间。
 
 ### Web 版 CLI
 
 ```bash
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.0'
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.1'
 ```
 
 Web 与桌面版使用不同 profile，在 Web 中安装不自动安装到桌面 DSH。
 
 ### 备用：GitHub Release
 
-[预发行版 v0.2.1-alpha.0](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.0) 提供与该标签对应的预打包 `dsh-codex-native-0.2.1-alpha.0.tgz`；无需 npm 账号。若链接尚未发布完成，以 [GitHub Actions](https://github.com/Tests4gptplay/dsh-codex-native/actions) 状态为准。
+[预发行版 v0.2.1-alpha.1](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.1) 提供与该标签对应的预打包 `dsh-codex-native-0.2.1-alpha.1.tgz`；无需 npm 账号。若链接尚未发布完成，以 [GitHub Actions](https://github.com/Tests4gptplay/dsh-codex-native/actions) 状态为准。
 
 ### 实机反馈
 
@@ -77,7 +77,7 @@ Web 与桌面版使用不同 profile，在 Web 中安装不自动安装到桌面
 | 插件设置页官方浏览器/设备码登录 UI | 已编写，待真实 Host 验证 |
 | 官方 Codex 额度读取 | 已编写，待真实 Host 验证 |
 | 多轮真实 Codex、插件安装及 Windows 运行 | 尚未验收 |
-| GitHub 测试预发行版 | `v0.2.1-alpha.0`；待实机安装验收，非稳定版 |
+| GitHub 测试预发行版 | `v0.2.1-alpha.1`；待实机安装验收，非稳定版 |
 
 详细测试证据与阻断项维护在 [docs/STATUS.md](docs/STATUS.md)，每次主要功能变化均以**实际状态**更新 README，不以“代码存在”等同“已验证”。
 

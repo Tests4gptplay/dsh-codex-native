@@ -1,4 +1,4 @@
-name: Publish Codex native alpha to GitHub
+name: Publish install-ready Codex native alpha
 'on':
   push:
     branches: [main]
@@ -8,11 +8,11 @@ name: Publish Codex native alpha to GitHub
 permissions:
   contents: write
 concurrency:
-  group: dsh-codex-native-publish-alpha-0
+  group: dsh-codex-native-publish-alpha-1
   cancel-in-progress: false
 jobs:
   publish-preview:
-    name: Verify and publish tagged alpha
+    name: Build, Git-install-smoke, and publish alpha.1
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -23,67 +23,111 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Install in disposable cloud environment
+      - name: Install source dependencies only in hosted runner
         run: pnpm install --no-frozen-lockfile --ignore-scripts
-      - name: Verify published source matches the alpha identity
+      - name: Check package identity and no Git install lifecycle scripts
         shell: bash
         run: |
           set -euo pipefail
-          node -e "const p=require('./package.json');if(p.name!=='dsh-codex-native'||p.version!=='0.2.1-alpha.0')process.exit(1)"
-      - name: Typecheck current DSH adapter
+          node --input-type=module <<'NODE'
+          import p from './package.json' with { type: 'json' }
+          if (p.name !== 'dsh-codex-native' || p.version !== '0.2.1-alpha.1') throw new Error('Wrong preview identity')
+          for (const name of ['prepare', 'prepack', 'postinstall', 'install', 'preinstall']) {
+            if (p.scripts?.[name]) throw new Error('Git installer must not run ' + name)
+          }
+          NODE
+      - name: Typecheck DSH 0.2.1 adapter
         run: pnpm run typecheck
       - name: Run account-free unit tests
         run: pnpm run test:ci
-      - name: Build exact production plugin
+      - name: Build production output in cloud runner
         run: pnpm run build
-      - name: Produce npm-format archive for GitHub Release
+      - name: Pack .tgz and check both installer entries
         shell: bash
         run: |
           set -euo pipefail
+          test -s lib/index.js
+          test -s lib/client.js
+          test -s lib/client/index.d.ts
           mkdir -p dist
           pnpm pack --pack-destination dist
-          test -s dist/dsh-codex-native-0.2.1-alpha.0.tgz
-          tar -tzf dist/dsh-codex-native-0.2.1-alpha.0.tgz > "$RUNNER_TEMP/package-file-list.txt"
-          grep -Fxq 'package/lib/index.js' "$RUNNER_TEMP/package-file-list.txt"
-          grep -Fxq 'package/lib/client.js' "$RUNNER_TEMP/package-file-list.txt"
-      - name: Publish fixed tag and GitHub prerelease with the tested tarball
+          TGZ='dist/dsh-codex-native-0.2.1-alpha.1.tgz'
+          test -s "$TGZ"
+          tar -tzf "$TGZ" > "$RUNNER_TEMP/pack-file-list.txt"
+          grep -Fxq 'package/lib/index.js' "$RUNNER_TEMP/pack-file-list.txt"
+          grep -Fxq 'package/lib/client.js' "$RUNNER_TEMP/pack-file-list.txt"
+          grep -Fxq 'package/lib/client/index.d.ts' "$RUNNER_TEMP/pack-file-list.txt"
+      - name: Create precompiled immutable test ref (not a second development branch)
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG='v0.2.1-alpha.1'
+          if git ls-remote --tags --exit-code origin "refs/tags/$TAG" >/dev/null; then
+            echo 'Preview tag exists: refusing to overwrite immutable version'
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # pnpm may update imported lockfile in the disposable workspace; only commit compiled artifacts.
+          git restore --worktree -- pnpm-lock.yaml || true
+          git add -f lib
+          git diff --cached --quiet && { echo 'No compiled output staged'; exit 1; }
+          git commit -m 'build(release): include compiled DSH Codex plugin without install hooks'
+          BUILD_SHA="$(git rev-parse HEAD)"
+          echo "BUILD_SHA=$BUILD_SHA" >> "$GITHUB_ENV"
+          git tag "$TAG"
+          git push origin "refs/tags/$TAG"
+      - name: Test exact GitHub-tag install without allowBuilds override
+        shell: bash
+        run: |
+          set -euo pipefail
+          CONSUMER="$RUNNER_TEMP/dsh-consumer"
+          mkdir -p "$CONSUMER"
+          cd "$CONSUMER"
+          printf '{"name":"dsh-codex-git-install-test","version":"1.0.0","private":true}\n' > package.json
+          printf 'packages:\n  - .\nautoInstallPeers: false\n' > pnpm-workspace.yaml
+          pnpm add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.1'
+          test -s node_modules/dsh-codex-native/lib/index.js
+          test -s node_modules/dsh-codex-native/lib/client.js
+          node --input-type=module <<'NODE'
+          import p from './node_modules/dsh-codex-native/package.json' with { type: 'json' }
+          if (p.version !== '0.2.1-alpha.1' || p.scripts?.prepare) throw new Error('Invalid installed package')
+          console.log('GIT_INSTALL_WITHOUT_ALLOWBUILDS_PASSED')
+          NODE
+      - name: Publish GitHub prerelease with the same tested tarball
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG='v0.2.1-alpha.0'
+          TAG='v0.2.1-alpha.1'
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "A release for $TAG already exists; preserving the immutable preview."
-            exit 0
+            echo 'Tag already published; refusing to replace release'
+            exit 1
           fi
           cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
-          ## DSH Codex Native v0.2.1-alpha.0 — installation testing preview
+          ## DSH Codex Native v0.2.1-alpha.1 — GitHub install hotfix
           
-          **Test release only; not a stable, real-account-validated build.** The source is verified against the DSH 0.2.1-rc.2 type contracts; account-free CI tests and packaging pass. Actual desktop installation, native Codex OAuth login, quota and main-model tool E2E still require real DSH testing.
+          Fixes DSH Desktop pnpm error `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` from the alpha.0 Git install.
+          The Git tag includes fully compiled `lib/index.js`, `lib/client.js`, and declarations, and its package manifest has **no `prepare` lifecycle build script**. A pnpm consumer with no custom `allowBuilds` entries completed direct GitHub-tag installation in the isolated release workflow.
           
-          ### DSH Desktop → Plugins → Add plugin
+          **DSH Desktop → Plugins → Add plugin:**
           
           ```text
-          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.0
+          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.1
           ```
           
-          After installation, enable the plugin and restart DSH. Open **Settings → Codex official login**, sign in with a ChatGPT account with Codex access, then select the **codex-local** main model. No npm account or separate OpenAI API Key is required.
+          Enable the plugin, restart DSH, open Settings → Codex official login, and select `codex-local`.
+          No separate OpenAI API Key or npm account is needed. Normal runtime files still occupy installed-plugin storage.
           
-          ### DSH Web CLI
+          **This is an alpha testing prerelease.** Actual DSH Windows Desktop integration, account authentication and subscribed Codex model/tool round-trips have not yet been verified in a user's machine.
           
-          ```bash
-          dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.0'
-          ```
-          
-          The attached `dsh-codex-native-0.2.1-alpha.0.tgz` is built and packed here on an ephemeral hosted runner. GitHub-source installs may trigger local package build as part of DSH's plugin installation. The software and official Codex runtime still occupy some local plugin space.
-          
-          See [README.zh.md](https://github.com/Tests4gptplay/dsh-codex-native/blob/v0.2.1-alpha.0/README.zh.md) for instructions and [docs/STATUS.md](https://github.com/Tests4gptplay/dsh-codex-native/blob/v0.2.1-alpha.0/docs/STATUS.md) for the test boundary.
+          MIT upstream attribution remains in LICENSE and README.
           NOTES
-          gh release create "$TAG" dist/dsh-codex-native-0.2.1-alpha.0.tgz \
+          gh release create "$TAG" 'dist/dsh-codex-native-0.2.1-alpha.1.tgz' \
             --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
-            --title "DSH Codex Native v0.2.1-alpha.0 (testing preview)" \
+            --target "$BUILD_SHA" \
+            --title "DSH Codex Native v0.2.1-alpha.1 (GitHub install fix)" \
             --prerelease \
             --notes-file "$RUNNER_TEMP/release-notes.md"
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json url,tagName,isPrerelease,assets

@@ -2,7 +2,7 @@
 
 **A DeepSeek Harness main-model plugin using the official OpenAI Codex app-server** · Independent community project · MIT
 
-> **Development preview: 0.2.1-alpha.0.** Porting to DSH `0.2.1-rc.2` is in progress. Typecheck, all 124 account-free unit tests and hosted packaging have passed; actual DSH installation, OAuth login and subscribed-model E2E have **not yet been verified**. **Do not treat this as a stable release.** [Current CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/workflows/ci.yml).
+> **Development preview: 0.2.1-alpha.1.** Porting to DSH `0.2.1-rc.2` is in progress. Typecheck, all 124 account-free unit tests and hosted packaging have passed; actual DSH installation, OAuth login and subscribed-model E2E have **not yet been verified**. **Do not treat this as a stable release.** [Current CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/workflows/ci.yml).
 
 [简体中文](README.zh.md) · [Development status](docs/STATUS.md) · [Screenshot provenance](docs/SCREENSHOTS.md)
 
@@ -34,32 +34,32 @@ The plugin uses the official `account/read`, `account/login/start`, `account/log
 
 ## Install development prerelease from GitHub (DSH desktop)
 
-**Testing tag: `v0.2.1-alpha.0`.** The package is intended for hands-on testing against DSH `0.2.1-rc.2`; **real desktop installation, subscribed sign-in and E2E remain unverified**.
+**Testing tag: `v0.2.1-alpha.1` (prebuilt, no install-time build).** The package is intended for hands-on testing against DSH `0.2.1-rc.2`; **real desktop installation, subscribed sign-in and E2E remain unverified**.
 
 1. Open DSH desktop → **Plugins → Add plugin**.
 2. Paste this complete GitHub package spec, then click **Install**:
 
    ```text
-   github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.0
+   github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.1
    ```
 
 3. Enable the installed plugin and restart DSH.
 4. In **Settings → Codex official login**, select **Sign in with ChatGPT** or **Use device code** and authenticate with a ChatGPT account that has Codex access.
 5. Return to the chat model picker, select `codex-local` / **Codex (local login)** and an available model, then send a test message.
 
-No npm account or separate OpenAI API Key is required. GitHub-source installation may build dependencies inside the DSH plugin installation process; the installed plugin and official Codex runtime still use disk space, though no local development checkout is needed.
+**v0.2.1-alpha.1 fixes the `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` GitHub install error.** Its tag contains GitHub-hosted precompiled `lib/` output and no `prepare` lifecycle script, so DSH does not need to grant this package `allowBuilds` or compile TypeScript locally. Normal installed plugin/Codex files still use disk space. No npm account or separate API key is needed.
 
 ### Web CLI
 
 ```bash
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.0'
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.1'
 ```
 
 The Web and Desktop DSH profiles are separate.
 
 ### GitHub Release fallback
 
-[Prerelease v0.2.1-alpha.0](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.0) distributes `dsh-codex-native-0.2.1-alpha.0.tgz`, a prebuilt npm-format package hosted by GitHub. If the release workflow has not completed, check [Actions](https://github.com/Tests4gptplay/dsh-codex-native/actions).
+[Prerelease v0.2.1-alpha.1](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.1) distributes `dsh-codex-native-0.2.1-alpha.1.tgz`, a prebuilt npm-format package hosted by GitHub. If the release workflow has not completed, check [Actions](https://github.com/Tests4gptplay/dsh-codex-native/actions).
 
 ### Test feedback
 
@@ -75,7 +75,7 @@ On failure, record your exact DSH version, error and enablement state. Never sha
 | Official browser/device-code sign-in Settings UI | Implemented; real-host verification pending |
 | Native Codex quota reading | Implemented; live verification pending |
 | Live multi-turn Codex, real DSH installation, Windows host | Not verified |
-| GitHub testing prerelease | `v0.2.1-alpha.0`; real-install testing pending; not stable |
+| GitHub testing prerelease | `v0.2.1-alpha.1`; real-install testing pending; not stable |
 
 See [docs/STATUS.md](docs/STATUS.md) for the actual CI record and known blockers.
 
