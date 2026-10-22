@@ -60,7 +60,13 @@ See [docs/STATUS.md](docs/STATUS.md) for the actual CI record and known blockers
 
 ## Original screenshots only
 
-No screenshots copied from the upstream author's previous UI are used. Future images must be generated **from this version's implementation**, labeled as an actual host screenshot or a component-only unauthenticated preview, with generation details in [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md). No real-account screenshots will be fabricated.
+All inherited upstream screenshots were removed. The image below was generated on an [isolated GitHub Actions runner](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39784055873) by rendering the **actual current `CodexNativeSection.tsx` React component** with no connected host/account.
+
+![Codex Native official login component, English unauthenticated preview; NOT a live DSH app screenshot](docs/screenshots/codex-native-login-en.png)
+
+*Original, unauthenticated component preview. The surrounding navigation is an illustrative test shell, **not the real DSH application and not proof of working OAuth sign-in**.*
+
+Chinese preview: [官方登录组件（中文）](docs/screenshots/codex-native-login-zh.png). Reproduction and future acceptance requirements: [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md).
 
 ## Architectural boundary
 
