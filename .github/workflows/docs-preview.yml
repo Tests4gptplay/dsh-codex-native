@@ -31,6 +31,12 @@ jobs:
         env:
           DSH_DOC_PREVIEW_OUTPUT: ${{ runner.temp }}/codex-native-preview
         run: pnpm exec vitest run tests/docs-preview.spec.tsx
+      - name: Provide transient CJK display fonts for Chinese screenshot
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq fonts-noto-cjk
+          fc-cache -f
+          fc-match 'Noto Sans CJK SC'
       - name: Capture own Chinese and English preview screenshots
         shell: bash
         run: |
