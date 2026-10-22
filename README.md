@@ -2,7 +2,7 @@
 
 **A DeepSeek Harness main-model plugin using the official OpenAI Codex app-server** · Independent community project · MIT
 
-> **Development preview: 0.2.1-alpha.0.** Porting to DSH `0.2.1-rc.2` is in progress. TypeScript source checking has passed in GitHub Actions; the complete test suite, actual installation, sign-in, and live-model end-to-end checks are **not yet all passing**. **Do not treat this as a stable release.** [Current CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/workflows/ci.yml).
+> **Development preview: 0.2.1-alpha.0.** Porting to DSH `0.2.1-rc.2` is in progress. Typecheck, all 124 account-free unit tests and hosted packaging have passed; actual DSH installation, OAuth login and subscribed-model E2E have **not yet been verified**. **Do not treat this as a stable release.** [Current CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/workflows/ci.yml).
 
 [简体中文](README.zh.md) · [Development status](docs/STATUS.md) · [Screenshot provenance](docs/SCREENSHOTS.md)
 
@@ -44,13 +44,15 @@ dsh plugin --profile web add github:Tests4gptplay/dsh-codex-native
 
 Prefer a reviewed commit/tag for repeatable installs. Restart DSH as requested, sign in through Settings, and choose `codex-local` in the main model picker. **Do not run this command yet as a production installation instruction.**
 
+[Successful hosted build and 124-unit-test run](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39786235347) · [Candidate tarball in the run's CI artifacts](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39786235347). **This is a build artifact, not a production-certified plugin release.**
+
 ## Implementation and test status
 
 | Capability | Status |
 |---|---|
 | MIT upstream imported into independent public repository | Completed |
 | Native `@openai/codex` app-server main-model adapter | Ported in code |
-| DSH 0.2.1 tool-message and stream type adaptation | Typecheck passed; test migration ongoing |
+| DSH 0.2.1 tool-message and stream type adaptation | Typecheck + 124 account-free tests passed; real Codex E2E excluded |
 | Official browser/device-code sign-in Settings UI | Implemented; real-host verification pending |
 | Native Codex quota reading | Implemented; live verification pending |
 | Live multi-turn Codex, real DSH installation, Windows host | Not verified |
