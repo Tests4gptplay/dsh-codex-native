@@ -4,7 +4,7 @@ Updated: 2026-10-22 · Target: **DSH 0.2.1-rc.2** · Plugin: **0.2.1-alpha.0**
 
 ## Authoritative status
 
-**Development alpha, not a stable release.** The README describes implemented source separately from validated capabilities. A completed GitHub workflow job is not proof of a live ChatGPT authentication or a real DSH Desktop installation.
+**Development alpha, not a stable release.** Hosted CI has successfully completed typecheck, 124 account-free unit tests in 14 test files, plugin build and .tgz packaging, but those tests explicitly excluded `tests/real-codex.e2e.ts`. This is **not** proof of a live ChatGPT authentication, working DSH installation, or a real DSH Desktop integration.
 
 | Layer | Current evidence | Acceptance |
 |---|---|---|
@@ -14,14 +14,14 @@ Updated: 2026-10-22 · Target: **DSH 0.2.1-rc.2** · Plugin: **0.2.1-alpha.0**
 | DSH 0.2 tool messages | `src/protocol.ts` and migrated fixtures | Protocol suite has run, tests migrated |
 | Native account bridge | `src/native-account.ts`, `src/native-transport.ts` | Implemented; tests written, no actual OAuth sign-in observed |
 | DSH settings login UI | `src/client/CodexNativeSection.tsx` | Component-level preview only; DSH Host still unverified |
-| Hosted CI | [Actions workflow](https://github.com/Tests4gptplay/dsh-codex-native/actions/workflows/ci.yml) | **Not yet green** as of this update |
-| Test evidence | [CI #39781966899](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39781966899) | 117 unit tests passed; one suite could not import an unpublished transitive DSH dev dependency; this is **not** a passing test run |
+| Hosted CI | [Successful run #39786235347](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39786235347) | **PASS**: typecheck, 124 unit tests / 14 files, build and .tgz package; real-account E2E excluded |
+| Package artifact | [Run #39786235347 artifacts](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39786235347) | `dsh-codex-native-0.2.1-alpha.0.tgz` generated on disposable Linux Runner; **not installed in real DSH** |
 | Model/account entitlement | Real account & model response | **Not tested** |
 | DSH installation / Windows | Isolated DSH Web/Desktop with installed .tgz | **Not tested** |
 
 ## Release-blocking acceptance criteria
 
-- Green typecheck, unit tests and plugin package build on a frozen revision.
+- **Completed in hosted CI**: Typecheck, account-free unit tests (124/124), plugin build, .tgz candidate generation. Freeze a reviewed commit for actual installation testing.
 - Install the packed plugin in an **isolated** DSH 0.2.1 Host and ensure it is enabled and appears in the main model selector.
 - Verify the app-server native browser login and device-code login paths; never export token data to browser storage or screenshots.
 - Make one real subscribed Codex multi-turn conversation, one DSH tool round-trip, one cancellation/recovery flow, and one requested attachment/modality check.
