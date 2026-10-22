@@ -1,0 +1,179 @@
+/** Native Codex account UI bridge. OAuth is owned exclusively by OpenAI Codex app-server.
+ *  No token, credential, cookie, or authorization code is read or persisted by DSH.
+ */
+import { homedir } from 'node:os'
+import type { SubprocessHandle, SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
+import { codexCliEntry } from './runner.ts'
+import { JsonRpcConnection, object } from './wire.ts'
+
+type LoginMode = 'browser' | 'device'
+export type LoginPhase = 'pending' | 'authenticated' | 'failed' | 'cancelled'
+export interface LoginFlow {
+  id: string
+  phase: LoginPhase
+  mode: LoginMode
+  authUrl?: string
+  verificationUrl?: string
+  userCode?: string
+  error?: string
+}
+interface RunningCodex {
+  child: SubprocessHandle
+  rpc: JsonRpcConnection
+  close(): Promise<void>
+}
+type Spawn = (spec: SubprocessSpawnSpec) => SubprocessHandle
+
+export class NativeCodexAccount {
+  private active: RunningCodex | undefined
+  private flow: LoginFlow | undefined
+  private disposed = false
+
+  constructor(private readonly spawn: Spawn) {}
+
+  private async open(): Promise<RunningCodex> {
+    if (this.disposed) throw new Error('Native Codex account service is disposed')
+    const child = this.spawn({
+      argv: [process.execPath, codexCliEntry(), 'app-server', '--stdio'],
+      cwd: homedir(),
+      stdio: { stdin: 'pipe', stdout: 'pipe', stderr: 'pipe' },
+      env: {},
+      graceMs: 3_000,
+    })
+    if (!child.stdin || !child.stdout) {
+      child.terminate()
+      throw new Error('Codex app-server did not provide stdio')
+    }
+    const rpc = new JsonRpcConnection(child.stdin, child.stdout, 8 * 1024 * 1024)
+    let closed = false
+    const close = async (): Promise<void> => {
+      if (closed) return
+      closed = true
+      rpc.dispose()
+      child.terminate()
+      await child.waitForExit().catch(() => {})
+    }
+    try {
+      await rpc.request('initialize', {
+        clientInfo: { name: 'dsh_codex_native', title: 'DSH Codex Native', version: '0.2.1' },
+      })
+      await rpc.notify('initialized', {})
+      return { child, rpc, close }
+    } catch (error: unknown) {
+      await close()
+      throw error
+    }
+  }
+
+  private async withConnection<T>(fn: (rpc: JsonRpcConnection) => Promise<T>): Promise<T> {
+    const conn = await this.open()
+    try { return await fn(conn.rpc) }
+    finally { await conn.close() }
+  }
+
+  async status(): Promise<{ authenticated: boolean; email?: string; planType?: string }> {
+    const data = object(await this.withConnection(rpc => rpc.request('account/read', { refreshToken: false })), 'account/read')
+    const account = data.account === null || data.account === undefined ? null : object(data.account, 'account')
+    if (!account || account.type !== 'chatgpt') return { authenticated: false }
+    return {
+      authenticated: true,
+      ...(typeof account.email === 'string' ? { email: account.email } : {}),
+      ...(typeof account.planType === 'string' ? { planType: account.planType } : {}),
+    }
+  }
+
+  async quota(): Promise<unknown> {
+    const data = object(await this.withConnection(rpc => rpc.request('account/rateLimits/read', {})), 'account/rateLimits/read')
+    const limits = data.rateLimits === undefined ? null : data.rateLimits
+    // Display-only server-provided limits: never infer quota from a counter.
+    return JSON.parse(JSON.stringify(limits))
+  }
+
+  async start(mode: LoginMode): Promise<LoginFlow> {
+    if (this.active) await this.active.close()
+    this.active = undefined
+    if (mode !== 'browser' && mode !== 'device') throw new Error('Unsupported login mode')
+    const conn = await this.open()
+    this.active = conn
+    try {
+      const reply = object(await conn.rpc.request('account/login/start',
+        mode === 'browser'
+          ? { type: 'chatgpt', useHostedLoginSuccessPage: true, appBrand: 'chatgpt' }
+          : { type: 'chatgptDeviceCode' }), 'account/login/start')
+      if (typeof reply.loginId !== 'string' || !reply.loginId) throw new Error('Codex login id missing')
+      const info: LoginFlow = { id: reply.loginId, phase: 'pending', mode }
+      if (mode === 'browser') {
+        if (typeof reply.authUrl !== 'string') throw new Error('Codex browser authorization URL missing')
+        info.authUrl = reply.authUrl
+      } else {
+        if (typeof reply.verificationUrl !== 'string' || typeof reply.userCode !== 'string') {
+          throw new Error('Codex device-code response incomplete')
+        }
+        info.verificationUrl = reply.verificationUrl
+        info.userCode = reply.userCode
+      }
+      this.flow = info
+      void this.observeLogin(conn, info.id)
+      return { ...info }
+    } catch (error: unknown) {
+      if (this.active === conn) this.active = undefined
+      await conn.close()
+      throw error
+    }
+  }
+
+  private async observeLogin(conn: RunningCodex, loginId: string): Promise<void> {
+    try {
+      while (!this.disposed && this.active === conn) {
+        const event = await conn.rpc.next()
+        if (event.done) break
+        if (event.value.kind !== 'notification' || event.value.method !== 'account/login/completed') continue
+        const params = event.value.params
+        if (params.loginId !== loginId) continue
+        this.flow = params.success === true
+          ? { id: loginId, phase: 'authenticated', mode: this.flow?.mode ?? 'browser' }
+          : { id: loginId, phase: 'failed', mode: this.flow?.mode ?? 'browser',
+              error: typeof params.error === 'string' ? params.error.slice(0, 180) : 'Codex login failed' }
+        break
+      }
+    } catch (error: unknown) {
+      if (this.active === conn) {
+        this.flow = { id: loginId, phase: 'failed', mode: this.flow?.mode ?? 'browser',
+          error: error instanceof Error ? error.message.slice(0, 180) : 'Codex login transport failed' }
+      }
+    } finally {
+      if (this.active === conn) this.active = undefined
+      await conn.close()
+    }
+  }
+
+  loginStatus(id: string): LoginFlow {
+    if (!this.flow || this.flow.id !== id) throw new Error('Unknown Codex login attempt')
+    return { ...this.flow }
+  }
+
+  async cancel(id: string): Promise<LoginFlow> {
+    if (!this.flow || this.flow.id !== id) throw new Error('Unknown Codex login attempt')
+    const conn = this.active
+    if (conn) {
+      await conn.rpc.request('account/login/cancel', { loginId: id }).catch(() => {})
+      if (this.active === conn) this.active = undefined
+      await conn.close()
+    }
+    this.flow = { id, phase: 'cancelled', mode: this.flow.mode }
+    return { ...this.flow }
+  }
+
+  async logout(): Promise<{ authenticated: false }> {
+    if (this.flow?.phase === 'pending') await this.cancel(this.flow.id)
+    await this.withConnection(rpc => rpc.request('account/logout', {}).then(() => undefined))
+    return { authenticated: false }
+  }
+
+  async dispose(): Promise<void> {
+    this.disposed = true
+    const conn = this.active
+    this.active = undefined
+    if (conn) await conn.close()
+  }
+}
