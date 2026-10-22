@@ -34,38 +34,13 @@ DSH 设置 → Codex 官方登录
 
 参考：[OpenAI Codex app-server 官方文档](https://developers.openai.com/codex/app-server/)。
 
-## 安装测试版（GitHub，DSH 桌面应用）
+## 安装状态：审计清理中，暂不建议安装
 
-**预发行版本：`v0.2.1-alpha.1`**（修复直接 GitHub 安装，无需启用构建脚本）。用于实际 DSH 安装和官方 ChatGPT/Codex 登录测试，**尚未通过 Windows 桌面端与真实账号 E2E 验收**。推荐使用 DSH `0.2.1-rc.2` 对照测试。
+**旧版 `v0.2.1-alpha.0` 曾因安装期构建脚本被 DSH 拒绝；`v0.2.1-alpha.1` 的 GitHub 源码快照仍携带旧开发测试和遗留 UI 文件。** 它们不代表测试代码已在 DSH 自动运行，但也未达到我们要求的最小发行物标准。
 
-1. 在 DSH 桌面应用侧栏打开 **插件 → 添加插件**。
-2. 将下面整行粘贴到 GitHub 插件安装框，点击 **安装**：
+当前正在制作 **`0.2.1-alpha.2` 精简版**，目标是 GitHub 标签只包含预编译 JS、必要类型、插件清单、补丁、许可证及最小安装说明，**不含 `src/`、`tests/`、CI、构建脚本、开发依赖、旧 UI 或历史文档**。必须先通过隔离环境 GitHub 安装和官方 DSH 启动/模型目录验收，才会公布新的安装入口。
 
-   ```text
-   github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.1
-   ```
-
-3. 安装后**启用插件并重启 DSH**。
-4. 打开 **设置 → Codex 官方登录**，选择 **Sign in with ChatGPT** 或 **Use device code**，用具有 Codex 权限的 ChatGPT 账号登录。
-5. 返回聊天窗口，在**主模型选择器**中查找 `codex-local` / **Codex (local login)**，选取当前账号实际可用的 Codex 模型，发送一条普通测试消息。
-
-**v0.2.1-alpha.1 修复了 GitHub 安装被 `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` 拦截的问题。** 新标签中的 `lib/` 是 GitHub 托管 Runner 预编译的产物，包不再包含 `prepare` 安装生命周期脚本。DSH 无需为此修改本地 `allowBuilds`，也无需本地构建 TypeScript；已安装插件及官方 Codex 运行时仍会占用一定磁盘空间。 **本次安装请使用 `#v0.2.1-alpha.1` 固定标签，不要使用尚未包含预编译产物的 `#main`。** [无 `allowBuilds` GitHub 安装实测：成功](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39789788735)。
-
-### Web 版 CLI
-
-```bash
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.1'
-```
-
-Web 与桌面版使用不同 profile，在 Web 中安装不自动安装到桌面 DSH。
-
-### 备用：GitHub Release
-
-[预发行版 v0.2.1-alpha.1](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.1) 提供与该标签对应的预打包 `dsh-codex-native-0.2.1-alpha.1.tgz`；无需 npm 账号。若链接尚未发布完成，以 [GitHub Actions](https://github.com/Tests4gptplay/dsh-codex-native/actions) 状态为准。
-
-### 实机反馈
-
-如果安装失败，请记录 DSH 的**确切版本、安装报错、插件启用状态**；如果安装成功但不能登录或没有模型，请记录对应错误及模型选择器信息，**不要公开授权码、令牌或账户信息**。没有 `/persona` 这样的专属测试指令：本插件验收的是登录、`codex-local` 主模型出现以及一条真实对话和 DSH 工具调用。
+在清理版发布与验证前，请不要重新安装旧版。
 
 ## 当前实现与待验证事项
 
