@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import type { NativeCodexRpc } from './native-rpc.ts'
+import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 
 interface Account {
   authenticated: boolean
@@ -19,7 +20,7 @@ interface Quota {
   primary?: { usedPercent?: number; windowDurationMins?: number; resetsAt?: number }
   secondary?: { usedPercent?: number; windowDurationMins?: number; resetsAt?: number }
 }
-type Translator = (key: string) => string
+type Translator = TranslateNS<'codex-native'>
 
 /** Primary DSH settings surface for native Codex OAuth and account usage. */
 export function CodexNativeSection({ rpc, t }: { rpc: NativeCodexRpc; t: Translator }): ReactNode {
