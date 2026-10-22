@@ -108,7 +108,7 @@ describe('App Server protocol translation', () => {
       ],
     }
     const output = [
-      { type: 'input_text', text: 'Tool error:\\n' },
+      { type: 'input_text', text: 'Tool error:\n' },
       { type: 'input_text', text: 'before' },
       { type: 'input_image', image_url: marker },
       { type: 'input_text', text: 'after' },
@@ -490,7 +490,7 @@ describe('App Server protocol translation', () => {
       ],
     }))).toEqual([
       { callId: 'call-1', output: 'ok', success: true },
-      { callId: 'call-2', output: 'Tool error:\\nbroken', success: false },
+      { callId: 'call-2', output: 'Tool error:\nbroken', success: false },
     ])
   })
 
