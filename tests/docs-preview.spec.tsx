@@ -74,7 +74,7 @@ describe('repository-owned screenshot source', () => {
     const text = html(lang)
     expect(text).toContain('DSH Codex Native')
     expect(text).toContain(lang === 'zh' ? '使用 ChatGPT 登录' : 'Sign in with ChatGPT')
-    expect(text).toContain('No real login')
+    expect(text).toContain(lang === 'zh' ? '未进行真实登录' : 'No real login')
     expect(text).not.toContain('<img')
     expect(text).not.toContain('sk-proj-')
   })
