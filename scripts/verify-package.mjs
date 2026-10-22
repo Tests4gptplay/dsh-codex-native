@@ -5,8 +5,8 @@ import { appendFileSync, existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const EXPECTED_NAME = 'dsh-llm-codex-app-server'
-const EXPECTED_REPOSITORY = 'git+https://github.com/wss534857356/dsh-plugin-codex.git'
+const EXPECTED_NAME = 'dsh-codex-native'
+const EXPECTED_REPOSITORY = 'git+https://github.com/Tests4gptplay/dsh-codex-native.git'
 const EXPECTED_REGISTRY = 'https://registry.npmjs.org/'
 const REQUIRED_FILES = [
   'LICENSE',
@@ -31,8 +31,8 @@ const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.
 const tag = process.argv[2] === '--' ? process.argv[3] : process.argv[2]
 
 if (manifest.name !== EXPECTED_NAME) fail(`package name must be ${EXPECTED_NAME}`)
-if (!/^\d+\.\d+\.\d+$/u.test(manifest.version)) {
-  fail(`package version must be a stable x.y.z release: ${JSON.stringify(manifest.version)}`)
+if (!/^\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?$/u.test(manifest.version)) {
+  fail(`package version must be a valid x.y.z or prerelease semver: ${JSON.stringify(manifest.version)}`)
 }
 if (tag !== undefined && tag !== `v${manifest.version}`) {
   fail(`git tag ${JSON.stringify(tag)} does not match package version v${manifest.version}`)
