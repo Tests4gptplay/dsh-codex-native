@@ -12,6 +12,15 @@ Three imported upstream screenshots and their old CDP capture evidence were remo
 
 They showed the old plugin UI, not the new `CodexNativeSection` login page.
 
+## Captures produced by this fork
+
+- [Chinese unauthenticated component preview](screenshots/codex-native-login-zh.png)
+- [English unauthenticated component preview](screenshots/codex-native-login-en.png)
+- [Source capture workflow, successful run #39784055873](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39784055873)
+- Render input: `src/client/CodexNativeSection.tsx` + `src/client/native-locales.ts`.
+- Test-only HTML: `tests/docs-preview.spec.tsx`. Chrome captures in temporary Ubuntu GitHub Runner. The image does not show a real DSH Host.
+- No inherited PNG assets, personal photos, real login or production data are included.
+
 ## Current image categories
 
 1. **Isolated component preview / 组件预览**: A browser rendering of the **actual** React `src/client/CodexNativeSection.tsx` component in its unauthenticated initial state, with a neutral preview shell. This is not a screenshot of a running DSH Web/Desktop Host. Chinese and English are captured separately.
