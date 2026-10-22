@@ -1,6 +1,7 @@
 /** DSH's existing authenticated RPC transport for the official Codex app-server account service. */
 import { clientRequestSchema } from '@deepseek-ai/dsh-client-connection'
 import type { NativeCodexAccount } from './native-account.ts'
+import type { HostConnectionHandle } from '@deepseek-ai/dsh-client-connection'
 
 export const CODEX_NATIVE_RPC = '/codex-native'
 export const CODEX_NATIVE_ENDPOINTS = [
@@ -16,8 +17,8 @@ type Handler = { fetch: { register: (options: {
 }) => (() => void) } }
 
 /** Bound to the DSH connection service, not a custom HTTP listener. */
-export function registerNativeCodexTransport(connection: Handler, account: NativeCodexAccount): () => void {
-  const disposers: Array<() => void> = []
+export function registerNativeCodexTransport(connection: HostConnectionHandle, account: NativeCodexAccount): () => void {
+  const disposers: Array<() => Promise<void>> = []
   try {
     for (const endpoint of CODEX_NATIVE_ENDPOINTS) {
       const method = `codex-native/${endpoint}`
@@ -72,8 +73,8 @@ export function registerNativeCodexTransport(connection: Handler, account: Nativ
       }))
     }
   } catch (error: unknown) {
-    for (const dispose of disposers.reverse()) dispose()
+    for (const dispose of disposers.reverse()) void dispose()
     throw error
   }
-  return () => { for (const dispose of disposers.reverse()) dispose() }
+  return async () => { await Promise.all(disposers.reverse().map(dispose => dispose())) }
 }
