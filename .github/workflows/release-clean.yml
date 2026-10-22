@@ -31,6 +31,10 @@ jobs:
           pnpm run typecheck
           pnpm run test:ci
           pnpm run build
+          # Entrypoints in package.json must exist in the built output; a successful compiler exit alone is insufficient.
+          test -s lib/index.js
+          test -s lib/client.js
+          test -s lib/client/index.d.ts
       - name: Create isolated minimal GitHub distribution tree
         shell: bash
         run: |
