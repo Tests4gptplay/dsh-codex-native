@@ -150,40 +150,21 @@ async function collectTurn(
 }
 
 describe('Codex App Server runner', () => {
-  it('uses the pinned CLI entry and fixed non-shell policy', () => {
+  it('does not override Codex feature policy, account config, or normal compaction', () => {
     expect(existsSync(codexCliEntry())).toBe(true)
     const argv = codexAppServerArgv()
-    expect(argv.slice(0, 3)).toEqual([process.execPath, codexCliEntry(), 'app-server'])
-    expect(argv).toContain('--stdio')
-    expect(argv).toContain('--strict-config')
-    expect(argv).toContain('check_for_update_on_startup=false')
-    expect(argv).toContain('analytics.enabled=false')
-    expect(argv).toContain('web_search="disabled"')
-    expect(argv).toContain(`model_auto_compact_token_limit=${String(Number.MAX_SAFE_INTEGER)}`)
-    const enabledFeatures = argv.flatMap((argument, index) => argument === '--enable' ? [argv[index + 1]] : [])
-    const disabledFeatures = argv.flatMap((argument, index) => argument === '--disable' ? [argv[index + 1]] : [])
-    expect(enabledFeatures).toEqual(expect.arrayContaining(['image_generation', 'view_image']))
-    expect(disabledFeatures).not.toContain('image_generation')
-    expect(disabledFeatures).not.toContain('view_image')
+    expect(argv).toEqual([process.execPath, codexCliEntry(), 'app-server', '--stdio'])
+    expect(argv).not.toContain('--strict-config')
+    expect(argv).not.toContain('--disable')
+    expect(argv).not.toContain('--enable')
     expect(argv).not.toContain('--dangerously-bypass-approvals-and-sandbox')
-
-    const searchArgv = codexAppServerArgv('live')
-    expect(searchArgv).toContain('web_search="live"')
-    const searchDisabledFeatures = searchArgv.flatMap(
-      (argument, index) => argument === '--disable' ? [searchArgv[index + 1]] : [],
-    )
-    expect(searchDisabledFeatures).not.toContain('standalone_web_search')
-
-    const noImageArgv = codexAppServerArgv('disabled', false)
-    const noImageEnabledFeatures = noImageArgv.flatMap(
-      (argument, index) => argument === '--enable' ? [noImageArgv[index + 1]] : [],
-    )
-    const noImageDisabledFeatures = noImageArgv.flatMap(
-      (argument, index) => argument === '--disable' ? [noImageArgv[index + 1]] : [],
-    )
-    expect(noImageEnabledFeatures).not.toContain('image_generation')
-    expect(noImageEnabledFeatures).toContain('view_image')
-    expect(noImageDisabledFeatures).toContain('image_generation')
+    const search = codexAppServerArgv('live')
+    expect(search).toContain('web_search="live"')
+    expect(search).not.toContain('--disable')
+    expect(codexAppServerArgv('disabled', false)).toEqual([
+      process.execPath, codexCliEntry(), 'app-server', '--stdio',
+      '-c', 'web_search="disabled"', '--disable', 'image_generation',
+    ])
   })
 
   it('starts an ephemeral thread, injects history, streams events, and reaches quiescence', async () => {
@@ -216,7 +197,6 @@ describe('Codex App Server runner', () => {
     })
     expect(messages.find(message => message.method === 'thread/start')).toMatchObject({
       params: {
-        approvalPolicy: 'never',
         baseInstructions: 'Harness system',
         developerInstructions: '',
         dynamicTools: [],
@@ -224,7 +204,9 @@ describe('Codex App Server runner', () => {
         experimentalRawEvents: true,
       },
     })
-    expect(object(messages.find(message => message.method === 'thread/start')?.params)).not.toHaveProperty('sandbox')
+    const threadParams = object(messages.find(message => message.method === 'thread/start')?.params)
+    expect(threadParams).not.toHaveProperty('sandbox')
+    expect(threadParams).not.toHaveProperty('approvalPolicy')
     expect(messages.find(message => message.method === 'thread/inject_items')).toMatchObject({
       params: { threadId: 'thread-1', items: request().history },
     })
@@ -233,10 +215,7 @@ describe('Codex App Server runner', () => {
     })
     expect(setup.spec()).toMatchObject({
       stdio: { stdin: 'pipe', stdout: 'pipe', stderr: { maxBytes: 1_000 } },
-      env: {
-        CODEX_HOME: 'configured-home',
-        CODEX_INTERNAL_ORIGINATOR_OVERRIDE: 'deepseek-harness',
-      },
+      env: { CODEX_HOME: 'configured-home' },
     })
     expect(existsSync(setup.spec().cwd)).toBe(false)
     expect(setup.child.terminate).toHaveBeenCalledOnce()
@@ -636,13 +615,18 @@ describe('Codex App Server runner', () => {
     expect(setup.child.waitForExit).toHaveBeenCalledOnce()
   })
 
-  it('rejects a mismatched App Server version and malformed JSON-RPC', async () => {
-    const mismatched = runner((message, send) => {
+  it('does not fail solely on diagnostic version text; still rejects malformed JSON-RPC', async () => {
+    const mismatched = runner((message, send, raw) => {
       if (message.method === 'initialize') {
         send({ id: message.id, result: { userAgent: 'codex_app_server/0.148.0' } })
+        return
       }
+      standardScript(write => write({
+        method: 'turn/completed',
+        params: { threadId: 'thread-1', turn: { id: 'turn-1', status: 'completed', error: null } },
+      }))(message, send, raw)
     })
-    await expect(collect(mismatched.runner, request())).rejects.toMatchObject({ code: 'PROTOCOL_VERSION' })
+    expect((await collect(mismatched.runner, request())).some(e => e.kind === 'notification' && e.method === 'turn/completed')).toBe(true)
     expect(mismatched.child.terminate).toHaveBeenCalledOnce()
 
     const malformed = runner((message, send, sendRaw) => {

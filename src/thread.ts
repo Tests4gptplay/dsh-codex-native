@@ -148,12 +148,12 @@ export class ManagedCodexThread implements CodexAppServerThreadPort {
     let retained = false
     let primary: LlmError | undefined
     let timedOut = false
-    const timeout = setTimeout(() => {
+    const timeout = this.options.timeoutMs > 0 ? setTimeout(() => {
       timedOut = true
       const failure = operationFailure(TIMEOUT_REASON, true, request.signal)
       this.options.connection.fail(failure)
       this.options.abort(TIMEOUT_REASON)
-    }, this.options.timeoutMs)
+    }, this.options.timeoutMs) : undefined
     const onAbort = (): void => {
       const failure = operationFailure(request.signal?.reason, false, request.signal)
       this.options.connection.fail(failure)
@@ -201,7 +201,7 @@ export class ManagedCodexThread implements CodexAppServerThreadPort {
     } catch (error: unknown) {
       primary = operationFailure(error, timedOut, request.signal)
     } finally {
-      clearTimeout(timeout)
+      if (timeout !== undefined) clearTimeout(timeout)
       request.signal?.removeEventListener('abort', onAbort)
       this.active = false
       if (!retained) {

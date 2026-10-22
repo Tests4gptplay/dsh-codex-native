@@ -27,32 +27,8 @@ export type { CodexAppServerEvent, JsonValue } from './wire.ts'
 export const CODEX_APP_SERVER_VERSION = '0.154.0'
 
 const WORKDIR_PREFIX = 'dsh-codex-app-server-'
-const HARNESS_COMPACTION_THRESHOLD = Number.MAX_SAFE_INTEGER
 const TIMEOUT_REASON = Symbol('codex-app-server-timeout')
 const CONSUMER_REASON = Symbol('codex-app-server-consumer-stop')
-const CODEX_ALWAYS_ENABLED_FEATURES = [
-  'view_image',
-] as const
-const CODEX_DISABLED_FEATURES = [
-  'apps',
-  'browser_use',
-  'browser_use_external',
-  'browser_use_full_cdp_access',
-  'computer_use',
-  'hooks',
-  'in_app_browser',
-  'mcp_2026_07_28',
-  'multi_agent',
-  'multi_agent_v2',
-  'plugins',
-  'remote_plugin',
-  'request_permissions_tool',
-  'shell_tool',
-  'skill_search',
-  'standalone_web_search',
-  'tool_call_mcp_elicitation',
-  'unified_exec',
-] as const
 
 /** Complete input for one stateless App Server turn. */
 export interface CodexAppServerRequest {
@@ -139,38 +115,20 @@ export function codexCliEntry(): string {
   return join(dirname(require.resolve('@openai/codex/package.json')), 'bin', 'codex.js')
 }
 
-/** Build the fixed, non-shell App Server argv. */
+/** Let the official Codex configuration select its own features and permissions.
+ * Only explicitly requested per-operation capabilities override the user policy.
+ */
 export function codexAppServerArgv(
-  webSearch: CodexWebSearchMode = 'disabled',
+  webSearch?: CodexWebSearchMode,
   imageGenerationEnabled = true,
 ): string[] {
-  const enabledFeatures = [
-    ...CODEX_ALWAYS_ENABLED_FEATURES,
-    ...(imageGenerationEnabled ? ['image_generation'] : []),
-  ]
-  const disabledFeatures = [
-    ...CODEX_DISABLED_FEATURES.filter(feature => webSearch === 'disabled' || feature !== 'standalone_web_search'),
-    ...(imageGenerationEnabled ? [] : ['image_generation']),
-  ]
-  const enabled = enabledFeatures.flatMap(feature => ['--enable', feature])
-  const disabled = disabledFeatures
-    .flatMap(feature => ['--disable', feature])
   return [
     process.execPath,
     codexCliEntry(),
     'app-server',
     '--stdio',
-    '--strict-config',
-    '-c',
-    'check_for_update_on_startup=false',
-    '-c',
-    'analytics.enabled=false',
-    '-c',
-    `web_search="${webSearch}"`,
-    '-c',
-    `model_auto_compact_token_limit=${String(HARNESS_COMPACTION_THRESHOLD)}`,
-    ...enabled,
-    ...disabled,
+    ...(webSearch === undefined ? [] : ['-c', `web_search="${webSearch}"`]),
+    ...(imageGenerationEnabled ? [] : ['--disable', 'image_generation']),
   ]
 }
 
@@ -303,11 +261,11 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
     }
     const lifetime = new AbortController()
     let timedOut = false
-    const timeout = setTimeout(() => {
+    const timeout = this.options.timeoutMs > 0 ? setTimeout(() => {
       timedOut = true
       connection?.fail(operationFailure(TIMEOUT_REASON, true, request.signal))
       if (!lifetime.signal.aborted) lifetime.abort(TIMEOUT_REASON)
-    }, this.options.timeoutMs)
+    }, this.options.timeoutMs) : undefined
     let child: SubprocessHandle | undefined
     let connection: JsonRpcConnection | undefined
     const onAbort = (): void => {
@@ -327,10 +285,7 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
         },
         graceMs: this.options.disposeGraceMs,
         signal: lifetime.signal,
-        env: {
-          ...this.options.env,
-          CODEX_INTERNAL_ORIGINATOR_OVERRIDE: 'deepseek-harness',
-        },
+        env: { ...this.options.env },
       })
       if (child.stdin === undefined || child.stdout === undefined) {
         throw new LlmError('Codex App Server subprocess did not expose protocol pipes', 'TRANSPORT')
@@ -360,19 +315,12 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
           requestAttestation: false,
         },
       }), 'initialize result')
-      if (typeof initialized.userAgent !== 'string'
-        || !initialized.userAgent.includes(CODEX_APP_SERVER_VERSION)) {
-        throw new LlmError(
-          `Codex App Server version mismatch: ${JSON.stringify(initialized.userAgent)}`,
-          'PROTOCOL_VERSION',
-        )
-      }
+
       await activeConnection.notify('initialized', {})
       const started = object(await activeConnection.request('thread/start', {
         model: request.model,
         modelProvider: request.modelProvider,
         cwd: workdir,
-        approvalPolicy: 'never',
         baseInstructions: request.system,
         developerInstructions: '',
         personality: 'none',
@@ -411,7 +359,7 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
         startedEvent: {
           kind: 'thread-started',
           threadId: id,
-          userAgent: initialized.userAgent,
+          userAgent: typeof initialized.userAgent === 'string' ? initialized.userAgent : '',
           instructionSources: instructionSources(started.instructionSources),
         },
       })
@@ -424,7 +372,7 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
       )!
       throw failure
     } finally {
-      clearTimeout(timeout)
+      if (timeout !== undefined) clearTimeout(timeout)
       request.signal?.removeEventListener('abort', onAbort)
     }
   }

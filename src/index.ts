@@ -164,7 +164,7 @@ export const Config: z<Config> = z.object({
   displayName: z.string().default('Codex (local login)'),
   modelProvider: z.string().default('openai'),
   models: z.array(modelSchema).default(DEFAULT_MODELS),
-  timeoutMs: z.number().max(2_147_483_647).default(300_000),
+  timeoutMs: z.number().min(0).max(2_147_483_647).default(0),
   disposeGraceMs: z.number().max(2_147_483_647).default(3_000),
   maxJsonRpcLineBytes: z.number().step(1).min(1).default(DEFAULT_MAX_JSON_RPC_LINE_BYTES),
   maxRequestImageBytes: z.number().step(1).min(1).default(DEFAULT_MAX_REQUEST_IMAGE_BYTES),
@@ -199,7 +199,7 @@ function resolveConfig(config: Config): ResolvedConfig {
   const provider = config.provider ?? 'codex-local'
   const displayName = config.displayName ?? 'Codex (local login)'
   const modelProvider = config.modelProvider ?? 'openai'
-  const timeoutMs = config.timeoutMs ?? 300_000
+  const timeoutMs = config.timeoutMs ?? 0
   const disposeGraceMs = config.disposeGraceMs ?? 3_000
   const maxJsonRpcLineBytes = config.maxJsonRpcLineBytes ?? DEFAULT_MAX_JSON_RPC_LINE_BYTES
   const maxRequestImageBytes = config.maxRequestImageBytes ?? DEFAULT_MAX_REQUEST_IMAGE_BYTES
@@ -214,8 +214,8 @@ function resolveConfig(config: Config): ResolvedConfig {
   if (!SAFE_ROUTE.test(modelProvider)) {
     throw new Error('llm-codex-app-server: modelProvider is not a safe Codex provider id')
   }
-  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > 2_147_483_647) {
-    throw new Error('llm-codex-app-server: timeoutMs must be a positive finite number')
+  if (!Number.isFinite(timeoutMs) || timeoutMs < 0 || timeoutMs > 2_147_483_647) {
+    throw new Error('dsh-codex-native: timeoutMs must be a non-negative finite number (0 disables the additional hard timer)')
   }
   if (!Number.isFinite(disposeGraceMs) || disposeGraceMs <= 0 || disposeGraceMs > 2_147_483_647) {
     throw new Error('llm-codex-app-server: disposeGraceMs must be a positive finite number')
