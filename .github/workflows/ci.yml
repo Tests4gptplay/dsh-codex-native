@@ -1,0 +1,39 @@
+name: DSH Codex native build
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install published DSH 0.2.1 dependency cohort
+        run: pnpm install --no-frozen-lockfile --ignore-scripts
+      - name: Typecheck
+        run: pnpm run typecheck
+      - name: Unit tests (no ChatGPT account)
+        run: pnpm run test:ci
+      - name: Build public plugin
+        run: pnpm run build
+      - name: Pack public plugin
+        run: |
+          mkdir -p dist
+          pnpm pack --pack-destination dist
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: dsh-codex-native-linux-validated
+          path: dist/*.tgz
