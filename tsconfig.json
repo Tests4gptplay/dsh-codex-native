@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2024",
-    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2024",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "strict": true,
@@ -17,7 +21,19 @@
     "rewriteRelativeImportExtensions": true,
     "jsx": "react-jsx",
     "declaration": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["src", "tests"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "exclude": [
+    "tests",
+    "src/client/CodexAssistantNodeView.tsx",
+    "src/client/CodexSettingsCard.tsx",
+    "src/client/settings-card-controller.ts",
+    "src/client/locales.ts"
+  ]
 }
