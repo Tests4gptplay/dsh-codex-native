@@ -31,33 +31,31 @@ jobs:
         env:
           DSH_DOC_PREVIEW_OUTPUT: ${{ runner.temp }}/codex-native-preview
         run: pnpm exec vitest run tests/docs-preview.spec.tsx
-      - name: Provide transient CJK display fonts for Chinese screenshot
-        run: |
-          sudo apt-get update -qq
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq fonts-noto-cjk
-          fc-cache -f
-          fc-match 'Noto Sans CJK SC' --format '%{family}\n' | grep -m1 'Noto Sans CJK'
-      - name: Capture own Chinese and English preview screenshots
+      - name: Capture original English-language Codex login component
         shell: bash
         run: |
           set -euo pipefail
           CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
           mkdir -p docs/screenshots
-          for LANG in zh en; do
-            "${CHROME}" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage \
-              --hide-scrollbars --window-size=1280,850 --screenshot="$GITHUB_WORKSPACE/docs/screenshots/codex-native-login-${LANG}.png" \
-              "file://${RUNNER_TEMP}/codex-native-preview/${LANG}.html"
-            test -s "docs/screenshots/codex-native-login-${LANG}.png"
-            file "docs/screenshots/codex-native-login-${LANG}.png"
-          done
-      - name: Commit only original preview screenshots to source repo
+          "${CHROME}" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage \
+            --hide-scrollbars --window-size=1280,850 --screenshot="$GITHUB_WORKSPACE/docs/screenshots/codex-native-login-en.png" \
+            "file://${RUNNER_TEMP}/codex-native-preview/en.html"
+          test -s docs/screenshots/codex-native-login-en.png
+          file docs/screenshots/codex-native-login-en.png
+      - name: Commit only original English preview screenshot to source repo
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/screenshots/codex-native-login-zh.png docs/screenshots/codex-native-login-en.png
+          git add docs/screenshots/codex-native-login-en.png
           if ! git diff --cached --quiet; then
-            git commit -m "docs: capture original logged-out React component previews"
+            git commit -m "docs: refresh original English Codex account preview"
+            git fetch origin main
+            if ! git diff --quiet HEAD..origin/main -- src/client/CodexNativeSection.tsx src/client/native-locales.ts tests/docs-preview.spec.tsx; then
+              echo 'Preview inputs changed during capture; refusing stale screenshot'
+              exit 1
+            fi
+            git rebase origin/main
             git push origin HEAD:main
           fi

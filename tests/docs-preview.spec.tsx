@@ -3,30 +3,24 @@ import { resolve } from 'node:path'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { CodexNativeSection } from '../src/client/CodexNativeSection.tsx'
-import { en, zh } from '../src/client/native-locales.ts'
+import { en } from '../src/client/native-locales.ts'
 import type { NativeCodexRpc } from '../src/client/native-rpc.ts'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 
 /** Isolated component capture; it does not start a DSH host or OpenAI session. */
 const offlineRpc: NativeCodexRpc = { async call() { throw new Error('Isolated preview has no RPC backend') } }
-function translation(dict: typeof zh): TranslateNS<'codex-native'> {
-  return ((key: keyof typeof zh) => dict[key]) as TranslateNS<'codex-native'>
+function translation(): TranslateNS<'codex-native'> {
+  return ((key: keyof typeof en) => en[key]) as TranslateNS<'codex-native'>
 }
 
-function html(lang: 'zh' | 'en'): string {
-  const chinese = lang === 'zh'
-  const dict = chinese ? zh : en
+function html(): string {
   const component = renderToStaticMarkup(
-    <CodexNativeSection rpc={offlineRpc} t={translation(dict)} />,
+    <CodexNativeSection rpc={offlineRpc} t={translation()} />,
   )
-  const title = chinese ? 'Codex 官方登录' : 'Codex official login'
-  const description = chinese
-    ? '隔离组件预览 · 未连接 DSH Host · 未进行真实登录'
-    : 'Isolated component preview · No DSH Host · No real login'
-  const notice = chinese
-    ? '本截图来自当前仓库 CodexNativeSection React 组件的浏览器渲染。侧栏为演示外壳，不是 DSH 软件实机截图。'
-    : 'Browser rendering of this repository’s actual CodexNativeSection component. The sidebar is an illustrative shell, not a live DSH app.'
-  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8">
+  const title = 'Codex official login'
+  const description = 'Isolated component preview · No DSH Host · No real login'
+  const notice = 'Browser rendering of this repository’s actual CodexNativeSection component. The sidebar is an illustrative shell, not a live DSH app.'
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>DSH Codex Native · ${title}</title>
   <style>
@@ -55,11 +49,11 @@ function html(lang: 'zh' | 'en'): string {
   .corner{position:fixed;right:26px;bottom:18px;color:#687892;font:11px monospace}
   </style></head><body><div class="app">
   <aside><div class="brand"><span>CN</span>DSH Codex Native</div>
-    <div class="sidecaption">${chinese ? '开发预览' : 'DEVELOPMENT PREVIEW'}</div>
-    <div class="sidelink">${chinese ? '插件概览' : 'Plugin overview'}</div>
+    <div class="sidecaption">DEVELOPMENT PREVIEW</div>
+    <div class="sidelink">Plugin overview</div>
     <div class="sidelink active">${title}</div>
-    <div class="sidelink">${chinese ? '模型适配器' : 'Model adapter'}</div>
-    <div class="sidelink">${chinese ? '版本与测试' : 'Build & tests'}</div>
+    <div class="sidelink">Model adapter</div>
+    <div class="sidelink">Build & tests</div>
   </aside>
   <main><header><div class="eyebrow">OPENAI CODEX APP-SERVER · COMPONENT PREVIEW</div>
     <h1>${title}</h1><div class="sub">${description}</div></header>
@@ -70,22 +64,21 @@ function html(lang: 'zh' | 'en'): string {
 }
 
 describe('repository-owned screenshot source', () => {
-  it.each(['zh', 'en'] as const)('renders the actual %s account component without external assets', (lang) => {
-    const text = html(lang)
-    expect(text).toContain('DSH Codex Native')
-    expect(text).toContain(lang === 'zh' ? '使用 ChatGPT 登录' : 'Sign in with ChatGPT')
-    expect(text).toContain(lang === 'zh' ? '未进行真实登录' : 'No real login')
-    expect(text).not.toContain('<img')
-    expect(text).not.toContain('sk-proj-')
+  it('renders the actual English Codex-login component without external assets', () => {
+    const markup = html()
+    expect(markup).toContain('Welcome to Codex')
+    expect(markup).toContain('ChatGPT account that has Codex access')
+    expect(markup).toContain('Sign in with ChatGPT')
+    expect(markup).toContain('No real login')
+    expect(markup).not.toContain('<img')
+    expect(markup).not.toContain('sk-proj-')
   })
 
-  it('writes preview HTML only when explicitly requested by the capture workflow', () => {
+  it('writes the isolated English preview only when capture is requested', () => {
     const directory = process.env.DSH_DOC_PREVIEW_OUTPUT
     if (!directory) return
     const target = resolve(directory)
     mkdirSync(target, { recursive: true })
-    for (const lang of ['zh', 'en'] as const) {
-      writeFileSync(resolve(target, lang + '.html'), html(lang), 'utf8')
-    }
+    writeFileSync(resolve(target, 'en.html'), html(), 'utf8')
   })
 })

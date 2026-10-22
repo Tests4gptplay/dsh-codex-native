@@ -64,13 +64,13 @@ dsh plugin --profile web add github:Tests4gptplay/dsh-codex-native
 
 ## 项目界面（自有截图）
 
-本仓库不使用上游作者的旧界面截图。下图由 [独立 GitHub Actions 运行](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39784055873)对**当前 `CodexNativeSection.tsx` React 组件**进行无账号浏览器渲染后生成。
+本仓库不使用原作者的旧界面截图。下图为[独立 GitHub Actions 截图流程](https://github.com/Tests4gptplay/dsh-codex-native/actions/workflows/docs-preview.yml)从**当前 `CodexNativeSection.tsx` 登录组件**生成的英文未登录预览。欢迎文案明确提示：需要具有 Codex 权限的 ChatGPT 账号，而非单独的 OpenAI API Key。
 
-![DSH Codex Native 官方登录组件：中文未登录预览；非 DSH 实机界面](docs/screenshots/codex-native-login-zh.png)
+![DSH Codex Native：Welcome to Codex，提示使用具有 Codex 权限的 ChatGPT 账号登录（英文组件预览）](docs/screenshots/codex-native-login-en.png)
 
-*图：本项目官方登录组件中文预览，未连接 DSH Host、未使用真实账号。外围导航是独立预览外壳，**不是 DSH 实机截图，也不是 OAuth 成功证明**。*
+*图：英文登录组件预览，未连接 DSH Host、未使用真实账号。外围导航是独立预览外壳，**不是 DSH 实机截图，也不是 OAuth 登录成功证明**。*
 
-英文版预览：[Codex official-login component (English)](docs/screenshots/codex-native-login-en.png)。生成命令、来源和后续实机截图验收条件见 [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md)。
+截图生成方式与实机验收条件见 [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md)。
 
 ## 实现边界
 

@@ -1,42 +1,27 @@
 # Screenshot provenance / 截图来源
 
-## Documentation rule
+## Rule / 规则
 
-Documentation images must be **our own captures of this fork**, not screenshots inherited from upstream. No real personal login, OAuth URL, device code, token, account identifier, or user directory may appear in a captured image.
+All public screenshots must be generated from **this fork's actual UI**, not inherited from the original author. Account email, OAuth URLs, device codes, API tokens and personal machine data may not appear. A component screenshot does not establish that DSH integration or OAuth works.
 
-Three imported upstream screenshots and their old CDP capture evidence were removed on 2026-10-22:
+本项目只使用当前源码生成的截图；不引用原作者界面。组件截图不能作为 DSH 实机或真实登录成功的证据。
 
-- `docs/images/conversation-screenshot.png`
-- `docs/images/model-selector-screenshot.png`
-- `docs/images/codex-settings-card.png`
+## Current preview / 当前预览
 
-They showed the old plugin UI, not the new `CodexNativeSection` login page.
+- [English Codex account login preview](screenshots/codex-native-login-en.png) — **English only**, no CJK font dependency.
+- Reproduction: [original screenshot workflow](../.github/workflows/docs-preview.yml).
+- React source: `src/client/CodexNativeSection.tsx` with `src/client/native-locales.ts`.
+- Offline browser-render source: `tests/docs-preview.spec.tsx`.
+- Context: a disposable Ubuntu GitHub Actions environment, without DSH Host or OpenAI authentication.
+- Welcome copy: **"Welcome to Codex"**; under it, **"Sign in with a ChatGPT account that has Codex access. Requests use your Codex plan allowance; no separate API key is needed."**
+- The navigation column is a test-only illustrative shell. It is not the real DSH interface.
 
-## Captures produced by this fork
+## Removed inherited or defective images / 已移除图片
 
-- [Chinese unauthenticated component preview](screenshots/codex-native-login-zh.png)
-- [English unauthenticated component preview](screenshots/codex-native-login-en.png)
-- [Source capture workflow, successful run #39784055873](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39784055873)
-- Render input: `src/client/CodexNativeSection.tsx` + `src/client/native-locales.ts`.
-- Test-only HTML: `tests/docs-preview.spec.tsx`. Chrome captures in temporary Ubuntu GitHub Runner. The image does not show a real DSH Host.
-- No inherited PNG assets, personal photos, real login or production data are included.
+Three prior upstream screenshots and their old CDP logs were removed on 2026-10-22. A broken Chinese-language preview with missing CJK glyphs was also removed; we retain the accurate, legible English preview. This does **not** remove Chinese text support from the actual plugin, which keeps both localizations.
 
-## Current image categories
+## Real DSH Host acceptance / 实机截图
 
-1. **Isolated component preview / 组件预览**: A browser rendering of the **actual** React `src/client/CodexNativeSection.tsx` component in its unauthenticated initial state, with a neutral preview shell. This is not a screenshot of a running DSH Web/Desktop Host. Chinese and English are captured separately.
-2. **Live DSH host screenshot / 真实 DSH 截图**: Captured only after installing a frozen plugin build in an isolated real DSH Host. Requires a reproducible build/test reference.
-3. **Authenticated account / 已登录账号**: Not permitted for public demo by default. Mocking a connected account must always say **mock**, and cannot be presented as a successful real login.
+A screenshot of the real DSH settings page will only be added after the released plugin has been installed in an isolated real DSH Host. No real-account screenshot is fabricated. Authentication, actual model execution and tools still require their own integration tests.
 
-An image is not proof that account login, model requests, or tooling works. Those claims require the actual integration test.
-
-## Reproduction
-
-The hosted screenshot workflow [`docs-preview.yml`](../.github/workflows/docs-preview.yml) renders the real React component via a test-only server-side render and captures it with Chrome in a **disposable GitHub Actions runner**, with no ChatGPT account. Generated PNGs use the `docs/screenshots/` directory.
-
-The preview never imports third-party image assets and never makes a network connection to OpenAI. The React UI logic is the same as the package's settings component, but the surrounding preview shell is **not** the DSH application. Do not crop out the preview disclaimer.
-
-## Caption required in README
-
-> Isolated screenshot of this fork's official-login React component, unauthenticated state. Not a DSH integration test or a real OAuth login.
-> 
-> 本仓库官方登录组件的隔离浏览器截图（未登录）；不是 DSH 实机验收，也不表示 OAuth 已真实完成。
+**Required caption:** Isolated capture of this fork's actual Codex-login React component, unauthenticated state. Not a real DSH Host screenshot or an OAuth login test.

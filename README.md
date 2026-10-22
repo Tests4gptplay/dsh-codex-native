@@ -60,13 +60,13 @@ See [docs/STATUS.md](docs/STATUS.md) for the actual CI record and known blockers
 
 ## Original screenshots only
 
-All inherited upstream screenshots were removed. The image below was generated on an [isolated GitHub Actions runner](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39784055873) by rendering the **actual current `CodexNativeSection.tsx` React component** with no connected host/account.
+All inherited upstream screenshots were removed. This **English-language, unauthenticated screenshot** is rendered from the current `CodexNativeSection.tsx` component by our [GitHub-hosted capture workflow](https://github.com/Tests4gptplay/dsh-codex-native/actions/workflows/docs-preview.yml). The welcome text explicitly directs users to sign in with a **ChatGPT account that has Codex access**, not a separate OpenAI API key.
 
-![Codex Native official login component, English unauthenticated preview; NOT a live DSH app screenshot](docs/screenshots/codex-native-login-en.png)
+![Welcome to Codex—sign in with a ChatGPT account that has Codex access (English component preview)](docs/screenshots/codex-native-login-en.png)
 
-*Original, unauthenticated component preview. The surrounding navigation is an illustrative test shell, **not the real DSH application and not proof of working OAuth sign-in**.*
+*Original component preview. The navigation is an illustrative shell, **not a running DSH application or a verified OAuth login**.*
 
-Chinese preview: [官方登录组件（中文）](docs/screenshots/codex-native-login-zh.png). Reproduction and future acceptance requirements: [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md).
+Reproduction and real-host acceptance requirements: [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md).
 
 ## Architectural boundary
 

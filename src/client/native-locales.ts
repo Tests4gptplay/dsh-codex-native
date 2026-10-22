@@ -1,8 +1,8 @@
 export const NS = 'codex-native'
 export const zh = {
   nav: 'Codex 官方登录',
-  title: 'Codex App Server',
-  description: '使用 OpenAI 官方 Codex 账号登录。本插件不保存 OAuth 凭据。',
+  title: '欢迎使用 Codex',
+  description: '请使用具有 Codex 使用权限的 ChatGPT 账号登录。调用将消耗适用的 Codex 订阅额度，无需单独配置 API Key。',
   signIn: '使用 ChatGPT 登录',
   deviceCode: '使用设备码登录',
   connected: '已连接',
@@ -24,8 +24,8 @@ export const zh = {
 }
 export const en: typeof zh = {
   nav: 'Codex official login',
-  title: 'Codex App Server',
-  description: 'Sign in through official OpenAI Codex. The plugin does not store OAuth credentials.',
+  title: 'Welcome to Codex',
+  description: 'Sign in with a ChatGPT account that has Codex access. Requests use your Codex plan allowance; no separate API key is needed.',
   signIn: 'Sign in with ChatGPT',
   deviceCode: 'Use device code',
   connected: 'Connected',
