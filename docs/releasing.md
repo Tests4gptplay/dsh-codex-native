@@ -1,57 +1,36 @@
-# Build and release
+# Build and release (this fork)
 
-English | [中文](releasing.zh.md)
+**As of 2026-10-22 this repository contains only development preview `0.2.1-alpha.0`. There is no stable npm publication or GitHub Release.**
 
-The repository has two GitHub Actions workflows:
+Release identity belongs to [`Tests4gptplay/dsh-codex-native`](https://github.com/Tests4gptplay/dsh-codex-native), **not** the upstream `dsh-llm-codex-app-server` package. Upstream npm trusted publishing settings, tags and release workflows do not authorize a release from this fork.
 
-- `build.yml` runs the complete release verification on Node 22.19 and Node 24 on Linux, plus Node 24 on Windows. The Linux Node 24 job uploads the resulting npm tarball as a workflow artifact.
-- `release.yml` accepts only a stable `vX.Y.Z` tag whose version exactly matches `package.json`, requires that commit to be on `main`, rebuilds and tests from the lockfile, publishes the verified tarball to npm, and attaches that same tarball to a generated GitHub release.
+## Workflows that actually exist
 
-The release job uses npm provenance and grants only `contents: write` and `id-token: write`. Normal builds are read-only.
+| Workflow | Current responsibility |
+|---|---|
+| [`ci.yml`](../.github/workflows/ci.yml) | Compile, test and pack in an ephemeral GitHub-hosted runner. Only successful full checks qualify the artifact as a candidate. |
+| [`docs-preview.yml`](../.github/workflows/docs-preview.yml) | Capture the current React login UI in Chinese and English as an **unauthenticated isolated component preview**, with no account. |
+| [`import-pinned-mit-source.yml`](../.github/workflows/import-pinned-mit-source.yml) | Original pinned MIT import. Not a publishing workflow. |
 
-## Local verification
+## Remaining release blockers
 
-Use the pinned package manager and lockfile:
+- Complete green DSH `0.2.1-rc.2` typecheck, tests and pack.
+- Actual isolated DSH plugin installation and model selection.
+- Windows Desktop Host test, official native OAuth browser/device login and real subscribed model/tool turns.
+- A reviewable tagged package and explicit release authorization. No npm trusted publisher or GitHub Release is configured here.
 
-```sh
-pnpm install --frozen-lockfile
-pnpm run check
+## Candidate build on temporary hosted runner
+
+```bash
+pnpm install --no-frozen-lockfile --ignore-scripts
+pnpm run typecheck
+pnpm run test:ci
+pnpm run build
+pnpm pack --pack-destination dist
 ```
 
-`pnpm run check` runs type checking, unit tests, production builds, an allowlist check over `npm pack --dry-run`, and creates `dist/dsh-llm-codex-app-server-X.Y.Z.tgz`.
+The imported upstream lockfile is being regenerated for the DSH 0.2.1 cohort; it must not be treated as an immutable validated release lockfile until a frozen CI run passes.
 
-To exercise the npm publish lifecycle without changing the registry:
+Only after the checklist in [STATUS.md](STATUS.md) is satisfied can a frozen commit be considered installable. The intended installation distribution is a public GitHub source or verified packaged artifact, without retaining a development checkout on the user's machine. The installed plugin and official Codex runtime themselves still require local space.
 
-```sh
-npm publish --dry-run
-```
-
-## npm trusted publishing
-
-Releases authenticate through npm trusted publishing with GitHub OIDC. The package's npm settings must authorize:
-
-- GitHub owner: `wss534857356`
-- Repository: `dsh-plugin-codex`
-- Workflow filename: `release.yml`
-- Allowed action: `npm publish`
-
-The publish step must not set `NODE_AUTH_TOKEN`. An empty token selects token authentication and prevents npm from using the GitHub OIDC identity.
-
-## Cut a release
-
-Start from a clean, current `main` branch. `npm version` refuses a dirty worktree, updates `package.json`, creates the release commit, and creates the matching tag.
-
-```sh
-git switch main
-git pull --ff-only
-pnpm install --frozen-lockfile
-pnpm run check
-npm version patch -m "chore: release v%s"
-git push origin main --follow-tags
-```
-
-Use `minor` or `major` instead of `patch` when required. Do not create prerelease tags with this workflow: its guard intentionally accepts stable `X.Y.Z` versions only.
-
-The tag push starts `release.yml`. A tag/version mismatch, a tag outside `main`, a failed test, a missing runtime entry, an unexpected source/test file in the tarball, or an npm authentication failure stops the release before the GitHub release is created.
-
-Published npm versions are immutable. Fix a bad release with a new patch version; deprecate the old version in npm when necessary rather than trying to overwrite it.
+[中文](releasing.zh.md).
