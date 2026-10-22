@@ -6,6 +6,9 @@ on:
       - 'docs/**'
   pull_request:
   workflow_dispatch:
+concurrency:
+  group: dsh-codex-native-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
