@@ -34,21 +34,38 @@ DSH 设置 → Codex 官方登录
 
 参考：[OpenAI Codex app-server 官方文档](https://developers.openai.com/codex/app-server/)。
 
-## 安装（开发阶段）
+## 安装测试版（GitHub，DSH 桌面应用）
 
-当前仓库提供源码与 GitHub Actions 构建验证，**尚无宣称稳定的发布包**。通过 GitHub 安装源码将要求 DSH/包管理器在本机处理插件依赖，虽然**不必保留开发项目目录**，官方 Codex 运行时和插件本身仍会占用安装空间。
+**预发行版本：`v0.2.1-alpha.0`**。用于实际 DSH 安装和官方 ChatGPT/Codex 登录测试，**尚未通过 Windows 桌面端与真实账号 E2E 验收**。推荐使用 DSH `0.2.1-rc.2` 对照测试。
 
-验证通过后的目标安装入口：
+1. 在 DSH 桌面应用侧栏打开 **插件 → 添加插件**。
+2. 将下面整行粘贴到 GitHub 插件安装框，点击 **安装**：
+
+   ```text
+   github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.0
+   ```
+
+3. 安装后**启用插件并重启 DSH**。
+4. 打开 **设置 → Codex 官方登录**，选择 **Sign in with ChatGPT** 或 **Use device code**，用具有 Codex 权限的 ChatGPT 账号登录。
+5. 返回聊天窗口，在**主模型选择器**中查找 `codex-local` / **Codex (local login)**，选取当前账号实际可用的 Codex 模型，发送一条普通测试消息。
+
+此安装不需要 npm 账号或额外的 OpenAI API Key，但 GitHub 源码安装可能要求 DSH 在插件安装时执行依赖构建；**本地仍需保存已安装插件与官方 Codex 运行时**，只是无需保留项目开发源码。
+
+### Web 版 CLI
 
 ```bash
-dsh plugin --profile web add github:Tests4gptplay/dsh-codex-native
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.0'
 ```
 
-建议最终使用经过验收的 commit/tag 固定安装，避免主分支更新时引入不兼容代码。安装后按 DSH 提示重启 Web/Desktop Host，再在设置里登录并在对话模型选择器里选`codex-local`。
+Web 与桌面版使用不同 profile，在 Web 中安装不自动安装到桌面 DSH。
 
-**当前阶段不要运行上述安装命令**；它只是拟发布的接口，并非已经通过真实安装验证的操作建议。
+### 备用：GitHub Release
 
-[云端构建与 124 项单测成功记录](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39786235347) · [候选包下载入口（CI Artifacts）](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39786235347)。**这是 CI 候选包，不是已验证可正常使用的正式发布。**
+[预发行版 v0.2.1-alpha.0](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.0) 提供与该标签对应的预打包 `dsh-codex-native-0.2.1-alpha.0.tgz`；无需 npm 账号。若链接尚未发布完成，以 [GitHub Actions](https://github.com/Tests4gptplay/dsh-codex-native/actions) 状态为准。
+
+### 实机反馈
+
+如果安装失败，请记录 DSH 的**确切版本、安装报错、插件启用状态**；如果安装成功但不能登录或没有模型，请记录对应错误及模型选择器信息，**不要公开授权码、令牌或账户信息**。没有 `/persona` 这样的专属测试指令：本插件验收的是登录、`codex-local` 主模型出现以及一条真实对话和 DSH 工具调用。
 
 ## 当前实现与待验证事项
 
@@ -60,7 +77,7 @@ dsh plugin --profile web add github:Tests4gptplay/dsh-codex-native
 | 插件设置页官方浏览器/设备码登录 UI | 已编写，待真实 Host 验证 |
 | 官方 Codex 额度读取 | 已编写，待真实 Host 验证 |
 | 多轮真实 Codex、插件安装及 Windows 运行 | 尚未验收 |
-| 可直接安装的稳定发布包 | 尚未发布 |
+| GitHub 测试预发行版 | `v0.2.1-alpha.0`；待实机安装验收，非稳定版 |
 
 详细测试证据与阻断项维护在 [docs/STATUS.md](docs/STATUS.md)，每次主要功能变化均以**实际状态**更新 README，不以“代码存在”等同“已验证”。
 
