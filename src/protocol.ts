@@ -8,6 +8,7 @@ import {
 } from '@deepseek-ai/dsh-llm'
 import type {
   ContentBlock,
+  ToolResultMessage,
   GenerateOptions,
   StreamChunk,
   TokenUsage,
@@ -321,8 +322,6 @@ function fallbackText(block: ContentBlock): string {
       return `[codex-action]\n${JSON.stringify(block)}`
     case 'tool-call':
       return `[tool-call ${block.name}]\n${block.arguments}`
-    case 'tool-result':
-      return block.content.map(fallbackText).join('\n')
     case 'image':
       throw new LlmError('Codex App Server provider supports text input only', 'UNSUPPORTED_CONTENT')
     default:
@@ -331,8 +330,7 @@ function fallbackText(block: ContentBlock): string {
 }
 
 function containsImage(block: ContentBlock): boolean {
-  if (block.type === 'image') return true
-  return block.type === 'tool-result' && block.content.some(containsImage)
+  return block.type === 'image'
 }
 
 function structuredResultContent(blocks: readonly ContentBlock[]): JsonValue[] {
@@ -340,23 +338,17 @@ function structuredResultContent(blocks: readonly ContentBlock[]): JsonValue[] {
     if (block.type === 'image') {
       return [{ type: 'input_image', image_url: imageAttachmentMarker(block.attachment) }]
     }
-    if (block.type === 'tool-result') {
-      const content = structuredResultContent(block.content)
-      return block.isError === true
-        ? [{ type: 'input_text', text: 'Tool error:\n' }, ...content]
-        : content
-    }
     return [{ type: 'input_text', text: fallbackText(block) }]
   })
 }
 
-function resultOutput(block: Extract<ContentBlock, { type: 'tool-result' }>): JsonValue {
-  if (!block.content.some(containsImage)) {
-    const output = block.content.map(fallbackText).join('\n')
-    return block.isError === true ? `Tool error:\n${output}` : output
+function resultOutput(message: ToolResultMessage): JsonValue {
+  if (!message.content.some(containsImage)) {
+    const output = message.content.map(fallbackText).join('\n')
+    return message.isError === true ? `Tool error:\n${output}` : output
   }
-  const content = structuredResultContent(block.content)
-  return block.isError === true
+  const content = structuredResultContent(message.content)
+  return message.isError === true
     ? [{ type: 'input_text', text: 'Tool error:\n' }, ...content]
     : content
 }
@@ -380,6 +372,16 @@ export function appServerHistory(options: GenerateOptions): JsonValue[] {
     appendHistoryItem(history, identities, item, origin)
   }
   for (const message of options.messages) {
+    // DSH 0.2+ persists tool results as their own role='tool' messages,
+    // never as nested assistant/user ContentBlock variants.
+    if (message.role === 'tool') {
+      append({
+        type: 'function_call_output',
+        call_id: String(message.toolCallId),
+        output: resultOutput(message),
+      }, 'harness')
+      continue
+    }
     const replay = message.role === 'assistant'
       && message.source.kind === 'model'
       && message.source.provider === options.provider
@@ -417,14 +419,6 @@ export function appServerHistory(options: GenerateOptions): JsonValue[] {
             namespace: HARNESS_TOOL_NAMESPACE,
             name: appServerToolName(block.name),
             arguments: argumentsJson(block.arguments, `arguments for ${block.name}`),
-          }, 'harness')
-          break
-        case 'tool-result':
-          flushContent()
-          append({
-            type: 'function_call_output',
-            call_id: String(block.toolCallId),
-            output: resultOutput(block),
           }, 'harness')
           break
         case 'image':
@@ -482,15 +476,15 @@ export function appServerToolResults(
       visibleOutputs.set(item.call_id, item.output)
     }
   }
-  return options.messages.flatMap(message => message.content.flatMap((block): CodexAppServerToolResult[] => {
-    if (block.type !== 'tool-result') return []
-    const callId = String(block.toolCallId)
+  return options.messages.flatMap((message): CodexAppServerToolResult[] => {
+    if (message.role !== 'tool') return []
+    const callId = String(message.toolCallId)
     return [{
       callId,
-      output: visibleOutputs.get(callId) ?? resultOutput(block),
-      success: block.isError !== true,
+      output: visibleOutputs.get(callId) ?? resultOutput(message),
+      success: message.isError !== true,
     }]
-  }))
+  })
 }
 
 /** Translate available Harness tools to App Server dynamic tools. */
