@@ -1,10 +1,10 @@
 /** DSH-owned browser RPC; plugin never handles tokens. */
+import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
+
 export interface NativeCodexRpc {
   call<T = unknown>(endpoint: string, payload?: Record<string, unknown>): Promise<T>
 }
-export function makeNativeCodexRpc(connection: {
-  rpc: { call: (base: string, method: string, data: unknown) => Promise<unknown> }
-}): NativeCodexRpc {
+export function makeNativeCodexRpc(connection: ConnectionHandle): NativeCodexRpc {
   return {
     async call<T>(endpoint: string, payload: Record<string, unknown> = {}): Promise<T> {
       const response = await connection.rpc.call('/api', 'codex-native/' + endpoint, payload) as {
