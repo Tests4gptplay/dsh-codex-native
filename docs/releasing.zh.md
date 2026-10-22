@@ -1,57 +1,35 @@
-# 构建与发布
+# 构建与发布（当前公库）
 
-[English](releasing.md) | 中文
+**截至 2026-10-22，此项目仅有开发预览版 `0.2.1-alpha.0`，尚未发布稳定 npm 包或 GitHub Release。**
 
-仓库包含两条 GitHub Actions 工作流：
+发布归属：[`Tests4gptplay/dsh-codex-native`](https://github.com/Tests4gptplay/dsh-codex-native)，不是原作者的 `dsh-llm-codex-app-server`，不要沿用原作者的 npm Trusted Publisher 或 GitHub Actions 配置。
 
-- `build.yml` 在 Linux 的 Node 22.19、Node 24，以及 Windows 的 Node 24 上执行完整发布校验；Linux Node 24 job 会把生成的 npm tarball 上传为工作流产物。
-- `release.yml` 只接受与 `package.json` 版本完全一致的稳定版 `vX.Y.Z` tag，并要求该提交位于 `main`。它会从锁文件重新安装、构建和测试，把已经校验的同一个 tarball 发布到 npm，再将它附加到自动生成的 GitHub Release。
+## 已存在的工作流
 
-发布 job 开启 npm provenance，只授予 `contents: write` 和 `id-token: write`；普通构建只有只读权限。
+| 文件 | 实际职责 |
+|---|---|
+| [`ci.yml`](../.github/workflows/ci.yml) | GitHub 临时 Runner 上安装依赖、TypeScript 检查、单元测试、编译、打包并上传 .tgz；只有所有校验通过才可称为有效候选包 |
+| [`docs-preview.yml`](../.github/workflows/docs-preview.yml) | 从当前 React 登录组件制作中英两张原版**未登录组件预览**截图，不登录账户 |
+| [`import-pinned-mit-source.yml`](../.github/workflows/import-pinned-mit-source.yml) | 初始化阶段导入固定上游 MIT commit；**不是发布工作流** |
 
-## 本地校验
+## 当前阻断
 
-使用仓库固定的包管理器与锁文件：
+- 适配 DSH `0.2.1-rc.2` 的依赖和测试尚在调整，完整 CI 需要通过。
+- 尚未对真实 DSH 安装、Windows Desktop、真实 ChatGPT 账号登录、模型推理与 DSH 工具完成独立验收。
+- 还未创建本公库的 GitHub Release 或 npm 发布/可信发布身份。**不能沿用旧仓库的发布凭证或给旧 npm 包名发布。**
 
-```sh
-pnpm install --frozen-lockfile
-pnpm run check
+## 候选打包流程（GitHub 托管环境）
+
+```bash
+pnpm install --no-frozen-lockfile --ignore-scripts
+pnpm run typecheck
+pnpm run test:ci
+pnpm run build
+pnpm pack --pack-destination dist
 ```
 
-`pnpm run check` 会依次执行类型检查、单元测试、生产构建、基于 `npm pack --dry-run` 的文件白名单校验，并生成 `dist/dsh-llm-codex-app-server-X.Y.Z.tgz`。
+锁文件从旧上游导入后尚需重新生成验证，不能使用旧锁文件强行认定可复现。CI 通过且冻结版本后，应固定 lockfile 并使用 `--frozen-lockfile`。
 
-若要在不修改 registry 的前提下演练 npm publish 生命周期：
+只有当 [STATUS](STATUS.md) 中所有真实集成验收完成，才允许把特定 commit 标记为可安装版本。目标是让 DSH 直接通过公库的 GitHub 源/稳定制品安装，用户本地无需保留开发源码仓库，但插件依赖与官方 Codex 运行时仍占磁盘空间。
 
-```sh
-npm publish --dry-run
-```
-
-## npm trusted publishing
-
-发布通过 npm trusted publishing 使用 GitHub OIDC 鉴权。npm 包设置必须授权：
-
-- GitHub owner：`wss534857356`
-- Repository：`dsh-plugin-codex`
-- Workflow filename：`release.yml`
-- Allowed action：`npm publish`
-
-发布步骤不能设置 `NODE_AUTH_TOKEN`。空 token 会选择 token 鉴权，阻止 npm 使用 GitHub OIDC 身份。
-
-## 发布新版本
-
-从干净且最新的 `main` 开始。`npm version` 会拒绝脏工作区，更新 `package.json`，创建发布 commit，并创建匹配的 tag。
-
-```sh
-git switch main
-git pull --ff-only
-pnpm install --frozen-lockfile
-pnpm run check
-npm version patch -m "chore: release v%s"
-git push origin main --follow-tags
-```
-
-需要时可将 `patch` 换成 `minor` 或 `major`。不要通过这条工作流创建 prerelease tag：校验器有意只接受稳定的 `X.Y.Z` 版本。
-
-推送 tag 后会启动 `release.yml`。tag 与版本不一致、tag 提交不在 `main`、测试失败、运行时入口缺失、tarball 意外包含源码或测试，以及 npm 鉴权失败，都会在创建 GitHub Release 前终止发布。
-
-npm 已发布版本不可覆盖。错误版本应通过新的 patch 版本修复；必要时在 npm 上 deprecate 旧版本，不要尝试覆盖。
+英文：[releasing.md](releasing.md)。
