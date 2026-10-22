@@ -93,54 +93,33 @@ describe('App Server protocol translation', () => {
     expect(JSON.stringify(history)).not.toContain('data:image')
   })
 
-  it('encodes nested image-bearing tool results as ordered structured output', () => {
+  it('encodes DSH 0.2 tool-role image output and error status faithfully', () => {
     const callId = ToolCallId('call-images')
-    const history = appServerHistory(options({
-      messages: [{
-        id: MessageId('tool-images'),
-        role: 'user',
-        source: { kind: 'tool', callId },
-        content: [{
-          type: 'tool-result',
-          toolCallId: callId,
-          content: [
-            { type: 'text', text: 'before' },
-            {
-              type: 'tool-result',
-              toolCallId: ToolCallId('nested-call'),
-              content: [
-                { type: 'image', attachment: image },
-                { type: 'text', text: 'inside' },
-              ],
-              isError: true,
-            },
-            { type: 'text', text: 'after' },
-          ],
-        }],
-      }],
-    }))
+    const tool = {
+      id: MessageId('tool-images'),
+      role: 'tool' as const,
+      source: { kind: 'tool' as const, callId },
+      toolCallId: callId,
+      isError: true,
+      content: [
+        { type: 'text' as const, text: 'before' },
+        { type: 'image' as const, attachment: image },
+        { type: 'text' as const, text: 'after' },
+      ],
+    }
     const output = [
+      { type: 'input_text', text: 'Tool error:\\n' },
       { type: 'input_text', text: 'before' },
-      { type: 'input_text', text: 'Tool error:\n' },
       { type: 'input_image', image_url: marker },
-      { type: 'input_text', text: 'inside' },
       { type: 'input_text', text: 'after' },
     ]
-    expect(history).toEqual([{
+    expect(appServerHistory(options({ messages: [tool] }))).toEqual([{
       type: 'function_call_output', call_id: 'call-images', output,
     }])
-    expect(appServerToolResults(options({
-      messages: [{
-        id: MessageId('tool-images'), role: 'user', source: { kind: 'tool', callId },
-        content: [{
-          type: 'tool-result', toolCallId: callId,
-          content: [{ type: 'image', attachment: image }],
-        }],
-      }],
-    }))).toEqual([{ callId: 'call-images', output: [
-      { type: 'input_image', image_url: marker },
-    ], success: true }])
-    expect(JSON.stringify(history)).not.toContain('base64')
+    expect(appServerToolResults(options({ messages: [tool] }))).toEqual([{
+      callId: 'call-images', output, success: false,
+    }])
+    expect(JSON.stringify(output)).not.toContain('base64')
   })
 
   it('matches pending callbacks against the exact budgeted tool output', () => {
@@ -148,13 +127,10 @@ describe('App Server protocol translation', () => {
     const request = options({
       messages: [{
         id: MessageId('tool-budgeted-image'),
-        role: 'user',
+        role: 'tool',
         source: { kind: 'tool', callId },
-        content: [{
-          type: 'tool-result',
-          toolCallId: callId,
-          content: [{ type: 'image', attachment: image }],
-        }],
+        toolCallId: callId,
+        content: [{ type: 'image', attachment: image }],
       }],
     })
     const modelHistory = [{
@@ -215,13 +191,10 @@ describe('App Server protocol translation', () => {
         },
         {
           id: MessageId('tool-1'),
-          role: 'user',
+          role: 'tool',
           source: { kind: 'tool', callId },
-          content: [{
-            type: 'tool-result',
-            toolCallId: callId,
-            content: [{ type: 'text', text: 'contents' }],
-          }],
+          toolCallId: callId,
+          content: [{ type: 'text', text: 'contents' }],
         },
       ],
     }))
@@ -455,13 +428,10 @@ describe('App Server protocol translation', () => {
         },
         {
           id: MessageId('tool-1'),
-          role: 'user',
+          role: 'tool',
           source: { kind: 'tool', callId },
-          content: [{
-            type: 'tool-result',
-            toolCallId: callId,
-            content: [{ type: 'text', text: 'Harness result' }],
-          }],
+          toolCallId: callId,
+          content: [{ type: 'text', text: 'Harness result' }],
         },
         {
           id: MessageId('assistant-2'),
@@ -502,31 +472,25 @@ describe('App Server protocol translation', () => {
     ])
   })
 
-  it('extracts exact successful and failed Harness tool outcomes', () => {
+  it('extracts two independent DSH 0.2 tool-role outcomes', () => {
     const first = ToolCallId('call-1')
     const second = ToolCallId('call-2')
     expect(appServerToolResults(options({
-      messages: [{
-        id: MessageId('tool-results'),
-        role: 'user',
-        source: { kind: 'tool', callId: first },
-        content: [
-          {
-            type: 'tool-result',
-            toolCallId: first,
-            content: [{ type: 'text', text: 'ok' }],
-          },
-          {
-            type: 'tool-result',
-            toolCallId: second,
-            content: [{ type: 'text', text: 'broken' }],
-            isError: true,
-          },
-        ],
-      }],
+      messages: [
+        {
+          id: MessageId('tool-result-one'), role: 'tool',
+          source: { kind: 'tool', callId: first }, toolCallId: first,
+          content: [{ type: 'text', text: 'ok' }],
+        },
+        {
+          id: MessageId('tool-result-two'), role: 'tool',
+          source: { kind: 'tool', callId: second }, toolCallId: second,
+          content: [{ type: 'text', text: 'broken' }], isError: true,
+        },
+      ],
     }))).toEqual([
       { callId: 'call-1', output: 'ok', success: true },
-      { callId: 'call-2', output: 'Tool error:\nbroken', success: false },
+      { callId: 'call-2', output: 'Tool error:\\nbroken', success: false },
     ])
   })
 
