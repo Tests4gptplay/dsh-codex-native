@@ -19,6 +19,15 @@ Updated: 2026-10-22 · Target: **DSH 0.2.1-rc.2** · Plugin: **0.2.1-alpha.0**
 | Model/account entitlement | Real account & model response | **Not tested** |
 | DSH installation / Windows | Isolated DSH Web/Desktop with installed .tgz | **Not tested** |
 
+
+## Published testing prerelease
+
+- **GitHub tag:** [`v0.2.1-alpha.0`](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.0), pointing to commit `131b82ec9e013a71041df00eafd771f274a96c55`.
+- **Release workflow:** [run #39788765405 — success](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39788765405). The tagged source passed hosted typecheck, account-free unit tests, production build, package structure checks and prerelease upload.
+- **Distribution:** `dsh-codex-native-0.2.1-alpha.0.tgz` [download](https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.1-alpha.0/dsh-codex-native-0.2.1-alpha.0.tgz).
+- **DSH Desktop testing package spec:** `github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.0`.
+- **Still unverified:** real DSH desktop installation, official native account sign-in, live subscribed model request and DSH tool round-trip. This prerelease is **for user testing, not stable production**.
+
 ## Release-blocking acceptance criteria
 
 - **Completed in hosted CI**: Typecheck, account-free unit tests (124/124), plugin build, .tgz candidate generation. Freeze a reviewed commit for actual installation testing.
