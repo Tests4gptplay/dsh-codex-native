@@ -45,3 +45,11 @@ export const en: typeof zh = {
   used: 'Used',
   instructions: 'Complete authorization on the official page. Account status updates automatically.',
 }
+
+export type CodexNativeUiKey = keyof typeof zh
+
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface LocaleNamespaceMap {
+    'codex-native': CodexNativeUiKey
+  }
+}
