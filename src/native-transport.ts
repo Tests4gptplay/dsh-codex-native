@@ -9,13 +9,6 @@ export const CODEX_NATIVE_ENDPOINTS = [
 ] as const
 export type CodexNativeEndpoint = typeof CODEX_NATIVE_ENDPOINTS[number]
 
-type Handler = { fetch: { register: (options: {
-  path: string
-  methods: string[]
-  requestBody: 'buffered'
-  fetch(request: Request): Promise<Response>
-}) => (() => void) } }
-
 /** Bound to the DSH connection service, not a custom HTTP listener. */
 export function registerNativeCodexTransport(connection: HostConnectionHandle, account: NativeCodexAccount): () => void {
   const disposers: Array<() => Promise<void>> = []
