@@ -30,7 +30,7 @@ function html(lang: 'zh' | 'en'): string {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>DSH Codex Native · ${title}</title>
   <style>
-  :root {color-scheme:dark;font-family:Inter,"Noto Sans SC","Microsoft YaHei",Arial,sans-serif;color:#e6eaf1}
+  :root {color-scheme:dark;font-family:Inter,"Noto Sans CJK SC","Noto Sans SC","Microsoft YaHei",Arial,sans-serif;color:#e6eaf1}
   *{box-sizing:border-box}
   body{margin:0;background:#10141e}
   .app{display:grid;grid-template-columns:240px minmax(0,1fr);height:100vh;min-height:730px}
