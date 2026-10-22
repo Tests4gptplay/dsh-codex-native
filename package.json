@@ -104,7 +104,8 @@
     "@deepseek-ai/dsh-subprocess": "0.2.1-rc.2",
     "@deepseek-ai/dsh-tools": "0.2.1-rc.2",
     "@deepseek-ai/dsh-web": "0.2.1-rc.2",
-    "react": "^18.2.0"
+    "react": "^18.2.0",
+    "@deepseek-ai/dsh-client-connection": "0.2.1-rc.2"
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.2",
@@ -144,6 +145,7 @@
     "rimraf": "^6.1.0",
     "tsdown": "0.22.2",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "@deepseek-ai/dsh-client-connection": "0.2.1-rc.2"
   }
 }
