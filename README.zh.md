@@ -49,7 +49,7 @@ DSH 设置 → Codex 官方登录
 4. 打开 **设置 → Codex 官方登录**，选择 **Sign in with ChatGPT** 或 **Use device code**，用具有 Codex 权限的 ChatGPT 账号登录。
 5. 返回聊天窗口，在**主模型选择器**中查找 `codex-local` / **Codex (local login)**，选取当前账号实际可用的 Codex 模型，发送一条普通测试消息。
 
-**v0.2.1-alpha.1 修复了 GitHub 安装被 `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` 拦截的问题。** 新标签中的 `lib/` 是 GitHub 托管 Runner 预编译的产物，包不再包含 `prepare` 安装生命周期脚本。DSH 无需为此修改本地 `allowBuilds`，也无需本地构建 TypeScript；已安装插件及官方 Codex 运行时仍会占用一定磁盘空间。
+**v0.2.1-alpha.1 修复了 GitHub 安装被 `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` 拦截的问题。** 新标签中的 `lib/` 是 GitHub 托管 Runner 预编译的产物，包不再包含 `prepare` 安装生命周期脚本。DSH 无需为此修改本地 `allowBuilds`，也无需本地构建 TypeScript；已安装插件及官方 Codex 运行时仍会占用一定磁盘空间。 **本次安装请使用 `#v0.2.1-alpha.1` 固定标签，不要使用尚未包含预编译产物的 `#main`。** [无 `allowBuilds` GitHub 安装实测：成功](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39789788735)。
 
 ### Web 版 CLI
 

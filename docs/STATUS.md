@@ -20,7 +20,14 @@ Updated: 2026-10-22 · Target: **DSH 0.2.1-rc.2** · Plugin: **0.2.1-alpha.1**
 | DSH installation / Windows | Isolated DSH Web/Desktop with installed .tgz | **Not tested** |
 
 
-## GitHub install fix in v0.2.1-alpha.1
+## Verified GitHub install fix in v0.2.1-alpha.1
+
+- [Published GitHub prerelease](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.1): immutable tag `v0.2.1-alpha.1` → commit `daaca2987135fdd82b0c521076cdf5beb2bc5df6`.
+- [Release workflow #39789788735 PASS](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39789788735): typecheck, 124 account-free unit tests, build, packaged JS/declarations, tag source inclusion, **`pnpm add github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.1` in a clean isolated consumer with `autoInstallPeers:false` and no `allowBuilds` override**, and successful GitHub prerelease upload.
+- Installed package contained `lib/index.js` and `lib/client.js`, and had no `prepare` lifecycle script. The previous alpha.0 tag remains unmodified.
+- **Not yet validated:** real DSH Desktop plugin-manager installation, Windows Codex login and subscribed model/tool execution.
+
+### Root cause and implementation
 
 - User reproduced `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` installing `v0.2.1-alpha.0` in the DSH Desktop profile.
 - Root cause: the tagged Git repository had `scripts.prepare = "pnpm run build"` and no checked-in `lib/` files, so pnpm tried to run a build that was not approved by the DSH profile's `allowBuilds`.

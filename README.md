@@ -47,7 +47,7 @@ The plugin uses the official `account/read`, `account/login/start`, `account/log
 4. In **Settings → Codex official login**, select **Sign in with ChatGPT** or **Use device code** and authenticate with a ChatGPT account that has Codex access.
 5. Return to the chat model picker, select `codex-local` / **Codex (local login)** and an available model, then send a test message.
 
-**v0.2.1-alpha.1 fixes the `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` GitHub install error.** Its tag contains GitHub-hosted precompiled `lib/` output and no `prepare` lifecycle script, so DSH does not need to grant this package `allowBuilds` or compile TypeScript locally. Normal installed plugin/Codex files still use disk space. No npm account or separate API key is needed.
+**v0.2.1-alpha.1 fixes the `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` GitHub install error.** Its tag contains GitHub-hosted precompiled `lib/` output and no `prepare` lifecycle script, so DSH does not need to grant this package `allowBuilds` or compile TypeScript locally. Normal installed plugin/Codex files still use disk space. No npm account or separate API key is needed. **Use the pinned `#v0.2.1-alpha.1` tag, not the source-only `#main`.** [Actual clean pnpm Git-tag install: PASS](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39789788735).
 
 ### Web CLI
 
