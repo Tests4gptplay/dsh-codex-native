@@ -1,6 +1,6 @@
 - insert:
     - id: llm-codex-app-server
-      name: dsh-llm-codex-app-server
+      name: dsh-codex-native
       config:
         provider: codex-local
         displayName: Codex (local login)
