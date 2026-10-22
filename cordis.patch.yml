@@ -48,7 +48,6 @@
             inputModalities: [text]
             reasoningEfforts: [low, medium, high, xhigh]
             defaultReasoningEffort: high
-        timeoutMs: 300000
         disposeGraceMs: 3000
         maxJsonRpcLineBytes: 8388608
         maxRequestImageBytes: 20971520
@@ -56,6 +55,3 @@
         maxRetries: 1
         maxCachedSessions: 8
         sessionIdleTimeoutMs: 600000
-        imageGenerationEnabled: true
-        webSearchEnabled: true
-        webSearchMaxResults: 8

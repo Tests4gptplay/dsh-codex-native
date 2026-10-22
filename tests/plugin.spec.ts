@@ -105,12 +105,6 @@ describe('plugin composition', () => {
     await expect(ctx.plugin(CodexAppServer, { models: [] })).rejects.toThrow('models must not be empty')
   })
 
-  it('rejects a non-positive Codex web-search result cap', async () => {
-    const ctx = await context()
-    await expect(ctx.plugin(CodexAppServer, { webSearchMaxResults: 0 }))
-      .rejects.toThrow(/webSearchMaxResults.*>= 1/u)
-  })
-
   it('delegates web_search unchanged for a non-Codex initiating Agent', async () => {
     const ctx = await context()
     await ctx.plugin(CodexAppServer, {})

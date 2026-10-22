@@ -18,7 +18,6 @@ export default defineConfig([
         '@deepseek-ai/dsh-llm',
         '@deepseek-ai/dsh-subprocess',
         '@deepseek-ai/dsh-tools',
-        '@deepseek-ai/dsh-web',
         '@deepseek-ai/schemastery',
         '@openai/codex',
       ],
