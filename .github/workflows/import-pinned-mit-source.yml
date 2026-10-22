@@ -1,0 +1,31 @@
+name: Bootstrap pinned MIT upstream source
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/import-pinned-mit-source.yml']
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import pinned MIT source in disposable GitHub-hosted workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          UPSTREAM="$RUNNER_TEMP/codex-upstream"
+          git init -q "$UPSTREAM"
+          git -C "$UPSTREAM" remote add origin https://github.com/wss534857356/dsh-plugin-codex.git
+          git -C "$UPSTREAM" fetch -q --depth=1 origin f1f61886f4defcf7294d63c3641fba01ee554e7b
+          git -C "$UPSTREAM" checkout -q --detach FETCH_HEAD
+          test "$(git -C "$UPSTREAM" rev-parse HEAD)" = 'f1f61886f4defcf7294d63c3641fba01ee554e7b'
+          tar -C "$UPSTREAM" --exclude='./.git' --exclude='./.github' --exclude='./node_modules' --exclude='./dist' --exclude='./lib' -cf - . | tar -C "$GITHUB_WORKSPACE" -xf -
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore: import pinned MIT app-server adapter baseline'
+            git push origin HEAD:main
+          fi
