@@ -1,0 +1,57 @@
+name: Original plugin UI screenshots
+'on':
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/docs-preview.yml'
+      - 'tests/docs-preview.spec.tsx'
+      - 'src/client/CodexNativeSection.tsx'
+      - 'src/client/native-locales.ts'
+  workflow_dispatch:
+concurrency:
+  group: original-ui-preview
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies in disposable hosted runner
+        run: pnpm install --no-frozen-lockfile --ignore-scripts
+      - name: Render actual account React component with no DSH Host or OAuth account
+        env:
+          DSH_DOC_PREVIEW_OUTPUT: ${{ runner.temp }}/codex-native-preview
+        run: pnpm exec vitest run tests/docs-preview.spec.tsx
+      - name: Capture own Chinese and English preview screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
+          mkdir -p docs/screenshots
+          for LANG in zh en; do
+            "${CHROME}" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage \
+              --hide-scrollbars --window-size=1280,850 --screenshot="$GITHUB_WORKSPACE/docs/screenshots/codex-native-login-${LANG}.png" \
+              "file://${RUNNER_TEMP}/codex-native-preview/${LANG}.html"
+            test -s "docs/screenshots/codex-native-login-${LANG}.png"
+            file "docs/screenshots/codex-native-login-${LANG}.png"
+          done
+      - name: Commit only original preview screenshots to source repo
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/screenshots/codex-native-login-zh.png docs/screenshots/codex-native-login-en.png
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: capture original logged-out React component previews"
+            git push origin HEAD:main
+          fi
