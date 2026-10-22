@@ -2,6 +2,7 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-attachment'
+import type {} from '@deepseek-ai/dsh-client-connection'
 import type {} from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-settings'
 import type {} from '@deepseek-ai/dsh-tools'
@@ -12,12 +13,9 @@ import { CodexAppServerAdapter } from './adapter.ts'
 import type { CodexModel } from './adapter.ts'
 import { SAFE_MODEL_ID, SAFE_REASONING_EFFORT } from './identifiers.ts'
 import { CodexAppServerRunner } from './runner.ts'
-import {
-  CODEX_SETTINGS_NAMESPACE,
-  codexCapabilitySettingsFields,
-  CodexCapabilitySettingsSchema,
-  resolveCodexCapabilitySettings,
-} from './settings.ts'
+import { codexCapabilitySettingsFields, resolveCodexCapabilitySettings } from './settings.ts'
+import { NativeCodexAccount } from './native-account.ts'
+import { registerNativeCodexTransport } from './native-transport.ts'
 import type { CodexCapabilitySettings, ResolvedCodexCapabilitySettings } from './settings.ts'
 import { CodexWebSearchProvider } from './web-search.ts'
 
@@ -61,7 +59,7 @@ export {
 } from './settings.ts'
 export type { CodexCapabilitySettings, ResolvedCodexCapabilitySettings } from './settings.ts'
 
-export const name = 'llm-codex-app-server'
+export const name = 'dsh-codex-native'
 export const inject = ['llm', 'subprocess', 'tools']
 
 /** Plugin configuration for one static provider route. */
@@ -351,8 +349,7 @@ async function runCodexSearches(
 /** Register the configured Codex App Server route on `ctx.llm`. */
 export function apply(ctx: Context, config: Config): void {
   const resolved = resolveConfig(config)
-  let capabilitySource: () => CodexCapabilitySettings = () => resolved.capabilities
-  const capabilities = (): ResolvedCodexCapabilitySettings => resolveCodexCapabilitySettings(capabilitySource())
+  const capabilities = (): ResolvedCodexCapabilitySettings => resolveCodexCapabilitySettings(resolved.capabilities)
   const runner = new CodexAppServerRunner({
     timeoutMs: resolved.timeoutMs,
     disposeGraceMs: resolved.disposeGraceMs,
@@ -407,20 +404,13 @@ export function apply(ctx: Context, config: Config): void {
   ctx.on('session/disposed', (session) => {
     void adapter.disposeSession(String(session.id)).catch(reportCleanupError)
   })
-  ctx.inject(['settings'], (settingsCtx) => {
-    settingsCtx.settings.installSection(
-      ctx,
-      CODEX_SETTINGS_NAMESPACE,
-      CodexCapabilitySettingsSchema,
-      resolved.capabilities,
-      {
-        setSource: (source) => { capabilitySource = source },
-        // Operations resolve a fresh snapshot and cached threads include it in
-        // their epoch, so no registration-level fact needs rebuilding here.
-        onChange: () => {},
-        validate: (value) => { resolveCodexCapabilitySettings(value) },
-      },
+  const account = new NativeCodexAccount(spec => ctx.subprocess.spawn(spec))
+  ctx.inject(['connection'], (scoped) => {
+    scoped.effect(
+      () => registerNativeCodexTransport(scoped.connection, account),
+      'dsh-codex-native: authenticated account RPC',
     )
   })
+  ctx.effect(() => () => { void account.dispose() }, 'dsh-codex-native: close account login process')
   ctx.effect(() => () => adapter.dispose(), 'llm-codex-app-server: dispose cached sessions')
 }
