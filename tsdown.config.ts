@@ -1,29 +1,6 @@
-import { readFile } from 'node:fs/promises'
-import { basename, dirname, resolve } from 'node:path'
 import { defineConfig } from 'tsdown'
-import { transform } from 'lightningcss'
 
 const PACKAGE_ID = 'dsh-codex-native'
-const CSS_PREFIX = '\0codex-app-server-css:'
-const CSS_SUFFIX = '.mjs'
-const CSS_MODULE_PATHS = new Map<string, string>()
-
-const CLIENT_EXTERNALS = [
-  'react',
-  'react/jsx-runtime',
-  'react-dom',
-  'react-dom/client',
-  '@deepseek-ai/cordis',
-  '@deepseek-ai/dsh-client-ui-slots',
-  '@deepseek-ai/dsh-client-ui-chat/client',
-  '@deepseek-ai/dsh-client-ui-conversation/client',
-  '@deepseek-ai/dsh-client-ui-primitives',
-  '@deepseek-ai/dsh-client-ui-renderer/client',
-  '@deepseek-ai/dsh-client-ui-settings/client',
-  '@deepseek-ai/dsh-client-ui-settings-plugins/client',
-  '@deepseek-ai/dsh-client-connection/client',
-  '@deepseek-ai/dsh-client-locale/client',
-] as const
 
 export default defineConfig([
   {
@@ -35,12 +12,10 @@ export default defineConfig([
     target: 'es2024',
     dts: false,
     clean: true,
-    fixedExtension: false,
     deps: {
       neverBundle: [
         '@deepseek-ai/cordis',
         '@deepseek-ai/dsh-llm',
-        '@deepseek-ai/dsh-settings',
         '@deepseek-ai/dsh-subprocess',
         '@deepseek-ai/dsh-tools',
         '@deepseek-ai/dsh-web',
@@ -50,7 +25,7 @@ export default defineConfig([
     },
   },
   {
-    name: `${PACKAGE_ID}/client`,
+    name: PACKAGE_ID + '/client',
     entry: { client: 'src/client/index.ts' },
     outDir: 'lib',
     format: 'cjs',
@@ -58,55 +33,20 @@ export default defineConfig([
     target: 'es2022',
     dts: false,
     clean: false,
-    sourcemap: true,
+    sourcemap: false,
     deps: {
-      neverBundle: [...CLIENT_EXTERNALS],
-      alwaysBundle: id => CLIENT_EXTERNALS.includes(id as typeof CLIENT_EXTERNALS[number]) ? undefined : true,
+      neverBundle: [
+        'react', 'react/jsx-runtime', 'react-dom', 'react-dom/client',
+        '@deepseek-ai/cordis', '@deepseek-ai/dsh-client-connection/client',
+        '@deepseek-ai/dsh-client-locale/client',
+        '@deepseek-ai/dsh-client-ui-slots',
+        '@deepseek-ai/dsh-client-ui-renderer/client',
+        '@deepseek-ai/dsh-client-ui-settings/client',
+      ],
     },
-    plugins: [{
-      name: 'codex-app-server-css-modules',
-      resolveId(source: string, importer: string | undefined) {
-        if (!source.endsWith('.module.css') || importer === undefined) return null
-        const path = resolve(dirname(importer), source)
-        const id = `${CSS_PREFIX}${basename(path)}${CSS_SUFFIX}`
-        const registered = CSS_MODULE_PATHS.get(id)
-        if (registered !== undefined && registered !== path) {
-          throw new Error(`CSS module basename collision: ${basename(path)}`)
-        }
-        CSS_MODULE_PATHS.set(id, path)
-        return id
-      },
-      async load(id: string) {
-        const path = CSS_MODULE_PATHS.get(id)
-        if (path === undefined) return null
-        this.addWatchFile(path)
-        const source = await readFile(path)
-        const result = transform({
-          filename: path,
-          code: source,
-          cssModules: { pattern: '[hash]_[local]' },
-          minify: true,
-        })
-        const classes: Record<string, string> = {}
-        for (const [local, value] of Object.entries(result.exports ?? {})) classes[local] = value.name
-        const tagId = `${PACKAGE_ID}/${basename(path)}`
-        return [
-          `const css = ${JSON.stringify(result.code.toString())};`,
-          `const tagId = ${JSON.stringify(tagId)};`,
-          'if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {',
-          '  const tag = document.createElement("style");',
-          `  tag.dataset.plugin = ${JSON.stringify(PACKAGE_ID)};`,
-          '  tag.dataset.pluginCss = tagId;',
-          '  tag.textContent = css;',
-          '  document.head.appendChild(tag);',
-          '}',
-          `export default ${JSON.stringify(classes)};`,
-        ].join('\n')
-      },
-    }],
     outputOptions: {
       entryFileNames: 'client.js',
-      banner: `window.__ModuleLoader__.load({ id: ${JSON.stringify(PACKAGE_ID)}, factory: (require) => {`,
+      banner: 'window.__ModuleLoader__.load({ id: ' + JSON.stringify(PACKAGE_ID) + ', factory: (require) => {',
       footer: 'return module.exports; } });',
       intro: 'var module = { exports: {} }; var exports = module.exports;',
     },
