@@ -43,8 +43,9 @@ jobs:
           mkdir -p dist
           pnpm pack --pack-destination dist
           test -s dist/dsh-codex-native-0.2.1-alpha.0.tgz
-          tar -tzf dist/dsh-codex-native-0.2.1-alpha.0.tgz | grep -q 'package/lib/index.js'
-          tar -tzf dist/dsh-codex-native-0.2.1-alpha.0.tgz | grep -q 'package/lib/client.js'
+          tar -tzf dist/dsh-codex-native-0.2.1-alpha.0.tgz > "$RUNNER_TEMP/package-file-list.txt"
+          grep -Fxq 'package/lib/index.js' "$RUNNER_TEMP/package-file-list.txt"
+          grep -Fxq 'package/lib/client.js' "$RUNNER_TEMP/package-file-list.txt"
       - name: Publish fixed tag and GitHub prerelease with the tested tarball
         shell: bash
         env:
