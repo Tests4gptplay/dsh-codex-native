@@ -3,7 +3,7 @@ import { basename, dirname, resolve } from 'node:path'
 import { defineConfig } from 'tsdown'
 import { transform } from 'lightningcss'
 
-const PACKAGE_ID = 'dsh-llm-codex-app-server'
+const PACKAGE_ID = 'dsh-codex-native'
 const CSS_PREFIX = '\0codex-app-server-css:'
 const CSS_SUFFIX = '.mjs'
 const CSS_MODULE_PATHS = new Map<string, string>()
@@ -21,6 +21,8 @@ const CLIENT_EXTERNALS = [
   '@deepseek-ai/dsh-client-ui-renderer/client',
   '@deepseek-ai/dsh-client-ui-settings/client',
   '@deepseek-ai/dsh-client-ui-settings-plugins/client',
+  '@deepseek-ai/dsh-client-connection/client',
+  '@deepseek-ai/dsh-client-locale/client',
 ] as const
 
 export default defineConfig([
