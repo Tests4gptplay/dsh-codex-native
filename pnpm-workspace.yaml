@@ -1,45 +1,9 @@
 packages:
   - .
-
 autoInstallPeers: false
-
 allowBuilds:
   '@deepseek-ai/dsh-subprocess-local': true
   esbuild: true
   koffi: true
   node-pty: true
   rolldown: true
-
-minimumReleaseAgeExclude:
-  - '@openai/codex@0.154.0||0.154.0-darwin-arm64||0.154.0-darwin-x64||0.154.0-linux-arm64||0.154.0-linux-x64||0.154.0-win32-arm64||0.154.0-win32-x64'
-  - '@deepseek-ai/cordis@4.0.2'
-  - '@deepseek-ai/cosmokit@1.8.3'
-  - '@deepseek-ai/schemastery@3.18.2'
-  - '@deepseek-ai/cordis-plugin-include@1.0.7'
-  - '@deepseek-ai/cordis-plugin-loader@1.0.3'
-
-overrides:
-  '@deepseek-ai/cordis': link:../deepseek-harness/vendor/cordis
-  '@deepseek-ai/dsh-attachment': link:../deepseek-harness/packages/attachment/attachment
-  '@deepseek-ai/dsh-brand': link:../deepseek-harness/packages/util/brand
-  '@deepseek-ai/dsh-client-locale': link:../deepseek-harness/packages/client/locale
-  '@deepseek-ai/dsh-client-store': link:../deepseek-harness/packages/client/store
-  '@deepseek-ai/dsh-client-ui-attachment': link:../deepseek-harness/packages/client/ui-attachment
-  '@deepseek-ai/dsh-client-ui-chat': link:../deepseek-harness/packages/client/ui-chat
-  '@deepseek-ai/dsh-client-ui-conversation': link:../deepseek-harness/packages/client/ui-conversation
-  '@deepseek-ai/dsh-client-ui-primitives': link:../deepseek-harness/packages/client/ui-primitives
-  '@deepseek-ai/dsh-client-ui-renderer': link:../deepseek-harness/packages/client/ui-renderer
-  '@deepseek-ai/dsh-client-ui-settings': link:../deepseek-harness/packages/client/ui-settings
-  '@deepseek-ai/dsh-client-ui-settings-plugins': link:../deepseek-harness/packages/client/ui-settings-plugins
-  '@deepseek-ai/dsh-client-ui-slots': link:../deepseek-harness/packages/client/ui-slots
-  '@deepseek-ai/dsh-invariants': link:../deepseek-harness/packages/runtime-diagnostics/invariants
-  '@deepseek-ai/dsh-llm': link:../deepseek-harness/packages/llm/llm
-  '@deepseek-ai/dsh-scope': link:../deepseek-harness/packages/core/scope
-  '@deepseek-ai/dsh-session': link:../deepseek-harness/packages/core/session
-  '@deepseek-ai/dsh-settings': link:../deepseek-harness/packages/settings/settings
-  '@deepseek-ai/dsh-subprocess': link:../deepseek-harness/packages/subprocess/subprocess
-  '@deepseek-ai/dsh-subprocess-local': link:../deepseek-harness/packages/subprocess/subprocess-local
-  '@deepseek-ai/dsh-system-prompt': link:../deepseek-harness/packages/core/system-prompt
-  '@deepseek-ai/dsh-timeout': link:../deepseek-harness/packages/util/timeout
-  '@deepseek-ai/dsh-tools': link:../deepseek-harness/packages/core/tools
-  '@deepseek-ai/dsh-web': link:../deepseek-harness/packages/web/web
