@@ -1,0 +1,88 @@
+name: Publish Codex native alpha to GitHub
+'on':
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: dsh-codex-native-publish-alpha-0
+  cancel-in-progress: false
+jobs:
+  publish-preview:
+    name: Verify and publish tagged alpha
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install in disposable cloud environment
+        run: pnpm install --no-frozen-lockfile --ignore-scripts
+      - name: Verify published source matches the alpha identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e "const p=require('./package.json');if(p.name!=='dsh-codex-native'||p.version!=='0.2.1-alpha.0')process.exit(1)"
+      - name: Typecheck current DSH adapter
+        run: pnpm run typecheck
+      - name: Run account-free unit tests
+        run: pnpm run test:ci
+      - name: Build exact production plugin
+        run: pnpm run build
+      - name: Produce npm-format archive for GitHub Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          pnpm pack --pack-destination dist
+          test -s dist/dsh-codex-native-0.2.1-alpha.0.tgz
+          tar -tzf dist/dsh-codex-native-0.2.1-alpha.0.tgz | grep -q 'package/lib/index.js'
+          tar -tzf dist/dsh-codex-native-0.2.1-alpha.0.tgz | grep -q 'package/lib/client.js'
+      - name: Publish fixed tag and GitHub prerelease with the tested tarball
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG='v0.2.1-alpha.0'
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "A release for $TAG already exists; preserving the immutable preview."
+            exit 0
+          fi
+          cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
+          ## DSH Codex Native v0.2.1-alpha.0 — installation testing preview
+          
+          **Test release only; not a stable, real-account-validated build.** The source is verified against the DSH 0.2.1-rc.2 type contracts; account-free CI tests and packaging pass. Actual desktop installation, native Codex OAuth login, quota and main-model tool E2E still require real DSH testing.
+          
+          ### DSH Desktop → Plugins → Add plugin
+          
+          ```text
+          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.0
+          ```
+          
+          After installation, enable the plugin and restart DSH. Open **Settings → Codex official login**, sign in with a ChatGPT account with Codex access, then select the **codex-local** main model. No npm account or separate OpenAI API Key is required.
+          
+          ### DSH Web CLI
+          
+          ```bash
+          dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.0'
+          ```
+          
+          The attached `dsh-codex-native-0.2.1-alpha.0.tgz` is built and packed here on an ephemeral hosted runner. GitHub-source installs may trigger local package build as part of DSH's plugin installation. The software and official Codex runtime still occupy some local plugin space.
+          
+          See [README.zh.md](https://github.com/Tests4gptplay/dsh-codex-native/blob/v0.2.1-alpha.0/README.zh.md) for instructions and [docs/STATUS.md](https://github.com/Tests4gptplay/dsh-codex-native/blob/v0.2.1-alpha.0/docs/STATUS.md) for the test boundary.
+          NOTES
+          gh release create "$TAG" dist/dsh-codex-native-0.2.1-alpha.0.tgz \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "DSH Codex Native v0.2.1-alpha.0 (testing preview)" \
+            --prerelease \
+            --notes-file "$RUNNER_TEMP/release-notes.md"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json url,tagName,isPrerelease,assets
