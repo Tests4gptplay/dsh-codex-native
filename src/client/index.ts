@@ -1,38 +1,24 @@
-/** Browser half: render Codex-native trajectory blocks without treating them as Harness tools. */
-
+/** DSH 0.2.1 browser plugin: official Codex account UI in Settings. */
 import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
-import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
-import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
-import { CodexAssistantNodeView } from './CodexAssistantNodeView.tsx'
-import { CodexSettingsCard } from './CodexSettingsCard.tsx'
-import { en, NS, zh } from './locales.ts'
-import {
-  CODEX_SETTINGS_NAMESPACE,
-  CodexSettingsCardController,
-} from './settings-card-controller.ts'
+import type {} from '@deepseek-ai/dsh-client-connection/client'
+import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import { CodexNativeSection } from './CodexNativeSection.tsx'
+import { makeNativeCodexRpc } from './native-rpc.ts'
+import { NS, zh, en } from './native-locales.ts'
 
-/** Required browser services for slot composition and localized presentation. */
-export const inject = ['slots', 'locale', 'settingsScope']
+export const inject = ['slots', 'locale', 'connection']
 
-/** Register the localized Assistant renderer shadow at a lower cell priority. */
 export function apply(ctx: Context): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'codex-app-server: browser dictionaries')
-  const settings = new CodexSettingsCardController(ctx.settingsScope.bind({
-    namespace: CODEX_SETTINGS_NAMESPACE,
-  }))
-  ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({
-    name: 'conversation.chat.node',
-    key: 'assistant-step',
-    priority: -10,
+  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-codex-native: language')
+  const rpc = makeNativeCodexRpc(ctx.connection)
+  const t = ctx.locale.bind(NS)
+  ctx.slots.inject('settings.section', () => ctx.slots.register({
+    name: 'settings.section',
+    id: 'dsh-codex-native-login',
+    order: 15,
+    label: () => t('nav'),
     locale: NS,
-  }, CodexAssistantNodeView))
-  ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
-    name: 'settings.plugin.item',
-    key: CODEX_SETTINGS_NAMESPACE,
-    locale: NS,
-    inject: () => settings.inject(),
-  }, CodexSettingsCard))
+    inject: () => ({ rpc, t }),
+  }, CodexNativeSection))
 }
