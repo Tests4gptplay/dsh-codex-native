@@ -816,17 +816,14 @@ describe('CodexAppServerAdapter', () => {
     }
     const result: Message = {
       id: MessageId('tool-1'),
-      role: 'user',
+      role: 'tool',
       source: { kind: 'tool', callId },
-      content: [{
-        type: 'tool-result',
-        toolCallId: callId,
-        content: [
-          { type: 'text', text: 'contents' },
-          { type: 'image', attachment: INPUT_IMAGE_REF },
-        ],
-        isError: false,
-      }],
+      toolCallId: callId,
+      content: [
+        { type: 'text', text: 'contents' },
+        { type: 'image', attachment: INPUT_IMAGE_REF },
+      ],
+      isError: false,
     }
 
     const secondChunks = await collect(cached.adapter, request({
