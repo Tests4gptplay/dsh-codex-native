@@ -2,7 +2,7 @@
 
 **基于 OpenAI 官方 Codex app-server 的 DeepSeek Harness 主模型插件** · 独立社区项目 · MIT
 
-> **开发预览版：0.2.1-alpha.0。** 目前面向 DSH `0.2.1-rc.2` 移植中。源码类型检查已在 GitHub Actions 验证；完整单测、安装/登录/真实模型端到端验收尚未全部通过。**请勿当作正式稳定版安装或投入业务。** [查看当前 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/workflows/ci.yml)。
+> **开发预览版：0.2.1-alpha.0。** 目前面向 DSH `0.2.1-rc.2` 移植中。源码类型检查、124 项非账号单测和云端打包均已通过；真实 DSH 安装、登录及模型端到端验收尚未完成。**请勿当作正式稳定版安装或投入业务。** [查看当前 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/workflows/ci.yml)。
 
 [English](README.md) · [开发进度与验收边界](docs/STATUS.md) · [截图来源](docs/SCREENSHOTS.md)
 
@@ -48,13 +48,15 @@ dsh plugin --profile web add github:Tests4gptplay/dsh-codex-native
 
 **当前阶段不要运行上述安装命令**；它只是拟发布的接口，并非已经通过真实安装验证的操作建议。
 
+[云端构建与 124 项单测成功记录](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39786235347) · [候选包下载入口（CI Artifacts）](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39786235347)。**这是 CI 候选包，不是已验证可正常使用的正式发布。**
+
 ## 当前实现与待验证事项
 
 | 项目 | 当前状态 |
 |---|---|
 | MIT 上游源码导入；独立公库 | 已完成 |
 | `@openai/codex` app-server 主模型适配器 | 代码已移植 |
-| DSH 0.2.1 Tool Role / `StreamChunk` 类型适配 | 源码类型检查通过；测试迁移中 |
+| DSH 0.2.1 Tool Role / `StreamChunk` 类型适配 | 类型检查及 124 项非账号单测通过；真实 Codex E2E 未执行 |
 | 插件设置页官方浏览器/设备码登录 UI | 已编写，待真实 Host 验证 |
 | 官方 Codex 额度读取 | 已编写，待真实 Host 验证 |
 | 多轮真实 Codex、插件安装及 Windows 运行 | 尚未验收 |
