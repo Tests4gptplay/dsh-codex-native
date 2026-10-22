@@ -12,6 +12,7 @@ export default defineConfig([
     target: 'es2024',
     dts: false,
     clean: true,
+    fixedExtension: false,
     deps: {
       neverBundle: [
         '@deepseek-ai/cordis',
