@@ -1,17 +1,11 @@
-# 构建与发布
+# 精简发行物发布
 
-**当前测试预发行版：[v0.2.1-alpha.3](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.3)（2026-10-23）。** 还不是正式稳定版。
+当前版本：[v0.2.1-alpha.4](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.4)。
 
-开发公库保留 TypeScript 源码、单元测试与 CI；供 DSH 安装的 GitHub 标签是**独立的 22 文件精简运行快照**，没有旧 UI、`src/`、`tests/`、构建脚本、开发依赖或 CI。
+`ci.yml` 在 Linux/Windows 临时环境读取固定提交的官方 DSH 源码，执行模拟 Codex 标准输入输出和官方渲染分支测试。产物含编译插件和对照 HTML；HTML 是测试证据，不是用户插件组成部分。
 
-[本版发布 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39879247613) 在 GitHub 临时 Linux/Windows 环境验证：117 项无账号单测、编译和打包、无 `allowBuilds` 例外的 GitHub 标签安装，以及 DSH 0.2.1 Web Profile 组装与 `codex-local` 配置。
+`release-clean.yml` 只接受成功的跨平台测试运行，取其中同一份编译产物，剥离开发依赖和脚本、核对文件清单、通过官方 DSH 安装，再创建独立精简标签并实测该 GitHub 标识安装后发布。旧标签不覆盖。
 
-DSH 桌面版在“插件 → 添加插件”粘贴：
+alpha.4 发行物只有 25 个运行文件：增加的是修复所需声明文件，而不是测试文件。没有源码、模拟后端、CI、安装脚本或开发依赖。
 
-```text
-github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.3
-```
-
-无需 npm 账号和本地 TypeScript 编译。**真实 ChatGPT 登录、原生审批和 Electron 桌面运行仍需实机验证。**
-
-详见 [验收状态](STATUS.md) 和 [清理审计](AUDIT.md)。旧 alpha.0～alpha.2 版本保留历史，但不再推荐安装。
+[复现及限制](REPRODUCTION.md) · [发布 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39948312538)。

@@ -1,38 +1,25 @@
-# DSH Codex Native — runtime and distribution audit
+# Runtime and distribution audit — alpha.4
 
-Updated: **2026-10-23** · Release: **v0.2.1-alpha.3**
+Updated 2026-10-23. [Bug reproduction and regression evidence](REPRODUCTION.md).
 
-## What was removed
+## Distribution
 
-| Finding in old versions | Outcome in alpha.3 |
-|---|---|
-| `prepare` install-time build blocked by DSH pnpm | No lifecycle `scripts` in tagged package |
-| Git-source installation bundled `src/`, `tests/`, CI, old docs | Tagged Git tree has 22 source-free runtime files |
-| Unreferenced old UI renderer, settings card, CSS compiler | Removed from active development source and distribution |
-| Plugin silently intercepted DSH `web_search` | Removed that listener; DSH retains its original provider chain |
-| Codex forced blanket `--disable` feature list | Removed; official Codex configuration remains authoritative |
-| Forced `approvalPolicy=never` | Removed; plugin does not grant its own blanket approval |
-| Forced compaction threshold, originator identity, hard exact userAgent check | Removed |
-| Plugin-level hard timeout default 300 seconds | Default now 0 (disabled); caller cancellation remains |
-| Legacy React component screenshot | Only own isolated demonstration, **no images in installation tag** |
+The frozen installation tag is a separate 25-file runtime snapshot. It contains precompiled JS, declarations, manifest, DSH bundle patch, LICENSE and minimal README only. No source, tests, mock server, CI, devDependencies or lifecycle scripts are shipped. No test loop or unattended validation is registered in the installed plugin.
 
-## What remains and why
+## Prior cleanup retained
 
-- DSH dynamic-tool namespace and tool-call association: avoids dispatching a Codex-native tool under the wrong DSH owner; this is **functional routing**, not user confirmation at every boundary.
-- JSON-RPC protocol framing and malformed-response detection: ensures messages can be routed correctly; not an independently scheduled watchdog.
-- Codex account login state checks: only while DSH Settings login UI is in use; pending login polls 1.5 seconds and the timer is cleared on unmount/completion.
-- Session cache idle expiry and capacity eviction: releases idle app-server process trees; **does not kill actively running model turns** merely for being long.
-- Codex process cleanup on DSH session/plugin shutdown: prevents orphan processes rather than scheduling tests.
-- No `vitest` or test-suite runtime references in the tagged `lib/index.js` or `lib/client.js`.
+Unused old settings/card/CSS source and unsolicited DSH web-search interception were removed. The plugin no longer supplies a blanket Codex feature blacklist, forced `approvalPolicy=never`, forced compaction threshold, originator override or default five-minute wall-clock kill. It retains functional protocol parsing, dynamic-tool ownership, cancellation and idle-process cleanup.
 
-## Release verification
+## Regression corrected
 
-[CI #39879247613](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39879247613) **passed**: 117 non-account unit tests, production bundle, clean 22-file Git tree, GitHub-tag pnpm add with no `allowBuilds` exemption, and official DSH 0.2.1 Web Profile configuration smoke on hosted Linux/Windows.
+The earlier cleanup removed the custom chat renderer without removing its producer. This was a functional regression, not a cosmetic residue. Alpha.4 keeps the wire/replay mapper but adds a narrow presentation conversion using native DSH content types. It removes lifecycle/empty diagnostic output from visible chat, not real failures or DSH tools. Old history is not rewritten.
 
-## Nontrivial risks not yet signed off
+Windows launch now bypasses the official JS wrapper's second native spawn, using DSH to launch the official packaged executable directly. No arbitrary window closing, global process interception, OS policy edit or user-machine operation was used.
 
-**Live Codex authorization and native approval handling are not fully verified.** The existing `src/thread.ts` resolves several native Codex approval/elicitation requests by declining them, rather than forwarding a real user-approval dialog into DSH. Removing the former forced no-approval setting does **not** implement that missing UI bridge.
+## What still runs normally
 
-Native Codex may still have permissions and tools controlled by its own configuration. Do not treat the plugin as a sandbox replacement. The source-free installer reduces packaging and automatic script risk, not all consequences of enabling Codex native capabilities.
+On-demand login status and pending-login polling while Settings is open; session-owned app-server processes during work; protocol reads; cancellation/cleanup and idle session eviction. These are runtime functionality, not test programs. Tests live in the development branch and isolated CI only.
 
-No user's local DSH files, OAuth tokens, or home directory were accessed during these cloud tests. Nothing in the release is represented as a production security certification.
+## Limits
+
+The Codex-native approval/elicitation UI bridge remains incomplete. Host-specific console visibility and live account permissions are not established solely by the successful no-account Windows handshake. This is an evidence-limited preview, not a zero-risk or security-certification claim.

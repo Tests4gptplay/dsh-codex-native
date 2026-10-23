@@ -1,17 +1,11 @@
-# Build and release
+# Publishing the minimal runtime
 
-**Current published test release: [v0.2.1-alpha.3](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.3) (2026-10-23).** No stable production release is claimed.
+Current release: [v0.2.1-alpha.4](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.4).
 
-Development repository retains TypeScript source, tests, GitHub Actions and historical attribution. Installation tags are **separate, source-free snapshots**, rather than clones of the development tree.
+`ci.yml` fetches pinned official DSH source into an ignored temporary directory and tests on Linux/Windows. Its artifacts include the built plugin and neutral before/after rendering HTML; the HTML is test evidence, not an installed component.
 
-[CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39879247613) builds on disposable GitHub runners, executes 117 account-free tests, checks the clean 22-file package, verifies Git-tag installation without modifying `allowBuilds`, loads the DSH 0.2.1 Web Profile on Linux and Windows, then creates the immutable release tag.
+`release-clean.yml` accepts a completed successful matrix run, extracts its tested package, removes development metadata and scripts, verifies only runtime files remain, runs official DSH profile installation, creates a fresh minimal tag, verifies the exact GitHub install, and publishes a prerelease. It does not rebuild untested runtime code or overwrite old tags.
 
-Install test preview in DSH Desktop Plugins → Add plugin:
+The published tag contains 25 files, including three additional runtime declaration files for the presentation and native launch fix. No test/mock code, CI or src directory is included. Source remains in main for maintainability.
 
-```text
-github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.3
-```
-
-No local compilation, npm account or separate API key is required. A live Codex login, user approvals and actual Desktop Electron testing remain outside the completed CI.
-
-See [status](STATUS.md) and [audit](AUDIT.md). Historical alpha.0 through alpha.2 tags must not be silently overwritten or recommended.
+[Reproduction and limitations](REPRODUCTION.md) · [Release CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39948312538).

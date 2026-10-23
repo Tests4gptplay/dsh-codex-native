@@ -1,81 +1,63 @@
 # DSH Codex Native
 
-**A DeepSeek Harness main-model plugin using the official OpenAI Codex app-server** · Independent community project · MIT
+A community DeepSeek Harness main-model adapter using the **official OpenAI Codex app-server** and its native ChatGPT login. Not an official OpenAI/DeepSeek product.
 
-> **Published test preview: 0.2.1-alpha.3.** Targets DSH 0.2.1-rc.2. Typecheck, 117 account-free unit tests, hosted Linux/Windows DSH Web Profile loading and direct Git installation without allowBuilds overrides passed. **Real ChatGPT account sign-in, Desktop Electron integration and Codex-native approvals remain unverified.** [Release CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39879247613).
+**Test preview v0.2.1-alpha.4, targeting DSH 0.2.1-rc.2.** Fixes new-message unknown content blocks and the Windows wrapper's extra console-spawning layer. Live subscribed inference and complete Electron Desktop behavior are not certified.
 
-[简体中文](README.zh.md) · [Development status](docs/STATUS.md) · [Screenshot provenance](docs/SCREENSHOTS.md)
+[中文](README.zh.md) · [Reproduction](docs/REPRODUCTION.md) · [Status](docs/STATUS.md) · [Audit](docs/AUDIT.md)
 
-## What this plugin does
+## Desktop GitHub installation
 
-The plugin registers the **official OpenAI Codex app-server** as DSH's `codex-local` **main LLM provider**. Unlike the built-in one-shot Codex subagent, DSH retains its Agent Loop, tool scheduling, and durable session history. Model inference uses the native app-server protocol from `@openai/codex@0.154.0`.
-
-- **No separate OpenAI API key**: Use ChatGPT sign-in managed by Codex itself, which owns and refreshes its OAuth credentials. Inference consumes applicable Codex/ChatGPT plan allowances, **not** unlimited free usage or ordinary Chat-message allowances.
-- **Selectable main model**: Route normal multi-turn DSH conversations to `codex-local`.
-- **In-app native sign-in (under validation)**: A DSH Settings section has been implemented for browser/device-code sign-in, account status, sign-out and native Codex usage lookup. The frontend never receives OAuth tokens.
-- **Native DSH tools**: Codex app-server Dynamic Tools are passed back through DSH's tool loop and permissions. Codex still owns additional native instruction/tool layers; this is not a raw model API.
-- **Conversation and images**: The upstream session cache, streaming, and image mapping have been carried forward and still require full validation under the current DSH host.
-
-## Sign-in flow
+Open **Plugins → Add plugin**, paste:
 
 ```text
-DSH Settings → Codex official login
-    ├─ Sign in with ChatGPT → official OpenAI authorization page
-    └─ Device code → official verification page + user code
-                          ↓
-            Codex app-server owns credentials
-                          ↓
-             Select codex-local in DSH
+github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.4
 ```
 
-The plugin uses the official `account/read`, `account/login/start`, `account/login/completed`, `account/logout`, and `account/rateLimits/read` protocol operations. The Codex process handles the browser callback; device-code login is available for a remote host. It does not request your API key or use a community plugin's direct non-public ChatGPT backend route.
+Enable, **fully exit and restart DSH**, then open **Settings → Codex official login**. Sign in with a ChatGPT account with Codex access and select **codex-local / Codex (local login)** in the main model picker.
 
-**Implementation is not the same as successful integration testing.** The real DSH + ChatGPT account sign-in flow is not yet verified. Reference: [OpenAI official app-server documentation](https://developers.openai.com/codex/app-server/).
+No npm account or separate API key is required. Usage is charged to the applicable Codex plan allowance, not ordinary Chat-message allowances or unlimited free usage. Installed runtime dependencies still consume disk space; no source checkout or local TypeScript build is needed.
 
-## One-line GitHub installation (v0.2.1-alpha.3 alpha)
+[Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.4) · [Prebuilt TGZ](https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.1-alpha.4/dsh-codex-native-0.2.1-alpha.4.tgz)
 
-In DSH Desktop open **Plugins → Add plugin**, paste:
+### Web CLI
 
-```text
-github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.3
+```bash
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.4'
 ```
 
-Enable and restart DSH. Open **Settings → Codex official login**, sign in with a ChatGPT account that has Codex access, and select the `codex-local` main-model provider.
+Web and Desktop profiles are separate. Use the frozen release tag, not the source-only main branch.
 
-**The GitHub tag is a 22-file precompiled runtime snapshot.** It has no source files, unit tests, CI, build scripts, dev dependencies or legacy UI. It does not require an `allowBuilds` exception or local TypeScript build.
+## Changes in alpha.4
 
-[Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.3) · [Linux/Windows DSH profile CI and clean Git install](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39879247613) · [Audit](docs/AUDIT.md)
+**Unknown content:** The prior cleanup removed the custom UI renderer while continuing to emit `codex-action` blocks. Official DSH treated them as unknown JSON. A narrow presentation boundary now drops private lifecycle/empty diagnostic chat blocks, maps meaningful native action notices to standard text, and preserves answers, reasoning, DSH tool calls, actual errors and replay state.
 
-**Alpha only:** The Windows DSH Web profile configuration loaded in a disposable runner. Actual Electron Desktop sign-in, live subscribed inference and native approval interactions have not yet been verified.
+**Windows launch:** The fixed Codex JS wrapper spawns its native binary without a Windows visibility flag. Only plugin-owned Windows login/model launches now bypass that second spawn and start the official packaged executable directly through DSH's existing process manager. No global patch, arbitrary process termination or extra watchdog is introduced.
 
-## Implementation and test status
+**Historical messages are not rewritten.** Previously persisted custom blocks may still appear in old messages. The fix applies to new replies after upgrade/restart; it does not erase chat history.
 
-| Capability | Status |
-|---|---|
-| MIT upstream imported into independent public repository | Completed |
-| Native `@openai/codex` app-server main-model adapter | Ported in code |
-| DSH 0.2.1 tool-message and stream type adaptation | Typecheck + 117 account-free tests passed; real Codex E2E excluded |
-| Official browser/device-code sign-in Settings UI | Implemented; real-host verification pending |
-| Native Codex quota reading | Implemented; live verification pending |
-| Live multi-turn Codex, real DSH installation, Windows host | Not verified |
-| GitHub testing prerelease | `v0.2.1-alpha.3`; minimal tag / Linux and Windows Web Profile checks passed; real account/Electron not verified |
+## Verification and package boundary
 
-See [docs/STATUS.md](docs/STATUS.md) for the actual CI record and known blockers.
+[Cross-platform regression run](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39947758087): Linux 126 passed with the Windows-only case skipped; Windows 127 passed. Official DSH source is pinned to `687f282e8625c6b8d11ff58211a90524be2e4317`.
 
-## Original screenshots only
+Tests use an actual local stdio child process as a fake Codex peer, the reported lifecycle/moderation notifications, official DSH `AssistantMarkdown` rendering logic, tool/reasoning/replay preservation, genuine failure propagation, and a real no-account native Codex initialize/account-read on Windows. The renderer test substitutes leaf widgets but **not the official unknown-block decision**; it is not a full Desktop screenshot test.
 
-All inherited upstream screenshots were removed. This **English-language, unauthenticated screenshot** is rendered from the current `CodexNativeSection.tsx` component by our [GitHub-hosted capture workflow](https://github.com/Tests4gptplay/dsh-codex-native/actions/workflows/docs-preview.yml). The welcome text explicitly directs users to sign in with a **ChatGPT account that has Codex access**, not a separate OpenAI API key.
+The release tag contains **25 runtime files** and no mock server, tests, source, CI, development dependencies, or install/build scripts. [Release and exact Git-tag installation check](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39948312538).
 
-![Welcome to Codex—sign in with a ChatGPT account that has Codex access (English component preview)](docs/screenshots/codex-native-login-en.png)
+## Known limits
 
-*Original component preview. The navigation is an illustrative shell, **not a running DSH application or a verified OAuth login**.*
+- Static model-menu entries are not proof of account eligibility. Codex determines supported models.
+- This plugin's provider is `codex-local`, not `openai-codex`; old conversations can retain a different provider.
+- Windows binary startup/JSON-RPC was tested, but hosted CI does not establish visual console behavior in a user's Electron Desktop session.
+- Some native Codex approvals/elicitation are not fully bridged to DSH's interactive UI. DSH dynamic tools retain their own execution path.
+- No real OAuth account or private credentials were used for the mock tests.
 
-Reproduction and real-host acceptance requirements: [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md).
+## Original UI preview
 
-## Architectural boundary
+![Unauthenticated isolated login component](docs/screenshots/codex-native-login-en.png)
 
-This plugin uses the **OpenAI-published `codex app-server`**. DSH owns durable history, permissions, and tool execution; Codex can still add its own system context and native tools. This is an intentional layered model, documented in the upstream [ADR 0002](docs/adr/0002-use-app-server-as-a-layered-codex-provider.md). The plugin is **not an official OpenAI or DeepSeek release**.
+Generated from this repository's React login component, not copied from upstream and not a real signed-in Desktop session. [Provenance](docs/SCREENSHOTS.md).
 
-## Attribution and license
+## Attribution
 
-Adapted from the MIT-licensed [wss534857356/dsh-plugin-codex](https://github.com/wss534857356/dsh-plugin-codex), pinned to upstream commit `f1f61886f4defcf7294d63c3641fba01ee554e7b`. The original LICENSE and historical ADRs are retained for attribution. The official Codex runtime is from OpenAI and DSH is from DeepSeek; neither project endorses this community integration.
+Based on MIT-licensed [wss534857356/dsh-plugin-codex](https://github.com/wss534857356/dsh-plugin-codex), baseline `f1f61886f4defcf7294d63c3641fba01ee554e7b`. LICENSE retained. Official runtime: `@openai/codex@0.154.0`. Framework: DeepSeek Harness.
