@@ -1,32 +1,61 @@
-name: Apply isolated Codex protocol repair
+name: DSH Codex native build
 'on':
   push:
-    branches: ['fix/protocol-stream-lifecycle']
-    paths: ['.github/workflows/ci.yml']
+    branches: [main, 'fix/protocol-stream-lifecycle']
+    paths-ignore: ['docs/**']
+  pull_request:
+  workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
+concurrency:
+  group: dsh-codex-native-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  apply:
-    if: github.repository == 'Tests4gptplay/dsh-codex-native' && github.ref == 'refs/heads/fix/protocol-stream-lifecycle'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - name: Fetch exact official DSH rendering source into disposable workspace
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-      - name: Materialize exact reviewed source patch and remove temporary helper
+          repository: deepseek-ai/deepseek-harness
+          ref: 687f282e8625c6b8d11ff58211a90524be2e4317
+          path: .tmp/dsh-reference
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install development dependencies only in CI
+        run: pnpm install --no-frozen-lockfile --ignore-scripts
+      - name: Typecheck
+        run: pnpm run typecheck
+      - name: Mock stdio, official DSH renderer, and account-free regression tests
+        env:
+          DSH_REFERENCE_ROOT: ${{ github.workspace }}/.tmp/dsh-reference
+          DSH_REPRO_OUTPUT: ${{ runner.temp }}/codex-reproduction
+        run: pnpm run test:ci
+      - name: Build and pack
         shell: bash
         run: |
           set -euo pipefail
-          python3 .github/protocol-repair.py
-          rm .github/protocol-repair.py
-          git diff --check
-          # Restore the workflow separately through the connector. This push
-          # only needs repository content access, not workflow-write access.
-          git restore .github/workflows/ci.yml
-          git add src/wire.ts src/process-connection.ts src/runner.ts src/thread.ts src/session-cache.ts src/native-account.ts src/native-transport.ts tests/native-account.spec.ts tests/mock-stdio.spec.ts tests/fixtures/mock-app-server.mjs README.md README.zh.md package.json .github/protocol-repair.py
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'fix: settle closed Codex pipes and preserve process exit evidence'
-          git push origin HEAD:refs/heads/fix/protocol-stream-lifecycle
-          echo "REPAIRED_SOURCE_COMMIT=$(git rev-parse HEAD)"
+          pnpm run build
+          test -s lib/index.js
+          test -s lib/client.js
+          mkdir -p dist
+          pnpm pack --pack-destination dist
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: codex-reproduction-${{ matrix.os }}
+          path: |
+            ${{ runner.temp }}/codex-reproduction/*.html
+            dist/*.tgz
+          if-no-files-found: ignore
