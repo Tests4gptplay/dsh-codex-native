@@ -1,11 +1,12 @@
-name: Original plugin UI screenshots
+name: Original native-control usage previews
 'on':
   push:
     branches: [main]
     paths:
       - '.github/workflows/docs-preview.yml'
       - 'tests/docs-preview.spec.tsx'
-      - 'src/client/CodexNativeSection.tsx'
+      - 'src/client/UsagePanel.tsx'
+      - 'src/client/ui-style.ts'
       - 'src/client/native-locales.ts'
   workflow_dispatch:
 concurrency:
@@ -19,44 +20,52 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: deepseek-ai/deepseek-harness
+          ref: 687f282e8625c6b8d11ff58211a90524be2e4317
+          path: .tmp/dsh-reference
+          persist-credentials: false
       - uses: pnpm/action-setup@v4
         with:
           version: 11.7.0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Install dependencies in disposable hosted runner
-        run: pnpm install --no-frozen-lockfile --ignore-scripts
-      - name: Render actual account React component with no DSH Host or OAuth account
+      - run: pnpm install --no-frozen-lockfile --ignore-scripts
+      - name: Render actual controls with labelled illustrative data
         env:
           DSH_DOC_PREVIEW_OUTPUT: ${{ runner.temp }}/codex-native-preview
+          DSH_REFERENCE_ROOT: ${{ github.workspace }}/.tmp/dsh-reference
         run: pnpm exec vitest run tests/docs-preview.spec.tsx
-      - name: Capture original English-language Codex login component
+      - name: Capture light and dark token previews
         shell: bash
         run: |
           set -euo pipefail
           CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
           mkdir -p docs/screenshots
-          "${CHROME}" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage \
-            --hide-scrollbars --window-size=1280,850 --screenshot="$GITHUB_WORKSPACE/docs/screenshots/codex-native-login-en.png" \
-            "file://${RUNNER_TEMP}/codex-native-preview/en.html"
-          test -s docs/screenshots/codex-native-login-en.png
-          file docs/screenshots/codex-native-login-en.png
-      - name: Commit only original English preview screenshot to source repo
+          for MODE in light dark; do
+            "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --hide-scrollbars --window-size=820,800 \
+              --screenshot="$GITHUB_WORKSPACE/docs/screenshots/codex-usage-$MODE.png" "file://$RUNNER_TEMP/codex-native-preview/usage-$MODE.html"
+            test -s "docs/screenshots/codex-usage-$MODE.png"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-control-usage-previews
+          path: docs/screenshots/codex-usage-*.png
+      - name: Commit only own preview images
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/screenshots/codex-native-login-en.png
+          git add docs/screenshots/codex-usage-light.png docs/screenshots/codex-usage-dark.png
           if ! git diff --cached --quiet; then
-            git commit -m "docs: refresh original English Codex account preview"
-            # Dependency resolution can update the imported lockfile in this disposable runner.
-            # Never mix that unrelated change into the screenshot commit or block the rebase.
+            git commit -m 'docs: actual DSH-control usage previews with sample-data captions'
             git restore --worktree -- .
             git fetch origin main
-            if ! git diff --quiet HEAD..origin/main -- src/client/CodexNativeSection.tsx src/client/native-locales.ts tests/docs-preview.spec.tsx; then
-              echo 'Preview inputs changed during capture; refusing stale screenshot'
+            if ! git diff --quiet HEAD..origin/main -- src/client/UsagePanel.tsx src/client/native-locales.ts src/client/ui-style.ts tests/docs-preview.spec.tsx; then
+              echo 'Preview inputs changed; not publishing stale screenshots'
               exit 1
             fi
             git rebase origin/main
