@@ -1,84 +1,64 @@
-# 接续入口：Codex 历史用量与原生设置 UI
+# 接续入口：Codex 历史查询 / 原生控件 — 已交付 alpha.5
 
-更新日期：2026-10-23。**唯一接续工作分支：`feat/usage-history-ui`。**
+更新：2026-10-23。开发分支：`feat/usage-history-ui`。阅读顺序：本文件 → [交付核验](docs/DELIVERY-alpha5.md) → [隔离 DSH 测试方法](docs/TESTING_WORKSPACE.md) → [用量规则](docs/USAGE.md)。
 
-## 0. 先从这里恢复，不依赖上一页聊天
+## 当前结论（更正旧记录）
 
-本分支从实读的 `main` 提交 `866b1fcc731dc68668e69e336b3094c58f2a94a5` 创建；基线已经有用量功能开发代码、说明和浅/深色截图。分支保存完整基线并继续开发，**没有重写 main，没有覆盖任何已有标签，没有在本轮发布新版本**。
+**固定安装版本 `v0.2.1-alpha.5` 已发布，可按原需求进行真实账号安装测试。**
 
-用户要求先保存分支和情况记录再继续，且必须保存“在临时工作区搭建隔离 DSH / 模拟 Codex 后端测试插件”的方法。现有 GitHub 连接器已经实测可以写：创建分支、写文档和修改该分支 CI 都成功。不需要让用户再开公库，不需要再为 GitHub 写权限找其他插件。
+```text
+github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.5
+```
 
-已持久化的主要检查点：
+[Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.5)。该 Release 实际在 **2026-10-23 13:16:44 UTC** 已发布；上一轮 HANDOFF 把它描述为未发布，是遗漏，不是后续需要再次发版。**不要覆盖现有标签，也不要为了文档纠正制造 alpha.6。**
 
-- `e4666d9bbac0c693e76200b20a35fa184d0a7e96`：首次需求与接续记录。
-- `5d6643952103e79d045f20766c679991eaea454a`：[临时 DSH / 模拟 Codex 测试方法](docs/TESTING_WORKSPACE.md)。
-- `291ce24fef48db4d30676d2e0048178db7574b55`：复用既有 CI 验证当前分支；只有 CI 触发范围变化，未改生产代码。
+本轮检查没有改生产代码。下载了保存分支的 CI artifact，计算运行文件 Git blob，与 alpha.5 标签完全一致：
 
-## 1. 用户确定的需求（不要再问，不要改方向）
+- `lib/index.js`：122045 bytes，`a29fd789061d2fdf2660dc944e22db1b6b69ad57`
+- `lib/client.js`：25925 bytes，`ba4fd9fbaba03f81fa4e4beb24901ae4083716d8`
+- `cordis.patch.yml`：2304 bytes，`135a27ce43c9be6350ec495502f6645208569c12`
 
-- 历史 token 优先调用官方 Codex app-server `account/usage/read`；不要另造从插件安装时开始累计所有用量的系统。默认是**账号**历史，不标为仅本插件消耗。
-- **只有用户点击查询才查询用量**。没有用量定时器、后台轮询、打开页面自动拉历史或每次聊天附加查询。已有登录完成状态轮询是另一个功能，不得混淆。
-- 顶部同一行显示总用量、唯一的“清除”和“查询”按钮；周期/每日行不要添加删除按钮。
-- 周期可折叠，折叠行显示该周期总用量，展开显示每日用量。版式参考用户手绘但要优化层次、对齐和可读性。
-- 重置周期优先官方；当前没有完整官方历史重置流水时，参考用户指定 `codex-reset.com`。公共事件不是当前账号实际重置的权威证明。
-- 每日聚合不能精确分开日内重置前后 token；不能编造准确分配或固定周周期。当前实现以 UTC 日期整桶分组，重置日归新参考组，必须说明只是参考。
-- 清除只清当前页面缓存/显示，不删除 OpenAI 账号历史、不用重置券、不退出登录、不删聊天。再次点击查询会重新显示官方历史。
-- 表格下必须注明 token 查询来源、重置周期来源、周期仅供参考和清除行为。
-- 登录区/统计区复用 DSH 官方 Button、DisclosureRow 和主题变量，兼容皮肤；不使用突兀的默认按钮或硬编码生产配色。
-- 测试、mock、源码、CI、截图生成程序、devDependencies、安装生命周期脚本不能进入 GitHub 安装标签/发行包。不改用户 allowBuilds，不因为统计失败阻断模型或工具。
-- 中英文 README、说明与实现同步；只用本项目真实组件截图，示例数据明示；不上传含邮箱/令牌的原始用户截图。
+Tag tree `a823c35cad477ed5518a951b69666696dc0e0d91`。发布包没有 scripts/devDependencies，没有 tests/src/scripts/.github、预览截图或 mock。开发 CI artifact 的 package.json 仍有开发字段，**它不是用户安装包**。
 
-## 2. 当前已保存的实现与预览
+主分支文档专用提交 `024329ee13e5aa3b6601dfec8864bd7354d50247` 仅同步双语 README、STATUS 和 DELIVERY；没有合并本功能分支、没有改生产代码和旧标签。本分支保留原有 CI 触发范围、测试环境说明及全部工作，文档与主分支同版。
 
-源代码声明版本是 **`0.2.1-alpha.5` 开发版**。声明版本和 CI 打包成功不等于该版本已发布。
+## 用户要求与当前实现（必须保留）
 
-| 文件 | 作用 |
-|---|---|
-| `src/usage.ts` | 用量数据转换、周期分组与第三方参考数据规则 |
-| `src/native-account.ts` / `src/native-transport.ts` | 通过官方 app-server 和 DSH 现有连接提供账号查询 |
-| `src/client/UsagePanel.tsx` | 手动查询、单个清除按钮、总计、折叠每日用量和来源说明 |
-| `src/client/CodexNativeSection.tsx` | 登录页与用量页组合，原生账号按钮 |
-| `src/client/native-locales.ts` | 中英文文案 |
-| `tests/usage.spec.ts` | 数据归一化与分组回归 |
-| `tests/usage-ui.spec.tsx` | jsdom 中真实组件的查询/清除/展开交互 |
-| `tests/docs-preview.spec.tsx` / `tests/official-primitives.ts` | 原生控件和 CSS 的离线示例预览 |
-| `docs/USAGE.md` | 功能、数据来源和限制说明 |
-| `docs/TESTING_WORKSPACE.md` | 下次可复用的隔离环境、测试和截图命令 |
+1. 历史用量直接读官方 `account/usage/read`，账号口径；不另造累计账本。
+2. **只有点击查询才读取历史**。打开页面、展开、清除不查询；没有用量后台轮询、聊天钩子或额外模型调用。原有 OAuth 完成状态计时器不是用量轮询。
+3. 顶部同一行：唯一“清除”、查询、列表总用量。折叠周期保留合计，展开每日明细；周期或每日行没有删除按钮。
+4. 清除只清本页显示，不删官方历史/聊天，不退登录，不用重置券；再查询会重新返回官方历史。
+5. 官方当前窗口/下次重置来自 `account/rateLimits/read`；没有虚构官方历史重置接口。历史分组用用户指定的 codex-reset.com **文档明确的已宣布重置**，按 UTC 日期整桶归组，**仅供参考**；不将其当个人账户真实重置，不假造日内 token。
+6. 表格下标明 token 来源、周期来源、仅供参考、清除含义。第三方公共 GET 不携带凭据/邮箱/账号/用量/提示词；60秒 on-demand cache + Retry-After，无刷新定时器。
+7. 登录与统计区使用宿主官方 Button、DisclosureRow、--dsw-* 变量。测试用 CSS alias 与示例配色不进入生产。
+8. 测试/mock/源码/CI/截图/开发依赖/安装 hooks 不随安装；不要改用户 allowBuilds；统计故障不能停止 Agent。
+9. README 与实际版本一致；截图仅用本项目实际组件，示例数据说明，不公开用户邮箱或令牌截图。
 
-预览已随基线保存，不仅留在临时缓存中：
+## 真实证据，不用旧 alpha.4 冒充新功能
 
-- [浅色原生控件预览](docs/screenshots/codex-usage-light.png)
-- [深色原生控件预览](docs/screenshots/codex-usage-dark.png)
+- [原始 alpha.5 跨平台测试 #39959031468](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39959031468)，source `de9f3b766a5bbc9d03f2846186c8f1f8eee6424a`。
+- [保存分支重新验证 #39961943894](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39961943894)，source `291ce24fef48db4d30676d2e0048178db7574b55`：Ubuntu/Windows 均 success。手动查询/单清除/展开不请求/失败保留旧值/来源文案的实际断言通过。
+- [发布 #39959807125](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39959807125)，job `120434651081` 全部步骤 success：使用已测构建、精简 manifest、真实 DSH Web Profile 安装/装配、固定 Git 标签无 allowBuilds 例外安装、Release 上传。
+- artifact `12504514277` 已下载并对比运行字节；这轮没有重新运行模型或使用真实账号。
+- 功能源码相对已发布基线无变化，GitHub compare 只有工作流、交接/测试文档和预览图片的变化。
 
-预览是官方控件+本插件组件+示例数据，不是已登录账号或完整 Electron 截图。正式 UI 引用宿主的控件/皮肤，测试 alias 与示例颜色不进入生产。
+## 代码入口与预览
 
-## 3. 本轮实际验证（不要用旧 alpha.4 结果冒充）
+`src/usage.ts` 数据/分组，`src/usage-query.ts` 手动读取，`src/native-account.ts`/`native-transport.ts` 官方账号桥接，`src/client/UsagePanel.tsx` 统计 UI，`CodexNativeSection.tsx` 登录与原生按钮，`native-locales.ts` 文案。测试入口：`tests/usage.spec.ts`、`tests/usage-ui.spec.tsx`、`tests/docs-preview.spec.tsx`、`tests/official-primitives.ts`。
 
-**[当前分支 CI #39961943894](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39961943894)，受测提交 `291ce24fef48db4d30676d2e0048178db7574b55`。** 已逐 job 读取结果：
+[浅色预览](docs/screenshots/codex-usage-light.png)、[深色预览](docs/screenshots/codex-usage-dark.png) 已持久保存；它们使用示例数据，不是登录账号截图。当前容器 Chromium 新渲染尝试超时，没有产生新截图，不应声称这轮截图成功；已打开核对既有源码关联预览。
 
-| Job | 结果 | 已完成步骤 |
-|---|---|---|
-| `build (ubuntu-latest)`，120441855206 | success | 官方 DSH 固定源码、开发依赖、typecheck、回归测试、build/pack、artifact 上传 |
-| `build (windows-latest)`，120441854611 | success | 同上；Windows 专属原生启动检查由当前测试集合执行 |
+## 隔离环境方法不要丢失
 
-测试使用 DSH 源码提交 `687f282e8625c6b8d11ff58211a90524be2e4317`、DSH `0.2.1-rc.2`、Codex `0.154.0`、Node 24、pnpm 11.7.0。使用现有 `.github/workflows/ci.yml`，只扩展为在本分支也运行，不创建多余 workflow，不触发发布。
+完整可重建步骤在 [TESTING_WORKSPACE.md](docs/TESTING_WORKSPACE.md)：固定 DSH 源码 `687f282e8625c6b8d11ff58211a90524be2e4317`，DSH 0.2.1-rc.2、Codex 0.154.0、Node24、pnpm11.7.0；独立 DSH_HOME/CODEX_HOME；真实 DSH 框架/控件 + 测试边界 mock；stdIO、jsdom、原生CSS截图、Host加载、最小发行物及清理规则。没有强制 Docker，没有触碰用户本机。
 
-已核对 `tests/usage-ui.spec.tsx` 的实际断言：挂载/展开不查询；点击 Query 才调用 usage；一个顶部 Clear 只清空视图；再次查询恢复结果；失败保留前次统计；来源/仅供参考文字存在。云端通过的是当前代码的这些回归，不是未经登录的真实账号数据证明。
+当前临时容器无法解析 github.com，Node22.16.0、无pnpm；GitHub connector 能读写并下载 CI artifacts。不要反复 clone，不要因此改用户电脑。需要补测时复用本分支现有 CI，不新增重复 workflow。测试产物只在开发目录/云端 artifact，不随发行。
 
-当前 ChatGPT 容器状态：旧完整 checkout/node_modules 没有保留，只有预览图、旧 alpha.4 ZIP 和 stage/README；Node v22.16.0，无 pnpm；一次 clone 因无法解析 github.com 失败。没有反复重试，也没有改用户电脑。GitHub 连接器写入与云端 CI 正常；复现与回退方法已完整记录。
+## 仍未认证的事项 / 后续工作
 
-## 4. 仍待完成/需要保留的边界
+- 真实账号历史返回范围、null/延迟、完整 Electron 及用户皮肤组合；不是本轮 mock 或 --dump-config 可以证明的。
+- 原生 Codex 审批交互桥接是已有独立问题，不把统计 UI 收尾说成解决了整个运行时。
+- 原先默认5分钟硬杀/全局禁用原生功能/擅自拦截 web_search 的清理保留，不为统计页面重加。
+- 后续收到用户真实问题时，针对该问题在本分支修复，再用新不可变版本发出；不要重写历史数据或已有标签。
 
-- 实际账号 `account/usage/read` 的返回范围、null 情况、服务更新延迟，以及真实网络下第三方 feed 的变化；不能拿固定 fixture 当用户实测。
-- 完整 Electron/皮肤组合实测，不等于 jsdom/SSR/`--dump-config` 通过。
-- 原生 Codex 交互审批桥接的既有局限没有因为本次统计页面而被解决。
-- 当前 CI 的 .tgz 是开发候选包，不直接交付。发布前要清理 manifest 的 scripts/devDependencies，并核对最终 Git 标签和 TGZ 两个真实文件清单。
-- `docs/STATUS.md` / 部分发布说明保留 alpha.4 的历史验收口径；不要无条件覆盖历史证据。正式推进新版本时同步新旧版本、测试和截图说明。
-
-## 5. 下一步
-
-1. 从本分支读取本文件和 [测试工作区文档](docs/TESTING_WORKSPACE.md)，不要让用户重述需求。
-2. 需要重跑时直接复用当前分支 CI；需要浏览器实际交互时在隔离工作区创建自己的 DSH_HOME/CODEX_HOME，明确 mock 与真实 Host 的边界。
-3. 完成必要的真实环境/发行物验收，再同步中英文 README 和发布说明；不要把开发分支直接给用户安装，不覆盖旧标签，不自动合并本分支。
-
-特别避免：安装脚本偷偷编译；删除 renderer 但继续发送私有内容块；未知/null 记成 0；百分比下降即擅自标实际重置；把统计故障升级为全插件停止；把 mock 或截图说成真实账号验收。
+**本轮交付已核验；现在应向用户提供 alpha.5 的固定安装码，不再停在“还没发布”的旧记录。**
