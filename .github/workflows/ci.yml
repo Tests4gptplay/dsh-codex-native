@@ -18,9 +18,6 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
-    env:
-      DSH_REFERENCE_ROOT: ${{ github.workspace }}/.tmp/dsh-reference
-      DSH_REPRO_OUTPUT: ${{ runner.temp }}/codex-reproduction
     steps:
       - uses: actions/checkout@v4
       - name: Fetch exact official DSH rendering source into disposable workspace
@@ -41,6 +38,9 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
       - name: Mock stdio, official DSH renderer, and account-free regression tests
+        env:
+          DSH_REFERENCE_ROOT: ${{ github.workspace }}/.tmp/dsh-reference
+          DSH_REPRO_OUTPUT: ${{ runner.temp }}/codex-reproduction
         run: pnpm run test:ci
       - name: Build and pack
         shell: bash
