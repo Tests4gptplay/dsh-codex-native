@@ -8,7 +8,7 @@ name: Publish verified minimal Codex Native release
       tested_run_id:
         description: Successful Linux and Windows regression run
         required: true
-        default: '39959031468'
+        default: '39996592077'
 permissions:
   contents: write
   actions: read
@@ -20,8 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      TESTED_RUN: ${{ inputs.tested_run_id || '39959031468' }}
-      RELEASE_VERSION: '0.2.1-alpha.5'
+      TESTED_RUN: ${{ inputs.tested_run_id || '39996592077' }}
+      RELEASE_VERSION: '0.2.1-alpha.6'
     steps:
       - name: Require successful Ubuntu and Windows regression jobs from this repository
         env:
@@ -73,8 +73,46 @@ jobs:
           for(const field of ['scripts','devDependencies','packageManager','publishConfig'])delete p[field]
           writeFileSync(join(root,'package.json'),JSON.stringify(p,null,2)+'\n')
           const spec='github:Tests4gptplay/dsh-codex-native#v'+p.version
-          writeFileSync(join(root,'README.md'),'# DSH Codex Native '+p.version+'\n\nInstall: '+spec+'\n\nOfficial Codex app-server main-model adapter. Settings now offers manual account usage queries using account/usage/read, with native DSH Button/DisclosureRow and skin-owned theme tokens. One Clear button, Query, and listed total sit above collapsible reference periods and daily rows. Token and reset provenance appear below the table.\n\nHistorical reset reference: codex-reset.com public announcements. Periods are approximate UTC-date groups, not individual account reset history. Clear removes only the local displayed result; Query restores official history. No usage polling, model hooks, token accumulation, reset-credit consumption or external account credential sharing.\n\nProduction tag contains only compiled runtime, declarations, metadata, license and READMEs. Tests, fixtures, screenshots, source, CI, scripts and devDependencies are excluded. Linux/Windows regressions passed; a real account history response and every third-party skin have not been verified in cloud CI.\n\nSource and MIT attribution: https://github.com/Tests4gptplay/dsh-codex-native\n')
-          writeFileSync(join(root,'README.zh.md'),'# DSH Codex Native '+p.version+'\n\n安装：'+spec+'\n\n设置页新增手动历史查询，使用 Codex 官方 account/usage/read；按钮和折叠行直接复用 DSH 官方控件及皮肤变量。顶部只有清除、查询和列表总用量；下方按参考周期折叠，每组可展开每日明细。表格下标明用量与周期来源。\n\n历史周期参考 codex-reset.com 公共公告，不是个人账户完整重置历史。重置当天用量不拆分；清除只清空本页结果，再次查询会恢复官方历史。没有用量轮询、模型统计钩子或自动重置操作，也不向第三方发送账户凭据或用量。\n\n精简发行标签没有测试、模拟数据、截图、源码、CI、构建脚本或开发依赖。Windows/Linux 回归通过；未在云端使用真实账号查询，也未声称所有第三方皮肤均已实测。\n\n源码、许可与来源：https://github.com/Tests4gptplay/dsh-codex-native\n')
+          writeFileSync(join(root,'README.md'),`# DSH Codex Native ${p.version}
+
+          Install in DSH Plugins → Add plugin:
+
+          ${spec}
+
+          Official Codex app-server main-model adapter with native ChatGPT login and manual account usage history. Independent community integration; MIT attribution is retained in LICENSE.
+
+          ## alpha.6 protocol lifecycle fix
+
+          Closed pipes now settle blocked requests instead of waiting forever for drain. Transport errors retain local process exit/stderr evidence, with common credential shapes redacted; an exit first observed during cleanup is labelled accordingly. Already-closed cached threads are rebuilt from recorded history on the next request, including existing tool results, without adding automatic in-flight tool replay.
+
+          No heartbeat, reconnect poller, watchdog or new hard model-task timer is added. Existing DSH retry settings are unchanged. This repair does not prove why the user's original local process exited or that OpenAI's cloud was down.
+
+          The alpha.5 manual Query/Clear history UI and native DSH controls remain. Token history is account-wide; historical reset groups reference codex-reset.com and are approximate UTC-date groupings. Clear empties the view only. No account data is sent to that reference site.
+
+          Production tag contains compiled runtime, declarations, metadata, license and READMEs only. Tests, mock processes, source, CI, screenshots, install scripts and devDependencies are excluded. Ubuntu and Windows regression tests, including a real isolated child exit, passed; no real user account or live model quota was used.
+
+          Fully restart DSH after upgrading. Source, detailed boundaries and evidence: https://github.com/Tests4gptplay/dsh-codex-native
+          `.replace(/^          /gm,''))
+          writeFileSync(join(root,'README.zh.md'),`# DSH Codex Native ${p.version}
+
+          DSH 插件 → 添加插件：
+
+          ${spec}
+
+          通过 OpenAI 官方 Codex app-server 接入 DSH 主模型，提供 ChatGPT 原生登录和手动账号历史用量查询。本插件为独立社区项目，保留原 MIT 许可和署名。
+
+          ## alpha.6 协议断流修复
+
+          修复管道关闭后仍等 drain 导致请求挂起的问题；保留本地进程退出码与标准错误证据，并遮盖常见凭据内容。在清理阶段才观察到的退出明确标注，不冒充最初原因。已关闭的缓存连接在下一次请求时按已有历史重建，工具结果作为已有记录保留，不新增执行途中自动重放。
+
+          不增加心跳、轮询、Watchdog 或模型任务硬超时；原有 DSH 重试设置不变。用户最初为何退出仍需实际退出日志确认，不能据此认定 OpenAI 云端宕机。
+
+          保留 alpha.5 的手动查询、单清除按钮、折叠每日用量及 DSH 官方控件。Token 是账号口径；历史周期参考 codex-reset.com，按 UTC 日期归组，仅供参考。清除只清本页显示，第三方不接收账号或用量数据。
+
+          安装标签只包含编译运行文件、声明、配置、许可证和说明；不含测试、模拟后端、源码、CI、截图、安装脚本或开发依赖。Linux/Windows 回归及隔离真实子进程退出测试通过，未使用真实账号或模型额度。
+
+          升级后完全退出并重新打开 DSH。源码和详细证据：https://github.com/Tests4gptplay/dsh-codex-native
+          `.replace(/^          /gm,''))
           const all=[]
           function walk(dir){for(const e of readdirSync(dir,{withFileTypes:true})){const f=join(dir,e.name);if(e.isDirectory())walk(f);else all.push(relative(root,f).replaceAll('\\','/'))}}
           walk(root)
@@ -82,7 +120,7 @@ jobs:
           for(const f of all)if(!allowed.has(f)&&!/^lib\/(?:index\.js|client\.js|(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.d\.ts)$/.test(f))throw Error('Unexpected installed file: '+f)
           for(const f of ['lib/index.js','lib/client.js']){
             const js=readFileSync(join(root,f),'utf8')
-            for(const token of ['mock-app-server.mjs','TEST_CODEX_SCENARIO','vitest','#dsh-primitives','tests/official-primitives'])if(js.includes(token))throw Error('Test code leaked into '+f)
+            for(const token of ['mock-app-server.mjs','TEST_CODEX_SCENARIO','fixture-secret','vitest','#dsh-primitives','tests/official-primitives'])if(js.includes(token))throw Error('Test code leaked into '+f)
           }
           const client=readFileSync(join(root,'lib/client.js'),'utf8')
           if(!client.includes('@deepseek-ai/dsh-client-ui-primitives'))throw Error('Client lost shared official-control dependency')
@@ -144,25 +182,27 @@ jobs:
         run: |
           set -euo pipefail
           cat > "$RUNNER_TEMP/notes.md" <<'NOTES'
-          # Codex Native alpha.5 — manual usage history and native DSH controls
-          
-          Desktop Plugins → Add plugin:
-          
+          # Codex Native alpha.6 — protocol stream lifecycle fix
+
+          DSH Desktop: Plugins → Add plugin:
+
           ```text
-          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.5
+          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.6
           ```
-          
-          - Manually query official account history; no usage polling or independent token accumulator.
-          - Single top Clear and Query controls alongside the listed total; collapsible reference periods with daily usage rows.
-          - Actual DSH Button/DisclosureRow components and skin-owned tokens, not a separately styled button library.
-          - Below-table notes distinguish OpenAI Codex token history, codex-reset.com public reset announcements, and official current/next quota windows. Periods are reference-only UTC-date groupings; reset-day usage is not split into invented intraday fractions.
-          - Clear empties the local view only. Query restores official history; no server history or conversation is deleted.
-          - Public fallback receives no account data, cookies, tokens or usage; on-demand cache respects the site's publication cadence. An unavailable reference source does not block model execution or discard returned official tokens.
-          - No tests, mock data, source, screenshots, CI, scripts or devDependencies in the installer tag.
-          
-          Account-authenticated history and every third-party Desktop skin were not tested with real credentials. Current model, login and native-approval limitations are not changed by this reporting feature.
-          
-          Sources: https://developers.openai.com/codex/app-server/ and https://codex-reset.com/developers . MIT attribution remains in LICENSE.
+
+          - Fix requests hanging on backpressured writes after protocol EOF or pipe closure.
+          - Preserve process exit and stderr evidence instead of losing it behind the generic stream-closed error; mask common credential shapes and label cleanup-time exit observations.
+          - Rebuild an already-closed cached connection on the next request using recorded history and tool outputs. No new automatic replay of in-flight operations.
+          - Observe account-process startup failures even when stdout emits no event; cleanup cannot wait indefinitely on a second unbounded process promise.
+          - Preserve manual usage queries, native DSH controls, existing cancellation, model policy and host retry settings. No new watchdog, heartbeat, usage poller or hard model-task limit.
+          - Tested with isolated streams and a real fixture subprocess through the official DSH runtime on Linux and Windows. No real account or model quota was used.
+          - Installer tag and TGZ exclude tests, mocks, source, CI, screenshots, scripts and devDependencies; exact GitHub installation does not require allowBuilds exceptions.
+
+          **Boundary:** the initiating cause of the user's original process exit is not yet proven. This fixes confirmed plugin-side failure handling, not every possible native Codex or cloud failure. Existing native interactive-approval limitations remain.
+
+          Upgrade, then fully quit and reopen DSH. If it recurs, the new error should retain more diagnostic evidence; remove personal paths before sharing it.
+
+          Details: https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/PROTOCOL_STREAM_FIX.md
           NOTES
           printf '\nRegression CI: https://github.com/%s/actions/runs/%s\nSource commit: %s\n' "$GITHUB_REPOSITORY" "$TESTED_RUN" "$TESTED_SHA" >> "$RUNNER_TEMP/notes.md"
-          gh release create "$RELEASE_TAG" "dist/dsh-codex-native-$RELEASE_VERSION.tgz" --repo "$GITHUB_REPOSITORY" --prerelease --title 'DSH Codex Native alpha.5 — manual history and native UI' --notes-file "$RUNNER_TEMP/notes.md"
+          gh release create "$RELEASE_TAG" "dist/dsh-codex-native-$RELEASE_VERSION.tgz" --repo "$GITHUB_REPOSITORY" --prerelease --title 'DSH Codex Native alpha.6 — protocol stream lifecycle fix' --notes-file "$RUNNER_TEMP/notes.md"
