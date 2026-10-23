@@ -8,7 +8,11 @@ function mockOfficialCodex() {
   const invocations: string[] = []
   const input = new PassThrough()
   const output = new PassThrough()
-  const terminated = vi.fn()
+  const done = Promise.withResolvers<{ exitCode: number; signal: null }>()
+  const terminated = vi.fn(() => {
+    output.end()
+    done.resolve({ exitCode: 0, signal: null })
+  })
   let buffer = ''
   input.setEncoding('utf8')
   input.on('data', (chunk: string) => {
@@ -48,7 +52,7 @@ function mockOfficialCodex() {
   const handle = {
     stdin: input, stdout: output, stderr: new PassThrough(),
     terminate: terminated, waitForExit: async () => ({}),
-    done: Promise.resolve({ exitCode: 0 }),
+    done: done.promise,
     control: {},
   } as unknown as SubprocessHandle
   return { handle, invocations, terminated }

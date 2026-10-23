@@ -27,6 +27,7 @@ export interface ManagedCodexThreadOptions {
   readonly startedEvent: Extract<CodexAppServerEvent, { kind: 'thread-started' }>
   readonly abort: (reason: unknown) => void
   readonly dispose: () => Promise<void>
+  readonly failure?: (error: LlmError) => Error
 }
 
 function thrown(value: unknown): Error {
@@ -136,6 +137,10 @@ export class ManagedCodexThread implements CodexAppServerThreadPort {
     return this.options.threadId
   }
 
+  get closed(): boolean {
+    return this.state.kind === 'disposed' || this.options.connection.closed
+  }
+
   async * stream(request: CodexAppServerTurnRequest): AsyncIterable<CodexAppServerEvent> {
     validateTurnRequest(request)
     if (this.active) {
@@ -213,7 +218,7 @@ export class ManagedCodexThread implements CodexAppServerThreadPort {
         }
       }
     }
-    if (primary !== undefined) throw primary
+    if (primary !== undefined) throw this.options.failure?.(primary) ?? primary
   }
 
   private async beginOrResume(request: CodexAppServerTurnRequest): Promise<void> {

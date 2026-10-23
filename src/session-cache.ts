@@ -158,6 +158,7 @@ class SessionLease {
   private state: LeaseState = { kind: 'active' }
   private readonly lifetime = new AbortController()
   private readonly threadTask: Promise<CodexAppServerThreadPort>
+  private thread: CodexAppServerThreadPort | undefined
   private disposeTask: Promise<void> | undefined
   private idleTimer: ReturnType<typeof setTimeout> | undefined
   lastUsed = 0
@@ -176,7 +177,10 @@ class SessionLease {
     const signal = request.signal === undefined
       ? this.lifetime.signal
       : AbortSignal.any([this.lifetime.signal, request.signal])
-    this.threadTask = runner.open({ ...request.thread, signal })
+    this.threadTask = runner.open({ ...request.thread, signal }).then(thread => {
+      this.thread = thread
+      return thread
+    })
   }
 
   get active(): boolean {
@@ -199,7 +203,7 @@ class SessionLease {
     if (this.state.kind === 'active') {
       throw new LlmError('Codex session already has an active model step', 'INVALID_CONTINUATION')
     }
-    if (this.state.kind === 'disposed') return undefined
+    if (this.state.kind === 'disposed' || this.thread?.closed === true) return undefined
     const previous = this.state
     const suffix = appendedItems(previous.history, request.history)
     if (suffix === undefined) return undefined

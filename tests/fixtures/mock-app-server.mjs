@@ -1,9 +1,14 @@
 // TEST ONLY: private stdio peer. No network, credentials, filesystem commands or production registration.
 import { createInterface } from 'node:readline'
+import { writeSync } from 'node:fs'
 const mode = process.env.TEST_CODEX_SCENARIO ?? 'answer'
 const write = value => process.stdout.write(JSON.stringify(value) + '\n')
 const notify = (method, params) => write({ method, params })
 function answer() {
+  if (mode === 'exit-during-turn') {
+    writeSync(2, 'Fixture fatal process exit; access_token=fixture-secret\n')
+    process.exit(42)
+  }
   notify('turn/moderationMetadata', {threadId:'test-thread',turnId:'test-turn',metadata:{prompt:{},generation:{},tool_call:{},tool_response:{}}})
   if (mode === 'error') {
     notify('turn/completed',{threadId:'test-thread',turn:{id:'test-turn',status:'failed',error:{message:'Fixture model rejected this request'}}})

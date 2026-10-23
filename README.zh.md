@@ -4,7 +4,11 @@
 
 [English](README.md) · [发布状态](docs/STATUS.md) · [用量规则](docs/USAGE.md) · [本次交付核验](docs/DELIVERY-alpha5.md)
 
-## 当前测试版：v0.2.1-alpha.5
+## alpha.6 协议断流修复
+
+修复本地标准输入输出断开后请求挂起、退出详情丢失及失效缓存连接复用；下一次请求可从已有记录重建连接。不新增心跳、Watchdog、轮询或执行途中自动重放。尚未从用户机器日志确定最初退出原因，不宣称解决所有 Codex 崩溃。[复现与验证范围](docs/PROTOCOL_STREAM_FIX.md)。
+
+## 当前测试版：v0.2.1-alpha.6
 
 2026-10-23：历史用量查询与原生设置 UI 已完成，并已提供固定版本安装标签。适配 **DSH 0.2.1-rc.2**，使用官方 **Codex 0.154.0**。云端回归和安装检查已通过，但没有使用用户真实账号验证返回的历史范围，也未声称所有 Electron 桌面皮肤均已实测。
 
@@ -13,7 +17,7 @@
 在 DSH 桌面应用选择 **插件 → 添加插件**，粘贴：
 
 ```text
-github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.5
+github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.6
 ```
 
 安装后启用插件，完全退出并重新打开 DSH。打开 **设置 → Codex 官方登录**，使用具有 Codex 权限的 ChatGPT 账号登录；主聊天模型选择器使用 `codex-local`，不是其他插件的 `openai-codex`。
@@ -23,12 +27,12 @@ github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.5
 ### Web CLI
 
 ```bash
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.5'
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.6'
 ```
 
 `web` 与桌面 `desktop` 是不同 profile；安装位置不自动互通。
 
-[GitHub Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.5) · [预编译 TGZ](https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.1-alpha.5/dsh-codex-native-0.2.1-alpha.5.tgz)
+[GitHub Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.6) · [预编译 TGZ](https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.1-alpha.6/dsh-codex-native-0.2.1-alpha.6.tgz)
 
 ## 历史用量：手动查询，不后台计量
 

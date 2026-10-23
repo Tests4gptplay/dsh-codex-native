@@ -43,7 +43,7 @@ export function registerNativeCodexTransport(connection: HostConnectionHandle, a
             }
             return Response.json({ type: 'server-response', rpcId: received.data.rpcId, result: { ok: true, value } })
           } catch (error: unknown) {
-            const message = error instanceof Error ? error.message.slice(0, 160) : 'Codex account operation failed'
+            const message = error instanceof Error ? error.message.slice(0, 3_000) : 'Codex account operation failed'
             return Response.json({ type: 'server-response', rpcId: received.data.rpcId, result: { ok: false, error: { code: 'native_codex', message, details: { issues: [] } } } })
           }
         },

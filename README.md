@@ -4,7 +4,11 @@
 
 [简体中文](README.zh.md) · [Status](docs/STATUS.md) · [Usage contract](docs/USAGE.md) · [Delivery verification](docs/DELIVERY-alpha5.md)
 
-## Current preview: v0.2.1-alpha.5
+## Protocol stream fix in alpha.6
+
+Repairs hanging requests after local stdio closure, captures process exit diagnostics, and recreates an already-closed cached connection on the next request from recorded history. No heartbeat, watchdog, polling or automatic mid-task replay is added. The initiating cause of the user's original process exit is not yet established from machine logs. See [reproduction and acceptance scope](docs/PROTOCOL_STREAM_FIX.md).
+
+## Current preview: v0.2.1-alpha.6
 
 2026-10-23: manual account history and native DSH settings controls are implemented and available in the fixed installation tag. Targets **DSH 0.2.1-rc.2**, official **Codex 0.154.0**. Hosted regressions and installation checks passed. Real-account history availability and every Desktop/skin combination have not been exercised with user credentials.
 
@@ -13,7 +17,7 @@
 Open **Plugins → Add plugin** and paste:
 
 ```text
-github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.5
+github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.6
 ```
 
 Enable the plugin and fully restart DSH. Open **Settings → Codex official login**, sign in with a ChatGPT account that has Codex access, and select the `codex-local` main-model provider. A provider called `openai-codex` belongs to a different integration.
@@ -23,12 +27,12 @@ No npm account, separate OpenAI API key, development checkout or local TypeScrip
 ### Web CLI
 
 ```bash
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.5'
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.6'
 ```
 
 The `web` and `desktop` profiles are separate.
 
-[GitHub Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.5) · [Prebuilt TGZ](https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.1-alpha.5/dsh-codex-native-0.2.1-alpha.5.tgz)
+[GitHub Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.6) · [Prebuilt TGZ](https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.1-alpha.6/dsh-codex-native-0.2.1-alpha.6.tgz)
 
 ## Usage history — manual, not a background meter
 

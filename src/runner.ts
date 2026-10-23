@@ -7,10 +7,10 @@ import { tmpdir } from 'node:os'
 import { LlmError } from '@deepseek-ai/dsh-llm'
 import type {
   SubprocessHandle,
-  SubprocessOutcome,
   SubprocessSpawnSpec,
 } from '@deepseek-ai/dsh-subprocess'
 import { SAFE_MODEL_ID } from './identifiers.ts'
+import { connectCodexProcess } from './process-connection.ts'
 import {
   ManagedCodexThread,
   operationFailure,
@@ -89,6 +89,8 @@ export interface CodexAppServerTurnRequest {
 /** One process-owned ephemeral thread that may span consecutive Harness steps. */
 export interface CodexAppServerThreadPort {
   readonly threadId: string
+  /** True only after the owned process/pipe has actually closed. */
+  readonly closed?: boolean
   stream(request: CodexAppServerTurnRequest): AsyncIterable<CodexAppServerEvent>
   dispose(): Promise<void>
 }
@@ -155,13 +157,6 @@ async function removePrivateWorkdir(path: string): Promise<void> {
   await rm(path, { recursive: true, force: true })
 }
 
-function readStderr(child: SubprocessHandle): string {
-  const reader = child.collected.stderr
-  if (reader === undefined) return ''
-  const read = reader.readFrom(0)
-  return read.lossy ? `${read.text}\n[stderr capture exceeded its configured limit]` : read.text
-}
-
 function thrown(value: unknown): Error {
   return value instanceof Error ? value : new Error(String(value))
 }
@@ -189,9 +184,8 @@ async function cleanupRun(
     } catch (error: unknown) {
       failures.push(thrown(error))
     }
-    await child.done.catch(() => {
-      // Exit and wait failures are already reported by the connection or the checks above.
-    })
+    // done is already observed by connectCodexProcess; do not await it again
+    // without a bound after waitForExit has reported an unsuccessful teardown.
   }
   try {
     await removePrivateWorkdir(workdir)
@@ -268,6 +262,7 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
     }, this.options.timeoutMs) : undefined
     let child: SubprocessHandle | undefined
     let connection: JsonRpcConnection | undefined
+    let processConnection: ReturnType<typeof connectCodexProcess> | undefined
     const onAbort = (): void => {
       connection?.fail(operationFailure(request.signal?.reason, false, request.signal))
       if (!lifetime.signal.aborted) lifetime.abort(request.signal?.reason)
@@ -290,20 +285,10 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
       if (child.stdin === undefined || child.stdout === undefined) {
         throw new LlmError('Codex App Server subprocess did not expose protocol pipes', 'TRANSPORT')
       }
-      connection = new JsonRpcConnection(child.stdin, child.stdout, this.options.maxJsonRpcLineBytes)
+      processConnection = connectCodexProcess(child, this.options.maxJsonRpcLineBytes)
+      connection = processConnection.rpc
       const activeConnection = connection
-      void child.done.then((outcome: SubprocessOutcome) => {
-        const stderr = readStderr(child!)
-        const detail = stderr.trim().length === 0 ? '' : `: ${stderr.trim()}`
-        activeConnection.fail(new LlmError(
-          `Codex App Server exited with ${String(outcome.exitCode)}/${String(outcome.signal)}${detail}`,
-          'TRANSPORT',
-        ))
-      }, (error: unknown) => {
-        activeConnection.fail(new LlmError('Codex App Server process failed to start', 'TRANSPORT', {
-          cause: thrown(error),
-        }))
-      })
+      const diagnostics = processConnection
       const initialized = object(await activeConnection.request('initialize', {
         clientInfo: {
           name: 'deepseek-harness',
@@ -338,6 +323,7 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
       let disposeTask: Promise<void> | undefined
       const dispose = (): Promise<void> => {
         if (disposeTask !== undefined) return disposeTask
+        diagnostics.markCleanup()
         if (!lifetime.signal.aborted) lifetime.abort(CONSUMER_REASON)
         disposeTask = (async (): Promise<void> => {
           const failure = cleanupError(
@@ -356,6 +342,7 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
           if (!lifetime.signal.aborted) lifetime.abort(reason)
         },
         dispose,
+        failure: error => diagnostics.failure(error),
         startedEvent: {
           kind: 'thread-started',
           threadId: id,
@@ -365,12 +352,13 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
       })
     } catch (error: unknown) {
       let failure = operationFailure(error, timedOut, request.signal)
+      processConnection?.markCleanup()
       if (!lifetime.signal.aborted) lifetime.abort(CONSUMER_REASON)
       failure = cleanupError(
         failure,
         await cleanupRun(child, connection, workdir, this.options.disposeGraceMs),
       )!
-      throw failure
+      throw processConnection?.failure(failure) ?? failure
     } finally {
       if (timeout !== undefined) clearTimeout(timeout)
       request.signal?.removeEventListener('abort', onAbort)
