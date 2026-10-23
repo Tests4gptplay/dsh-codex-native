@@ -51,9 +51,9 @@ jobs:
           import {join} from 'node:path';
           const root=process.env.ROOT;
           const p=JSON.parse(readFileSync(join(root,'released-plugin/package.json'),'utf8'));
-          const deps={...p.peerDependencies,'@deepseek-ai/cordis':'4.0.4','react':'18.3.1','@deepseek-ai/dsh':'0.2.1-rc.2','@deepseek-ai/dsh-subprocess-local':'0.2.1-rc.2','dsh-codex-native':'file:../artifacts/dsh-codex-native-0.2.1-alpha.6.tgz'};
+          const deps={...p.peerDependencies,'@deepseek-ai/cordis':'4.0.4','react':'18.3.1','@deepseek-ai/dsh':'0.2.1-rc.2','@deepseek-ai/dsh-system-prompt':'0.2.1-rc.2','@deepseek-ai/dsh-subprocess-local':'0.2.1-rc.2','dsh-codex-native':'file:../artifacts/dsh-codex-native-0.2.1-alpha.6.tgz'};
           writeFileSync(join(root,'host/package.json'),JSON.stringify({name:'isolated-official-dsh-audit',version:'1.0.0',private:true,type:'module',dependencies:deps},null,2)+'\n');
-          writeFileSync(join(root,'host/pnpm-workspace.yaml'),'packages:\n  - .\nautoInstallPeers: false\n');
+          writeFileSync(join(root,'host/pnpm-workspace.yaml'),'packages:\n  - .\nautoInstallPeers: true\n');
           writeFileSync(join(root,'evidence/provenance.json'),JSON.stringify({pluginVersion:p.version,pluginTag:'v0.2.1-alpha.6',pluginSource:'718356eb00fde0d7a6002ebcdbe13df5f81e56f8',officialDshSource:'687f282e8625c6b8d11ff58211a90524be2e4317',officialDshVersion:'0.2.1-rc.2',node:process.version,credentials:'none',productionChanges:false},null,2)+'\n');
           NODE
           cd "$ROOT/host"
