@@ -1,10 +1,11 @@
-name: Original native-control usage previews
+name: Native DSH usage previews (light and dark)
 'on':
   push:
     branches: [main]
     paths:
       - '.github/workflows/docs-preview.yml'
       - 'tests/docs-preview.spec.tsx'
+      - 'vitest.config.ts'
       - 'src/client/UsagePanel.tsx'
       - 'src/client/ui-style.ts'
       - 'src/client/native-locales.ts'

@@ -11,7 +11,8 @@ export default defineConfig({
   },
   test: {
     include: ['tests/**/*.spec.{ts,tsx}'], pool: 'forks',
-    css: { include: /\.css$/, modules: { classNameStrategy: 'scoped' } },
+    // Process ordinary module CSS and ?inline CSS used for original UI evidence.
+    css: { include: /.+/, modules: { classNameStrategy: 'scoped' } },
     server: { deps: { inline: [/@deepseek-ai\/dsh-client-ui-/, /katex/] } },
   },
 })
