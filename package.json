@@ -1,38 +1,19 @@
 {
   "name": "dsh-codex-native",
-  "version": "0.2.1-alpha.3",
-  "description": "Official OpenAI Codex app-server main-model adapter for DSH, with native ChatGPT sign-in.",
+  "version": "0.2.1-alpha.4",
+  "description": "Community DSH main-model adapter using the official OpenAI Codex app-server and native ChatGPT sign-in.",
   "type": "module",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Tests4gptplay/dsh-codex-native.git"
-  },
+  "repository": { "type": "git", "url": "git+https://github.com/Tests4gptplay/dsh-codex-native.git" },
   "homepage": "https://github.com/Tests4gptplay/dsh-codex-native#readme",
-  "bugs": {
-    "url": "https://github.com/Tests4gptplay/dsh-codex-native/issues"
-  },
+  "bugs": { "url": "https://github.com/Tests4gptplay/dsh-codex-native/issues" },
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./lib/index.d.ts",
-      "default": "./lib/index.js"
-    },
-    "./client": {
-      "types": "./lib/client/index.d.ts",
-      "default": "./lib/client.js"
-    },
+    ".": { "types": "./lib/index.d.ts", "default": "./lib/index.js" },
+    "./client": { "types": "./lib/client/index.d.ts", "default": "./lib/client.js" },
     "./package.json": "./package.json"
   },
-  "files": [
-    "lib/index.js",
-    "lib/client.js",
-    "lib/**/*.d.ts",
-    "cordis.patch.yml",
-    "README.md",
-    "README.zh.md",
-    "LICENSE"
-  ],
+  "files": ["lib/index.js", "lib/client.js", "lib/**/*.d.ts", "cordis.patch.yml", "README.md", "README.zh.md", "LICENSE"],
   "scripts": {
     "build": "tsdown && tsc --project tsconfig.build.json --emitDeclarationOnly",
     "clean": "rimraf lib dist coverage",
@@ -42,34 +23,14 @@
     "test:ci": "vitest run --exclude '**/real-codex.e2e.ts'"
   },
   "dsh": {
-    "bundle": {
-      "patch": "./cordis.patch.yml"
-    },
-    "client": {
-      "inject": [
-        "@deepseek-ai/dsh-client-connection",
-        "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-settings"
-      ],
-      "platform": "web"
-    }
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": { "inject": ["@deepseek-ai/dsh-client-connection", "@deepseek-ai/dsh-client-locale", "@deepseek-ai/dsh-client-ui-settings"], "platform": "web" }
   },
-  "keywords": [
-    "deepseek-harness",
-    "codex",
-    "llm",
-    "plugin"
-  ],
+  "keywords": ["deepseek-harness", "codex", "llm", "plugin"],
   "license": "MIT",
-  "publishConfig": {
-    "access": "public",
-    "provenance": true,
-    "registry": "https://registry.npmjs.org/"
-  },
+  "publishConfig": { "access": "public", "provenance": true, "registry": "https://registry.npmjs.org/" },
   "packageManager": "pnpm@11.7.0",
-  "engines": {
-    "node": "^22.19.0 || >=24.0.0"
-  },
+  "engines": { "node": "^22.19.0 || >=24.0.0" },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/dsh-attachment": "0.2.1-rc.2",
@@ -85,10 +46,7 @@
     "react": "^18.2.0",
     "@deepseek-ai/dsh-client-connection": "0.2.1-rc.2"
   },
-  "dependencies": {
-    "@deepseek-ai/schemastery": "^3.18.2",
-    "@openai/codex": "0.154.0"
-  },
+  "dependencies": { "@deepseek-ai/schemastery": "^3.18.2", "@openai/codex": "0.154.0" },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.4",
     "@deepseek-ai/dsh-attachment": "0.2.1-rc.2",
@@ -97,6 +55,8 @@
     "@deepseek-ai/dsh-client-ui-renderer": "0.2.1-rc.2",
     "@deepseek-ai/dsh-client-ui-settings": "0.2.1-rc.2",
     "@deepseek-ai/dsh-client-ui-slots": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-util-workspace-path": "0.2.1-rc.2",
     "@deepseek-ai/dsh-invariants": "0.2.0-rc.2",
     "@deepseek-ai/dsh-llm": "0.2.1-rc.2",
     "@deepseek-ai/dsh-scope": "0.2.1-rc.2",
@@ -110,12 +70,7 @@
     "@types/node": "^24.10.0",
     "@types/react": "~18.3.1",
     "@types/react-dom": "~18.3.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "rimraf": "^6.1.0",
-    "tsdown": "0.22.2",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.18",
+    "react": "^18.3.1", "react-dom": "^18.3.1", "rimraf": "^6.1.0", "tsdown": "0.22.2", "typescript": "^5.9.3", "vitest": "^4.0.18",
     "@deepseek-ai/dsh-client-connection": "0.2.1-rc.2",
     "@deepseek-ai/dsh-http-proxy": "0.2.1-rc.2",
     "@deepseek-ai/dsh-sandbox": "0.2.1-rc.2",

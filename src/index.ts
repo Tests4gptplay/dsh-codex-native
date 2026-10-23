@@ -8,7 +8,8 @@ import type {} from '@deepseek-ai/dsh-settings'
 import type {} from '@deepseek-ai/dsh-tools'
 import type { ModelModality } from '@deepseek-ai/dsh-llm'
 import z from '@deepseek-ai/schemastery'
-import { CodexAppServerAdapter } from './adapter.ts'
+import { DshCodexAdapter } from './dsh-adapter.ts'
+import { codexSpawnSpec } from './launch.ts'
 import type { CodexModel } from './adapter.ts'
 import { SAFE_MODEL_ID, SAFE_REASONING_EFFORT } from './identifiers.ts'
 import { CodexAppServerRunner } from './runner.ts'
@@ -289,12 +290,12 @@ export function apply(ctx: Context, config: Config): void {
     maxJsonRpcLineBytes: resolved.maxJsonRpcLineBytes,
     maxStderrBytes: resolved.maxStderrBytes,
     env: resolved.env,
-    spawn: spec => ctx.subprocess.spawn(spec),
+    spawn: spec => ctx.subprocess.spawn(codexSpawnSpec(spec)),
   })
   const reportCleanupError = (error: unknown): void => {
     ctx.logger.warn(`llm-codex-app-server: cached session cleanup failed: ${String(error)}`)
   }
-  const adapter = new CodexAppServerAdapter({
+  const adapter = new DshCodexAdapter({
     provider: resolved.provider,
     displayName: resolved.displayName,
     modelProvider: resolved.modelProvider,
@@ -312,7 +313,7 @@ export function apply(ctx: Context, config: Config): void {
   ctx.on('session/disposed', (session) => {
     void adapter.disposeSession(String(session.id)).catch(reportCleanupError)
   })
-  const account = new NativeCodexAccount(spec => ctx.subprocess.spawn(spec))
+  const account = new NativeCodexAccount(spec => ctx.subprocess.spawn(codexSpawnSpec(spec)))
   ctx.inject(['connection'], (scoped) => {
     scoped.effect(
       () => registerNativeCodexTransport(scoped.connection, account),

@@ -1,42 +1,61 @@
 name: DSH Codex native build
-on:
+'on':
   push:
     branches: [main]
-    paths-ignore:
-      - 'docs/**'
+    paths-ignore: ['docs/**']
   pull_request:
   workflow_dispatch:
+permissions:
+  contents: read
 concurrency:
   group: dsh-codex-native-${{ github.ref }}
   cancel-in-progress: true
-permissions:
-  contents: read
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 25
+    env:
+      DSH_REFERENCE_ROOT: ${{ github.workspace }}/.tmp/dsh-reference
+      DSH_REPRO_OUTPUT: ${{ runner.temp }}/codex-reproduction
     steps:
       - uses: actions/checkout@v4
+      - name: Fetch exact official DSH rendering source into disposable workspace
+        uses: actions/checkout@v4
+        with:
+          repository: deepseek-ai/deepseek-harness
+          ref: 687f282e8625c6b8d11ff58211a90524be2e4317
+          path: .tmp/dsh-reference
+          persist-credentials: false
       - uses: pnpm/action-setup@v4
         with:
           version: 11.7.0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Install published DSH 0.2.1 dependency cohort
+      - name: Install development dependencies only in CI
         run: pnpm install --no-frozen-lockfile --ignore-scripts
       - name: Typecheck
         run: pnpm run typecheck
-      - name: Unit tests (no ChatGPT account)
+      - name: Mock stdio, official DSH renderer, and account-free regression tests
         run: pnpm run test:ci
-      - name: Build public plugin
-        run: pnpm run build
-      - name: Pack public plugin
+      - name: Build and pack
+        shell: bash
         run: |
+          set -euo pipefail
+          pnpm run build
+          test -s lib/index.js
+          test -s lib/client.js
           mkdir -p dist
           pnpm pack --pack-destination dist
       - uses: actions/upload-artifact@v4
-        if: success()
+        if: always()
         with:
-          name: dsh-codex-native-linux-validated
-          path: dist/*.tgz
+          name: codex-reproduction-${{ matrix.os }}
+          path: |
+            ${{ runner.temp }}/codex-reproduction/*.html
+            dist/*.tgz
+          if-no-files-found: ignore
