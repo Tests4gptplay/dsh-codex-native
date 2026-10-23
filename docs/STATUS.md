@@ -1,25 +1,35 @@
-# Development and verification status / 开发与验收状态
+# DSH Codex Native — development and release status
 
-Updated: 2026-10-22 · Target **DSH 0.2.1-rc.2**, current source development version **0.2.1-alpha.2 (unreleased)**.
+Updated: **2026-10-23** · Target DSH **0.2.1-rc.2** · Test release **v0.2.1-alpha.3**
 
-## Packaging audit and user-reported defects
+## Published release
 
-1. **alpha.0** git install failed with `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` because `package.json` declared `prepare`, asking the user's DSH installation to build source. Failure confirmed.
-2. **alpha.1** removed `prepare` and passed plain pnpm Git-tag installation, **but its GitHub tag still contained 16 test files, unused pre-0.2 UI/settings source, development workflows and old documents**. The executable entry points did not import test frameworks, yet shipping this extra material was unnecessary and violated the intended slim install contract.
-3. **alpha.2 source cleanup (in progress)**: removed dead UI/settings/CSS pipeline and one-shot import workflow, removed the plugin's unsolicited interception of DSH `web_search`, removed blanket Codex-native feature-disable overrides, removed forced `approvalPolicy=never`, fixed hard 300-second timeout as default 0 (no plugin-level wall clock), removed forced native compaction threshold and unneeded originator override. Required DSH dynamic-tool ownership and transport parsing still remain.
-4. **User-side code execution is not part of the test plan.** Unit tests and Github install smoke run in disposable CI only. No DSH code is installed into the user's home for the cloud checks.
-5. The next version will use an **orphan minimal release snapshot**: its GitHub tag must not have `tests/`, `src/`, `.github/`, `scripts/`, `devDependencies`, or lifecycle hooks. A downloaded tag is checked as well as a package archive.
-6. **Remaining behavior to validate**: the native approval prompts are not currently forwarded as interactive DSH prompts, and unauthenticated app-server/model turns have not been tested against a real ChatGPT Codex account. Treat that as a known integration limitation, not an absence of risk. A live user trial is not a substitute for isolating and testing the shipped package.
+**[GitHub v0.2.1-alpha.3](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.3)** is a separate immutable source-free tag. Its Git tree contains **22 files**. The tag contains runtime JS, declaration files, package metadata, Cordis patch, two short READMEs and the MIT license — **no tests, source code, CI workflow, build/install lifecycle script, devDependencies, generated image, or obsolete UI**.
 
-## CI and release gates
+[GitHub Actions run #39879247613 — PASS](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39879247613) verifies:
+- TypeScript compile, **117/117 account-free unit tests**, and production JS build.
+- Minimum distribution tree and packed TGZ contents.
+- Clean pnpm tarball install and **exact GitHub tag install without changes to `allowBuilds`**.
+- Actual DSH **0.2.1-rc.2** Web Profile plugin-add and `--dump-config` composition on **Linux and Windows**, with `codex-local` in the resulting config.
 
-- [Cloud CI (typecheck, account-free unit tests, build)](https://github.com/Tests4gptplay/dsh-codex-native/actions/workflows/ci.yml). No unit tests should be invoked by loading the plugin.
-- Minimal GitHub-tag installation must succeed **without modifying the user's `allowBuilds`**.
-- A clean DSH 0.2.1 Host must load the bundle and list the `codex-local` model in a disposable CI environment.
-- Distributable contains compiled runtime only; source repository continues to carry test fixtures for development (not shipped).
-- Authenticating a real account, native user approvals, and long-running native Codex tasks still need separate validation; none may be represented as production-proven.
+Release package: [dsh-codex-native-0.2.1-alpha.3.tgz](https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.1-alpha.3/dsh-codex-native-0.2.1-alpha.3.tgz).
 
-## Prior immutable releases
+## Runtime cleanup
 
-- [alpha.0](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.0): unsuitable for DSH Git installation.
-- [alpha.1](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.1): installation hook fixed but distribution tree not isolated; not recommended.
+Removed unused legacy settings cards and conversation UI; removed automatic takeover of DSH `web_search`; removed blanket Codex native feature disabling, forced no-approval policy, forced compaction overrides, legacy client identity override and default five-minute hard kill. Source tests remain in the **development branch only**, never in the installation tag. DSH still owns its tool loop. Transport parsing, JSON-RPC request matching, the active login UI, session lifecycle and idle-process cleanup are retained for required functionality.
+
+See [docs/AUDIT.md](AUDIT.md) for traceable findings and remaining boundaries.
+
+## Remaining unverified behavior
+
+- Live ChatGPT/Codex OAuth browser and device-code login, subscription quota reading.
+- Native Codex approvals/elicitation are **not completely bridged to interactive DSH UI**. Unsupported native approval requests can still be declined. This is a functional gap rather than an automatic test or watchdog.
+- Real Electron Desktop lifecycle and live Codex model/tool round-trips, especially privileged OS operations.
+- The distributed runtime and its normal dependencies consume local disk space. The absence of development files is not a claim that every operational risk is eliminated.
+
+## Previous versions
+
+- `v0.2.1-alpha.0`: Git install failed because `prepare` needed an unauthorized build.
+- `v0.2.1-alpha.1`: removed `prepare` but Git tag included development files.
+- `v0.2.1-alpha.2`: source-free 22-file tag created during failed CI. pnpm Git install itself passed, but an incorrect assertion about pnpm-generated `node_modules` aborted the workflow before host checks and release. **Not a recommended version**.
+- **`v0.2.1-alpha.3`**: source-free published preview with green Linux/Windows and Git install checks. **Still an alpha for live-account validation**.

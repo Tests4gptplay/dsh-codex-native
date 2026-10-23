@@ -2,7 +2,7 @@
 
 **基于 OpenAI 官方 Codex app-server 的 DeepSeek Harness 主模型插件** · 独立社区项目 · MIT
 
-> **开发预览版：0.2.1-alpha.1。** 目前面向 DSH `0.2.1-rc.2` 移植中。源码类型检查、124 项非账号单测和云端打包均已通过；真实 DSH 安装、登录及模型端到端验收尚未完成。**请勿当作正式稳定版安装或投入业务。** [查看当前 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/workflows/ci.yml)。
+> **已发布测试预览版：0.2.1-alpha.3。** 面向 DSH 0.2.1-rc.2。117 项非账号单元测试、类型检查、Linux/Windows DSH Web Profile 加载测试和 GitHub 无构建许可安装已通过；**真实 ChatGPT 账号登录、桌面 Electron 集成和 Codex 原生交互审批仍未验收。** [本版 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39879247613)。
 
 [English](README.md) · [开发进度与验收边界](docs/STATUS.md) · [截图来源](docs/SCREENSHOTS.md)
 
@@ -34,13 +34,21 @@ DSH 设置 → Codex 官方登录
 
 参考：[OpenAI Codex app-server 官方文档](https://developers.openai.com/codex/app-server/)。
 
-## 安装状态：审计清理中，暂不建议安装
+## GitHub 桌面安装（v0.2.1-alpha.3 测试版）
 
-**旧版 `v0.2.1-alpha.0` 曾因安装期构建脚本被 DSH 拒绝；`v0.2.1-alpha.1` 的 GitHub 源码快照仍携带旧开发测试和遗留 UI 文件。** 它们不代表测试代码已在 DSH 自动运行，但也未达到我们要求的最小发行物标准。
+打开 DSH 桌面应用，选择 **插件 → 添加插件**，将下列整行粘贴到安装框：
 
-当前正在制作 **`0.2.1-alpha.2` 精简版**，目标是 GitHub 标签只包含预编译 JS、必要类型、插件清单、补丁、许可证及最小安装说明，**不含 `src/`、`tests/`、CI、构建脚本、开发依赖、旧 UI 或历史文档**。必须先通过隔离环境 GitHub 安装和官方 DSH 启动/模型目录验收，才会公布新的安装入口。
+```text
+github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.3
+```
 
-在清理版发布与验证前，请不要重新安装旧版。
+安装完成后启用插件、重启 DSH，进入 **设置 → Codex 官方登录**，使用具备 Codex 权限的 ChatGPT 账号登录，再在主聊天模型选择器中查找 `codex-local`。
+
+**新版本安装标签仅含 22 个文件**：预编译 JS、类型声明、插件清单、Cordis 补丁、LICENSE 和 README。没有 `src/`、`tests/`、CI、构建脚本、开发依赖或旧 UI；不需要本地编译 TypeScript，也不需要修改 `allowBuilds`。
+
+[GitHub Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.3) · [真实安装链路的云端 CI 记录](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39879247613) · [代码与打包审计](docs/AUDIT.md)
+
+这是方便实机测试的 Alpha 版。Linux/Windows 的 DSH Web Profile **加载检查已通过**，但不等价于 Windows 桌面 Electron 实际登录及完整模型工具验收。
 
 ## 当前实现与待验证事项
 
@@ -48,11 +56,11 @@ DSH 设置 → Codex 官方登录
 |---|---|
 | MIT 上游源码导入；独立公库 | 已完成 |
 | `@openai/codex` app-server 主模型适配器 | 代码已移植 |
-| DSH 0.2.1 Tool Role / `StreamChunk` 类型适配 | 类型检查及 124 项非账号单测通过；真实 Codex E2E 未执行 |
+| DSH 0.2.1 Tool Role / `StreamChunk` 类型适配 | 类型检查及 117 项非账号单测通过；真实 Codex E2E 未执行 |
 | 插件设置页官方浏览器/设备码登录 UI | 已编写，待真实 Host 验证 |
 | 官方 Codex 额度读取 | 已编写，待真实 Host 验证 |
 | 多轮真实 Codex、插件安装及 Windows 运行 | 尚未验收 |
-| GitHub 测试预发行版 | `v0.2.1-alpha.1`；待实机安装验收，非稳定版 |
+| GitHub 测试预发行版 | `v0.2.1-alpha.3`；精简标签、Linux/Windows Web Profile 与安装测试通过；真实登录和 Electron 待验 |
 
 详细测试证据与阻断项维护在 [docs/STATUS.md](docs/STATUS.md)，每次主要功能变化均以**实际状态**更新 README，不以“代码存在”等同“已验证”。
 

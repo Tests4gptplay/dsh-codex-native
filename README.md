@@ -2,7 +2,7 @@
 
 **A DeepSeek Harness main-model plugin using the official OpenAI Codex app-server** · Independent community project · MIT
 
-> **Development preview: 0.2.1-alpha.1.** Porting to DSH `0.2.1-rc.2` is in progress. Typecheck, all 124 account-free unit tests and hosted packaging have passed; actual DSH installation, OAuth login and subscribed-model E2E have **not yet been verified**. **Do not treat this as a stable release.** [Current CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/workflows/ci.yml).
+> **Published test preview: 0.2.1-alpha.3.** Targets DSH 0.2.1-rc.2. Typecheck, 117 account-free unit tests, hosted Linux/Windows DSH Web Profile loading and direct Git installation without allowBuilds overrides passed. **Real ChatGPT account sign-in, Desktop Electron integration and Codex-native approvals remain unverified.** [Release CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39879247613).
 
 [简体中文](README.zh.md) · [Development status](docs/STATUS.md) · [Screenshot provenance](docs/SCREENSHOTS.md)
 
@@ -32,11 +32,21 @@ The plugin uses the official `account/read`, `account/login/start`, `account/log
 
 **Implementation is not the same as successful integration testing.** The real DSH + ChatGPT account sign-in flow is not yet verified. Reference: [OpenAI official app-server documentation](https://developers.openai.com/codex/app-server/).
 
-## Installation status: undergoing isolation audit
+## One-line GitHub installation (v0.2.1-alpha.3 alpha)
 
-**Do not install the old alpha.0 or alpha.1 previews.** Alpha.0 required an unapproved Git installation-time build. Alpha.1 shipped old development source, tests and unused UI files in the GitHub tag (though none were wired to auto-run). These do not meet the intended minimal distribution standard.
+In DSH Desktop open **Plugins → Add plugin**, paste:
 
-The `0.2.1-alpha.2` target will be a **self-contained, prebuilt, source-free GitHub tag** containing only runtime JS, required declarations, bundle patch, license, package metadata and concise documentation. The tag must contain **no `src/`, `tests/`, CI, build hooks, development dependencies, stale UI or historical notes**. A clean git installation and DSH Host-level loading test are required before publishing instructions.
+```text
+github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.3
+```
+
+Enable and restart DSH. Open **Settings → Codex official login**, sign in with a ChatGPT account that has Codex access, and select the `codex-local` main-model provider.
+
+**The GitHub tag is a 22-file precompiled runtime snapshot.** It has no source files, unit tests, CI, build scripts, dev dependencies or legacy UI. It does not require an `allowBuilds` exception or local TypeScript build.
+
+[Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.3) · [Linux/Windows DSH profile CI and clean Git install](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39879247613) · [Audit](docs/AUDIT.md)
+
+**Alpha only:** The Windows DSH Web profile configuration loaded in a disposable runner. Actual Electron Desktop sign-in, live subscribed inference and native approval interactions have not yet been verified.
 
 ## Implementation and test status
 
@@ -44,11 +54,11 @@ The `0.2.1-alpha.2` target will be a **self-contained, prebuilt, source-free Git
 |---|---|
 | MIT upstream imported into independent public repository | Completed |
 | Native `@openai/codex` app-server main-model adapter | Ported in code |
-| DSH 0.2.1 tool-message and stream type adaptation | Typecheck + 124 account-free tests passed; real Codex E2E excluded |
+| DSH 0.2.1 tool-message and stream type adaptation | Typecheck + 117 account-free tests passed; real Codex E2E excluded |
 | Official browser/device-code sign-in Settings UI | Implemented; real-host verification pending |
 | Native Codex quota reading | Implemented; live verification pending |
 | Live multi-turn Codex, real DSH installation, Windows host | Not verified |
-| GitHub testing prerelease | `v0.2.1-alpha.1`; real-install testing pending; not stable |
+| GitHub testing prerelease | `v0.2.1-alpha.3`; minimal tag / Linux and Windows Web Profile checks passed; real account/Electron not verified |
 
 See [docs/STATUS.md](docs/STATUS.md) for the actual CI record and known blockers.
 
