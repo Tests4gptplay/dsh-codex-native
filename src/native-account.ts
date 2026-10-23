@@ -1,10 +1,10 @@
-/** Native Codex account UI bridge. OAuth is owned exclusively by OpenAI Codex app-server.
- *  No token, credential, cookie, or authorization code is read or persisted by DSH.
- */
+/** Native Codex account bridge. OAuth credentials remain owned by official Codex. */
 import { homedir } from 'node:os'
 import type { SubprocessHandle, SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
 import { codexCliEntry } from './runner.ts'
 import { JsonRpcConnection, object } from './wire.ts'
+import { queryUsage } from './usage-query.ts'
+import type { UsageSnapshot } from './usage.ts'
 
 type LoginMode = 'browser' | 'device'
 export type LoginPhase = 'pending' | 'authenticated' | 'failed' | 'cancelled'
@@ -28,7 +28,6 @@ export class NativeCodexAccount {
   private active: RunningCodex | undefined
   private flow: LoginFlow | undefined
   private disposed = false
-
   constructor(private readonly spawn: Spawn) {}
 
   private async open(): Promise<RunningCodex> {
@@ -36,9 +35,8 @@ export class NativeCodexAccount {
     const child = this.spawn({
       argv: [process.execPath, codexCliEntry(), 'app-server', '--stdio'],
       cwd: homedir(),
-      stdio: { stdin: 'pipe', stdout: 'pipe', stderr: 'pipe' },
-      env: {},
-      graceMs: 3_000,
+      stdio: { stdin: 'pipe', stdout: 'pipe', stderr: { maxBytes: 64 * 1024 } },
+      env: {}, graceMs: 3_000,
     })
     if (!child.stdin || !child.stdout) {
       child.terminate()
@@ -64,13 +62,11 @@ export class NativeCodexAccount {
       throw error
     }
   }
-
   private async withConnection<T>(fn: (rpc: JsonRpcConnection) => Promise<T>): Promise<T> {
     const conn = await this.open()
     try { return await fn(conn.rpc) }
     finally { await conn.close() }
   }
-
   async status(): Promise<{ authenticated: boolean; email?: string; planType?: string }> {
     const data = object(await this.withConnection(rpc => rpc.request('account/read', { refreshToken: false })), 'account/read')
     const account = data.account === null || data.account === undefined ? null : object(data.account, 'account')
@@ -81,14 +77,14 @@ export class NativeCodexAccount {
       ...(typeof account.planType === 'string' ? { planType: account.planType } : {}),
     }
   }
-
   async quota(): Promise<unknown> {
     const data = object(await this.withConnection(rpc => rpc.request('account/rateLimits/read', {})), 'account/rateLimits/read')
-    const limits = data.rateLimits === undefined ? null : data.rateLimits
-    // Display-only server-provided limits: never infer quota from a counter.
-    return JSON.parse(JSON.stringify(limits))
+    return data.rateLimits ?? null
   }
-
+  /** Manual, read-only account-wide history. No token accumulation hook or background loop. */
+  async usage(): Promise<UsageSnapshot> {
+    return this.withConnection(rpc => queryUsage(method => rpc.request(method, {})))
+  }
   async start(mode: LoginMode): Promise<LoginFlow> {
     if (this.active) await this.active.close()
     this.active = undefined
@@ -106,9 +102,7 @@ export class NativeCodexAccount {
         if (typeof reply.authUrl !== 'string') throw new Error('Codex browser authorization URL missing')
         info.authUrl = reply.authUrl
       } else {
-        if (typeof reply.verificationUrl !== 'string' || typeof reply.userCode !== 'string') {
-          throw new Error('Codex device-code response incomplete')
-        }
+        if (typeof reply.verificationUrl !== 'string' || typeof reply.userCode !== 'string') throw new Error('Codex device-code response incomplete')
         info.verificationUrl = reply.verificationUrl
         info.userCode = reply.userCode
       }
@@ -121,7 +115,6 @@ export class NativeCodexAccount {
       throw error
     }
   }
-
   private async observeLogin(conn: RunningCodex, loginId: string): Promise<void> {
     try {
       while (!this.disposed && this.active === conn) {
@@ -132,26 +125,20 @@ export class NativeCodexAccount {
         if (params.loginId !== loginId) continue
         this.flow = params.success === true
           ? { id: loginId, phase: 'authenticated', mode: this.flow?.mode ?? 'browser' }
-          : { id: loginId, phase: 'failed', mode: this.flow?.mode ?? 'browser',
-              error: typeof params.error === 'string' ? params.error.slice(0, 180) : 'Codex login failed' }
+          : { id: loginId, phase: 'failed', mode: this.flow?.mode ?? 'browser', error: typeof params.error === 'string' ? params.error.slice(0, 180) : 'Codex login failed' }
         break
       }
     } catch (error: unknown) {
-      if (this.active === conn) {
-        this.flow = { id: loginId, phase: 'failed', mode: this.flow?.mode ?? 'browser',
-          error: error instanceof Error ? error.message.slice(0, 180) : 'Codex login transport failed' }
-      }
+      if (this.active === conn) this.flow = { id: loginId, phase: 'failed', mode: this.flow?.mode ?? 'browser', error: error instanceof Error ? error.message.slice(0, 180) : 'Codex login transport failed' }
     } finally {
       if (this.active === conn) this.active = undefined
       await conn.close()
     }
   }
-
   loginStatus(id: string): LoginFlow {
     if (!this.flow || this.flow.id !== id) throw new Error('Unknown Codex login attempt')
     return { ...this.flow }
   }
-
   async cancel(id: string): Promise<LoginFlow> {
     if (!this.flow || this.flow.id !== id) throw new Error('Unknown Codex login attempt')
     const conn = this.active
@@ -163,13 +150,11 @@ export class NativeCodexAccount {
     this.flow = { id, phase: 'cancelled', mode: this.flow.mode }
     return { ...this.flow }
   }
-
   async logout(): Promise<{ authenticated: false }> {
     if (this.flow?.phase === 'pending') await this.cancel(this.flow.id)
     await this.withConnection(rpc => rpc.request('account/logout', {}).then(() => undefined))
     return { authenticated: false }
   }
-
   async dispose(): Promise<void> {
     this.disposed = true
     const conn = this.active

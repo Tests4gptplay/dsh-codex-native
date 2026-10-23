@@ -1,84 +1,65 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { createRequire } from 'node:module'
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { CodexNativeSection } from '../src/client/CodexNativeSection.tsx'
+import { UsageView } from '../src/client/UsagePanel.tsx'
 import { en } from '../src/client/native-locales.ts'
-import type { NativeCodexRpc } from '../src/client/native-rpc.ts'
-import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
-
-/** Isolated component capture; it does not start a DSH host or OpenAI session. */
-const offlineRpc: NativeCodexRpc = { async call() { throw new Error('Isolated preview has no RPC backend') } }
-function translation(): TranslateNS<'codex-native'> {
-  return ((key: keyof typeof en) => en[key]) as TranslateNS<'codex-native'>
+import type { UsageSnapshot } from '../src/usage.ts'
+const t = (key: keyof typeof en) => en[key]
+const sample: UsageSnapshot = {
+  queriedAt: '2026-10-23T12:00:00Z', lifetimeTokens: '8420650', incomplete: false, windows: [], resetSource: 'codex-reset.com',
+  days: [
+    { date: '2026-10-18', tokens: '245800' }, { date: '2026-10-19', tokens: '183500' },
+    { date: '2026-10-20', tokens: '620450' }, { date: '2026-10-21', tokens: '405200' },
+    { date: '2026-10-22', tokens: '312500' }, { date: '2026-10-23', tokens: '128650' },
+  ],
+  resets: [
+    { date: '2026-10-17', announcedAt: '2026-10-17T20:00:00Z' },
+    { date: '2026-10-20', announcedAt: '2026-10-20T06:00:00Z' },
+    { date: '2026-10-22', announcedAt: '2026-10-22T17:00:00Z' },
+  ],
 }
-
-function html(): string {
-  const component = renderToStaticMarkup(
-    <CodexNativeSection rpc={offlineRpc} t={translation()} />,
-  )
-  const title = 'Codex official login'
-  const description = 'Isolated component preview · No DSH Host · No real login'
-  const notice = 'Browser rendering of this repository’s actual CodexNativeSection component. The sidebar is an illustrative shell, not a live DSH app.'
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>DSH Codex Native · ${title}</title>
-  <style>
-  :root {color-scheme:dark;font-family:Inter,"Noto Sans CJK SC","Noto Sans SC","Microsoft YaHei",Arial,sans-serif;color:#e6eaf1}
-  *{box-sizing:border-box}
-  body{margin:0;background:#10141e}
-  .app{display:grid;grid-template-columns:240px minmax(0,1fr);height:100vh;min-height:730px}
-  aside{background:#141923;border-right:1px solid #2a3041;padding:30px 20px}
-  .brand{font-weight:700;font-size:19px;letter-spacing:.2px;display:flex;align-items:center;gap:11px}
-  .brand span{display:grid;place-items:center;background:#4159a5;color:#fff;border-radius:10px;width:33px;height:33px;font-size:16px}
-  .sidecaption{color:#8590a6;font-size:12px;margin:35px 0 14px}
-  .sidelink{border-radius:11px;padding:13px 15px;color:#abb6ca;font-size:14px;margin:5px 0}
-  .sidelink.active{background:#293554;color:#e7eeff;border:1px solid #3d568b}
-  main{padding:44px 56px;min-width:0}
-  .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#8ba8ff;font-weight:700}
-  header h1{font-size:31px;margin:10px 0 4px;letter-spacing:-.5px}
-  .sub{color:#9aa5ba;font-size:14px;margin-top:8px}
-  .preview{margin-top:32px;background:#1b2230;border:1px solid #354054;box-shadow:0 12px 28px #0003;border-radius:18px;max-width:820px;overflow:hidden}
-  .preview section{padding:29px 35px !important;max-width:100% !important}
-  .preview h2{font-size:21px;margin:0 0 12px}
-  .preview section p{color:#a5b1c6;line-height:1.65}
-  .preview section p strong{color:#ffd59a;font-size:14px;border-radius:25px;padding:6px 12px;background:#463620}
-  .preview button{font:inherit;color:#fff;border-radius:9px;cursor:default;padding:11px 18px;margin:5px 3px 5px 0;background:#475fba;border:1px solid #6b84dd}
-  .preview button+button{background:#273348;border-color:#536279}
-  .disclaimer{background:#1a283a;border-left:4px solid #749cfa;max-width:820px;padding:16px 20px;margin-top:24px;border-radius:0 10px 10px 0;color:#c2cde0;font-size:13px;line-height:1.6}
-  .corner{position:fixed;right:26px;bottom:18px;color:#687892;font:11px monospace}
-  </style></head><body><div class="app">
-  <aside><div class="brand"><span>CN</span>DSH Codex Native</div>
-    <div class="sidecaption">DEVELOPMENT PREVIEW</div>
-    <div class="sidelink">Plugin overview</div>
-    <div class="sidelink active">${title}</div>
-    <div class="sidelink">Model adapter</div>
-    <div class="sidelink">Build & tests</div>
-  </aside>
-  <main><header><div class="eyebrow">OPENAI CODEX APP-SERVER · COMPONENT PREVIEW</div>
-    <h1>${title}</h1><div class="sub">${description}</div></header>
-    <div class="preview">${component}</div>
-    <div class="disclaimer">${notice}</div>
-    <div class="corner">DSH CODEX NATIVE · 0.2.1-alpha.0 · OFFLINE RENDER</div>
-  </main></div></body></html>`
+function markup(): string {
+  return renderToStaticMarkup(<UsageView snapshot={sample} busy={false} enabled error="" open={new Set(['2026-10-22'])}
+    onQuery={() => {}} onClear={() => {}} onToggle={() => {}} t={t} />)
 }
-
-describe('repository-owned screenshot source', () => {
-  it('renders the actual English Codex-login component without external assets', () => {
-    const markup = html()
-    expect(markup).toContain('Welcome to Codex')
-    expect(markup).toContain('ChatGPT account that has Codex access')
-    expect(markup).toContain('Sign in with ChatGPT')
-    expect(markup).toContain('No real login')
-    expect(markup).not.toContain('<img')
-    expect(markup).not.toContain('sk-proj-')
+function primitiveCss(): string {
+  const require = createRequire(import.meta.url)
+  const root = join(dirname(require.resolve('@deepseek-ai/dsh-client-ui-primitives/package.json')), 'lib')
+  const output: string[] = []
+  function scan(dir: string): void {
+    for (const item of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, item.name)
+      if (item.isDirectory()) scan(path)
+      else if (path.endsWith('.css')) output.push(readFileSync(path, 'utf8'))
+    }
+  }
+  scan(root)
+  return output.join('\n')
+}
+describe('actual native-control preview (sample data only)', () => {
+  it('renders only one clear/query toolbar, official controls, and honest source notes', () => {
+    const view = markup()
+    expect(view).toContain('account/usage/read')
+    expect(view).toContain('Periods are reference only')
+    expect(view).toContain('codex-reset.com')
+    expect(view.match(/data-usage-clear/g)).toHaveLength(1)
+    expect(view).toContain('outline')
   })
-
-  it('writes the isolated English preview only when capture is requested', () => {
-    const directory = process.env.DSH_DOC_PREVIEW_OUTPUT
-    if (!directory) return
-    const target = resolve(directory)
-    mkdirSync(target, { recursive: true })
-    writeFileSync(resolve(target, 'en.html'), html(), 'utf8')
+  it('exports offline HTML only when the CI preview path is explicitly set', () => {
+    const output = process.env.DSH_REPRO_OUTPUT ?? process.env.DSH_DOC_PREVIEW_OUTPUT
+    if (!output) return
+    mkdirSync(output, { recursive: true })
+    const css = primitiveCss()
+    for (const mode of ['light', 'dark'] as const) {
+      // Test-only theme tokens, not shipped. Actual runtime inherits the DSH/skin token values.
+      const tokens = mode === 'light'
+        ? '--dsw-alias-label-primary:#171717;--dsw-alias-label-secondary:#60646c;--dsw-alias-label-tertiary:#858991;--dsw-alias-border-l2:#e2e3e6;--dsw-alias-border-l3:#d3d5da;--dsw-alias-interactive-bg-hover:#f1f2f4;background:#fff;'
+        : '--dsw-alias-label-primary:#ebedf0;--dsw-alias-label-secondary:#b3b7be;--dsw-alias-label-tertiary:#8c929c;--dsw-alias-border-l2:#363b42;--dsw-alias-border-l3:#4d545e;--dsw-alias-interactive-bg-hover:#2e343c;background:#1c2026;'
+      const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Codex usage — isolated component preview</title><style>${css}\n:root{${tokens}--dsw-radius-lg:16px;--dsw-radius-md:12px;--dsw-radius-sm:8px;color:var(--dsw-alias-label-primary);font-family:Arial,sans-serif}body{margin:0;padding:40px}main{max-width:680px;margin:auto}button{font-family:inherit}h1{font-size:24px;margin:0 0 8px}.caption{font-size:12px;line-height:1.6;color:var(--dsw-alias-label-tertiary);margin-bottom:24px}</style></head><body><main><h1>Codex</h1><p class="caption">Actual DSH Button and DisclosureRow components. Illustrative data only — not a signed-in account or a full Desktop screenshot.</p>${markup()}</main></body></html>`
+      writeFileSync(join(output, `usage-${mode}.html`), html)
+      if (mode === 'light') writeFileSync(join(output, 'en.html'), html)
+    }
   })
 })
