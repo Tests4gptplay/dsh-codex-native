@@ -2,17 +2,13 @@
 
 **DeepSeek Harness main-model adapter using the official OpenAI Codex app-server** · Independent community project · MIT
 
-[简体中文](README.zh.md) · [Status](docs/STATUS.md) · [Usage contract](docs/USAGE.md) · [Delivery verification](docs/DELIVERY-alpha5.md)
-
-## Protocol stream fix in alpha.6
-
-Repairs hanging requests after local stdio closure, captures process exit diagnostics, and recreates an already-closed cached connection on the next request from recorded history. No heartbeat, watchdog, polling or automatic mid-task replay is added. The initiating cause of the user's original process exit is not yet established from machine logs. See [reproduction and acceptance scope](docs/PROTOCOL_STREAM_FIX.md).
+[简体中文](README.zh.md) · [Release status and evidence](docs/STATUS.md) · [Usage rules](docs/USAGE.md) · [Protocol repair](docs/PROTOCOL_STREAM_FIX.md)
 
 ## Current preview: v0.2.1-alpha.6
 
-2026-10-23: manual account history and native DSH settings controls are implemented and available in the fixed installation tag. Targets **DSH 0.2.1-rc.2**, official **Codex 0.154.0**. Hosted regressions and installation checks passed. Real-account history availability and every Desktop/skin combination have not been exercised with user credentials.
+2026-10-24 JST: fixes confirmed local protocol lifecycle defects following a report of `Codex App Server closed its protocol stream`. Targets **DSH 0.2.1-rc.2**, official **Codex 0.154.0**. The original initiating process-exit cause remains unproven; this message alone does not establish an OpenAI cloud outage.
 
-### DSH Desktop
+### DSH Desktop installation
 
 Open **Plugins → Add plugin** and paste:
 
@@ -20,52 +16,48 @@ Open **Plugins → Add plugin** and paste:
 github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.6
 ```
 
-Enable the plugin and fully restart DSH. Open **Settings → Codex official login**, sign in with a ChatGPT account that has Codex access, and select the `codex-local` main-model provider. A provider called `openai-codex` belongs to a different integration.
+Enable the plugin and fully quit and reopen DSH. Use **Settings → Codex official login** with a ChatGPT account that has Codex access, and select `codex-local` as the main-model provider. An `openai-codex` provider is a different integration.
 
-No npm account, separate OpenAI API key, development checkout or local TypeScript compilation is needed. Do not relax `allowBuilds`. Install the fixed tag, not the development branch or `main`.
-
-### Web CLI
+No npm account, separate API key, local source checkout, TypeScript build or `allowBuilds` exception is required. Install the fixed tag, not `main` or a development branch. Existing sign-in files are not deleted by this repair.
 
 ```bash
 dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.6'
 ```
 
-The `web` and `desktop` profiles are separate.
+The Web and Desktop profiles are separate. [Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.6) · [Prebuilt TGZ](https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.1-alpha.6/dsh-codex-native-0.2.1-alpha.6.tgz)
 
-[GitHub Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.6) · [Prebuilt TGZ](https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.1-alpha.6/dsh-codex-native-0.2.1-alpha.6.tgz)
+## alpha.6 repair
+
+Closed protocol pipes now settle backpressured requests instead of leaving them waiting indefinitely. Errors preserve local exit code/signal and bounded stderr, with common credential shapes masked; exits first observed during cleanup are labelled rather than presented as the initiating cause. Account startup rejection is observed even without a stdout event.
+
+An already-closed cached thread is rebuilt on the next request from recorded history, including existing tool outputs. This does not add automatic replay of an in-flight turn or rerun an already-recorded tool itself. No heartbeat, watchdog, reconnect poller or new hard model-task limit is added. Existing host retries, cancellation and model policies are unchanged.
 
 ## Usage history — manual, not a background meter
 
-Only clicking **Query** requests usage history. A single top toolbar contains **Clear**, **Query**, and the listed total. Each collapsible period retains its total while folded and shows daily rows when expanded. Account and usage controls use the actual host-owned DSH `Button`, `DisclosureRow`, and `--dsw-*` theme variables, without bundling another control stylesheet.
+Only **Query** requests history. One toolbar contains **Clear**, **Query** and the listed total. Folded periods retain their totals; expanded periods show daily counts. The controls use host-owned DSH `Button`, `DisclosureRow` and `--dsw-*` variables. The browser bundle is unchanged from alpha.5.
 
-- **Tokens:** official Codex `account/usage/read`, account-wide rather than plugin-only. Listed total sums returned daily rows; the separately labelled lifetime total can differ. Missing values are not converted to zero.
-- **Reset grouping:** official `account/rateLimits/read` supplies current windows and next reset timestamps, not a full historical reset ledger. Historical groups use [codex-reset.com](https://codex-reset.com/) public announcements by UTC date. **Reference only:** not proof of individual-account boundaries; no invented intraday division of daily totals.
-- **Clear:** clears the displayed result/total only. It does not delete official history, conversations or credentials, and does not redeem reset credits. Query retrieves the official history again.
+Tokens come from official `account/usage/read` and are account-wide, not plugin-only. Listed total sums returned daily rows; lifetime total is separately labelled. Missing values are not treated as zero.
 
-These source and limitation notes appear directly below the table. No usage poller, chat metering hook or extra model turn is added. The separate public GET sends no credentials, account identity, prompts or usage to the reference site. Reference-source failure does not discard returned official tokens or stop the Agent.
+Official `account/rateLimits/read` supplies current windows and next reset timestamps, not a complete reset ledger. Historical grouping references **Data: codex-reset.com** public announcements by UTC date. It is reference-only, not proof of private account boundaries; no intraday fractions are invented. The public request receives no credentials, account identity, prompts or usage. Source failure does not stop model execution.
 
-## User-confirmed Desktop result (2026-10-23)
+Clear empties only this view. It does not delete official history, conversations or credentials, or redeem reset credits. Query restores the official data. These notes also appear below the table.
 
-The user confirmed that alpha.5's manual account-history query works in their DSH Desktop installation and current skin, and approved this screenshot for publication.
+## User-confirmed UI (alpha.5)
 
-![User-confirmed alpha.5 Desktop usage history with a fictional account label](docs/screenshots/codex-usage-desktop-anonymized.png)
+The user confirmed manual history querying in their DSH Desktop and skin and approved this capture. It does not certify alpha.6 on their machine.
 
-*Only the account row was replaced with `GPT-Codex@OpenAI.com`, a fictional display placeholder, not an actual OpenAI account. Original dimensions, other UI pixels, dates and token values are unchanged. This is not an AI-redrawn interface. Reference periods do not certify personal account reset timestamps.*
+![User-confirmed Desktop history with a fictional account label](docs/screenshots/codex-usage-desktop-anonymized.png)
 
-This confirms this user's observed environment, not all accounts, skins or native-tool paths. Development-only light/dark examples below remain explicitly labelled as samples.
+*Only the account row was replaced with `GPT-Codex@OpenAI.com`, a fictional placeholder, not an actual OpenAI account. Other pixels, dates and usage values are unchanged; this is not an AI-redrawn interface.*
 
-![Actual official DSH controls, sample usage data](docs/screenshots/codex-usage-light.png)
+[Light sample](docs/screenshots/codex-usage-light.png) · [Dark sample](docs/screenshots/codex-usage-dark.png) · [Provenance](docs/SCREENSHOTS.md)
 
-*Original component preview using sample data, not a signed-in account screenshot.* [Dark preview](docs/screenshots/codex-usage-dark.png) · [Provenance](docs/SCREENSHOTS.md)
+## Verification and boundaries
 
-## Verification and remaining boundaries
+[Ubuntu/Windows regressions](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39996592077) and [release / exact Git installation](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39997058708) passed. The downloaded tested runtime matches the published tag's JS blobs. Tests include a real isolated subprocess exit through the official DSH runtime, without user credentials or model quota.
 
-[Cross-platform regressions](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39959031468), [branch recheck](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39961943894), and [release/actual Git-tag installation](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39959807125) passed. The downloaded branch build's server/client JS blobs exactly match the published alpha.5 tag.
-
-The installation snapshot contains only compiled runtime, declarations, metadata, patch, license and READMEs. No source, tests, mock backend, screenshots, CI, build scripts or devDependencies are shipped. Runtime dependencies still need disk space; source-repository tests do not run when the installed plugin starts.
-
-Official account history can be unavailable or delayed. Native Codex approval/elicitation bridging remains an earlier limitation, not a feature changed by this report. The alpha.4 standard-content and direct Windows-launch fixes are retained; already stored custom history blocks are not rewritten.
+The installer contains compiled runtime, declarations, patch, metadata, license and READMEs only: no source, tests, mock process, CI, screenshots, install scripts or devDependencies. Dependencies still use normal disk space. Existing native Codex approval/elicitation limitations remain. Full Electron/skin compatibility and the initiating user-machine failure are not proven by cloud tests. [Detailed evidence](docs/STATUS.md).
 
 ## Attribution
 
-Adapted from MIT-licensed [wss534857356/dsh-plugin-codex](https://github.com/wss534857356/dsh-plugin-codex), import baseline `f1f61886f4defcf7294d63c3641fba01ee554e7b`. Original LICENSE retained. DSH is from DeepSeek and Codex is from OpenAI; this community integration is not endorsed by either. Public reset data: **Data: codex-reset.com**, with on-surface credit and documented read-only API usage.
+Adapted from MIT-licensed [wss534857356/dsh-plugin-codex](https://github.com/wss534857356/dsh-plugin-codex), import baseline `f1f61886f4defcf7294d63c3641fba01ee554e7b`. Original LICENSE retained. DSH is from DeepSeek and Codex is from OpenAI; this community plugin is not endorsed by either. Public reset data is credited to **codex-reset.com**.

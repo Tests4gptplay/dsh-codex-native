@@ -1,37 +1,39 @@
 # Release status
 
-Updated 2026-10-23. Published preview: **v0.2.1-alpha.5**, DSH **0.2.1-rc.2**, official Codex **0.154.0**.
+Updated 2026-10-24 JST. Published preview: **v0.2.1-alpha.6**, DSH **0.2.1-rc.2**, official Codex **0.154.0**. No dependency upgrade is part of this repair.
 
-[Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.5) · [Regression CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39959031468) · [Saved-branch regression](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39961943894) · [Publication and exact Git install](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39959807125).
+[Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.6) · [Cross-platform CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39996592077) · [Publication and exact Git install](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39997058708).
 
-## Correction to earlier handoff
+## Verified alpha.6 repair
 
-The alpha.5 release already completed at **2026-10-23 13:16:44 UTC**. The prior handoff incorrectly called it unreleased. This round verified the actual tag, uploaded TGZ, publication steps and runtime hashes. It did not overwrite the tag or publish a duplicate version. Production source is unchanged between the alpha.5 tested source `de9f3b766a5bbc9d03f2846186c8f1f8eee6424a` and saved branch `998985e459c4157fddbe9646869833c52cf5ba1e`; differences are CI/documentation/previews.
+Fixes protocol EOF/close leaving requests blocked on stdin drain, preserves late process-exit diagnostics, observes account-process startup failure, and rebuilds an already-closed cached process from durable history on the next request. It does not prove the initiating cause of the user's original exit. See [reproduction and boundaries](PROTOCOL_STREAM_FIX.md).
 
-## Delivered feature
+Both Ubuntu and Windows typecheck, account-free regression, build and pack jobs passed at source `80175849c80d2cc688ac77276bb0588262bb8e95`. Ubuntu ran 153 passed tests with one Windows-only test skipped. The Windows job passed its applicable suite, including native Windows launch. Fifteen added tests cover pipe lifecycle, diagnostics, cache recovery and a real fixture child exiting through the official DSH subprocess runtime. No real account or paid model request was used.
 
-Manual official account history; one top Clear/Query/total row; collapsible reference periods and daily counts; source and reference-only notes; shared official DSH controls and inherited skin variables. No history polling, model hook, independent accumulator or quota-reset operation. Clear affects the view only. Detailed rules: [USAGE.md](USAGE.md).
+Main source commit `5ca7899967b8551d8a9e9f7ecac3696b289e38a5` has exactly the tested source tree `62c0539daf759656b931390be1393d61285b2ea7`. Temporary patch/export helpers are absent from the final tree and were not incorporated into main history. Tests remain development-only.
 
-## Verified
+The release job consumed that tested artifact, stripped development manifest fields, checked the runtime file list, installed through the official DSH Web profile, and installed the exact GitHub tag without an allowBuilds exception. The published TGZ is 51,784 bytes; GitHub reports SHA-256 `25e5fcded66613ac6c3da16acf108d9db9d00ebd8220a4427316f067b03b0db3`.
 
-- Ubuntu and Windows branch CI: official reference source, typecheck, account-free regression, build and pack passed.
-- Exact published GitHub tag installation without allowBuilds exceptions passed in the publication job.
-- Official DSH 0.2.1 Web Profile add/configuration smoke passed in that job.
-- Published server JS blob `a29fd789061d2fdf2660dc944e22db1b6b69ad57`; browser JS blob `ba4fd9fbaba03f81fa4e4beb24901ae4083716d8`. Both match the actual downloaded branch CI artifact byte-for-byte.
-- Published manifest has neither scripts nor devDependencies. Git tag has no tests/src/scripts/.github or preview images. Runtime JS has no Vitest/mock fixture/test selector strings. Browser primitives remain an external DSH-owned import.
+The tested artifact was downloaded and its runtime bytes compared to the published tag:
 
-## Boundaries
+| Runtime file | Bytes | Git blob |
+|---|---:|---|
+| lib/index.js | 125070 | 91b20cb4dbc9563433ecba41b321bdc067769242 |
+| lib/client.js | 25925 | ba4fd9fbaba03f81fa4e4beb24901ae4083716d8 |
+| cordis.patch.yml | 2304 | 135a27ce43c9be6350ec495502f6645208569c12 |
 
-Real-account history availability, full Electron Desktop/third-party-skin combinations and complete native Codex approval/elicitation UI are not certified by mock/host-composition tests. The alpha.4 content and Windows launch regressions are retained; historical custom content is not rewritten.
+The browser bundle and patch are unchanged from alpha.5. The actual alpha.6 compiled transport was also rerun in the isolated local EOF/backpressure reproduction: the two formerly pending requests now reject, with no unhandled rejection. Late exit details are tested through the shared process wrapper and real-child CI case, not claimed from the wire class alone.
 
-The current temporary container cannot resolve github.com, so source reads use the GitHub connector and test execution remains in hosted CI. Downloaded artifacts were inspectable locally. An optional local Chromium rerender timed out without producing a new screenshot; no new screenshot success is claimed. Previously generated, source-linked light/dark previews remain the visual evidence.
+Published tag tree: `26ae7657756c8cc3280f0b59becf3fc556cbd4c8`. Its manifest has no scripts or devDependencies; no source, tests, mock backend, CI, screenshots or patch helper is shipped. Runtime dependencies still take normal installation space.
 
-See [delivery audit](DELIVERY-alpha5.md), [alpha.4 reproduction](REPRODUCTION.md), and [cleanup audit](AUDIT.md).
+## Preserved behavior and limits
 
-## User-confirmed Desktop check — 2026-10-23
+No new watchdog, heartbeat, background reconnect loop, usage poller, active-task deadline, or automatic in-flight tool replay. Existing host retry policy and cancellation remain unchanged. Account teardown's bounded wait only runs when closing a process; it is not a model task time limit.
 
-After installing alpha.5, the user reported that manual history querying succeeded and supplied a screenshot of their real DSH Desktop with a custom skin. They explicitly approved a version with only the account text replaced by the fictional label `GPT-Codex@OpenAI.com`.
+Manual history Query/Clear, official native controls and skin variables are retained. Historical reset periods remain approximate reference groupings. Real-account availability, every Electron/skin combination, the original user's exit cause and complete native Codex interactive approval remain outside this account-free certification.
 
-[Approved screenshot](screenshots/codex-usage-desktop-anonymized.png) · [Privacy edit and provenance](SCREENSHOTS.md).
+## Historical evidence
 
-This adds one real-user confirmation to the prior cloud-only checks; it does not claim all accounts/skins, precise private reset timestamps or native approval paths have been verified. No plugin code, release tag or installation package was changed for this documentation update.
+The user confirmed alpha.5 history querying in their actual Desktop/skin environment and approved an anonymized screenshot. That remains evidence for the UI, not a claim that alpha.6's transport repair has already been exercised on their machine.
+
+[Approved screenshot](screenshots/codex-usage-desktop-anonymized.png) · [Screenshot provenance](SCREENSHOTS.md) · [alpha.5 delivery](DELIVERY-alpha5.md) · [alpha.4 reproduction](REPRODUCTION.md) · [Cleanup audit](AUDIT.md).
