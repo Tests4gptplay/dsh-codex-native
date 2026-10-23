@@ -40,6 +40,16 @@ dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha
 
 上述来源、参考限制和清除说明也放在统计表格下。没有用量轮询、聊天统计钩子或额外模型调用。第三方只接收独立的公共 GET，不接收邮箱、账号、token、提示词或个人用量；参考服务失败不丢弃已取得的官方用量，也不阻断 Agent。
 
+## 用户实机确认（2026-10-23）
+
+用户已确认 alpha.5 的手动历史查询成功，以下为其 DSH 桌面与当前皮肤下的实际截图，经用户确认后公开。
+
+![alpha.5 用户实机历史查询，账号使用示例占位文字](docs/screenshots/codex-usage-desktop-anonymized.png)
+
+*账号行已替换为 `GPT-Codex@OpenAI.com`（虚构展示文字，不代表真实 OpenAI 账号）。除账号区域外，原图尺寸、界面、日期和用量数字均未改动；这不是 AI 重绘的界面。周期分组仍仅供参考，不能据此认定个人账号的准确重置时刻。*
+
+这是该用户当前环境的一次成功确认，不代表所有账号、皮肤或原生工具均已完成验收。其他开发期浅色/深色示例保留在下方，来源另行标明。
+
 ![官方 DSH 控件的用量预览，示例数据](docs/screenshots/codex-usage-light.png)
 
 *本插件实际组件与官方控件的浅色示例预览，不是真实账号截图。* [深色示例](docs/screenshots/codex-usage-dark.png) · [截图来源](docs/SCREENSHOTS.md)

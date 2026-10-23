@@ -40,6 +40,16 @@ Only clicking **Query** requests usage history. A single top toolbar contains **
 
 These source and limitation notes appear directly below the table. No usage poller, chat metering hook or extra model turn is added. The separate public GET sends no credentials, account identity, prompts or usage to the reference site. Reference-source failure does not discard returned official tokens or stop the Agent.
 
+## User-confirmed Desktop result (2026-10-23)
+
+The user confirmed that alpha.5's manual account-history query works in their DSH Desktop installation and current skin, and approved this screenshot for publication.
+
+![User-confirmed alpha.5 Desktop usage history with a fictional account label](docs/screenshots/codex-usage-desktop-anonymized.png)
+
+*Only the account row was replaced with `GPT-Codex@OpenAI.com`, a fictional display placeholder, not an actual OpenAI account. Original dimensions, other UI pixels, dates and token values are unchanged. This is not an AI-redrawn interface. Reference periods do not certify personal account reset timestamps.*
+
+This confirms this user's observed environment, not all accounts, skins or native-tool paths. Development-only light/dark examples below remain explicitly labelled as samples.
+
 ![Actual official DSH controls, sample usage data](docs/screenshots/codex-usage-light.png)
 
 *Original component preview using sample data, not a signed-in account screenshot.* [Dark preview](docs/screenshots/codex-usage-dark.png) · [Provenance](docs/SCREENSHOTS.md)

@@ -36,3 +36,11 @@ No real user account was queried here. Null/limited/delayed official history, fu
 ## Continuity
 
 Development branch: `feat/usage-history-ui`. [Handoff](https://github.com/Tests4gptplay/dsh-codex-native/blob/feat/usage-history-ui/HANDOFF.md) and [isolated testing recipe](https://github.com/Tests4gptplay/dsh-codex-native/blob/feat/usage-history-ui/docs/TESTING_WORKSPACE.md) stay there. This closeout changes documentation only and does not merge the feature branch into main or change any installation tag.
+
+## User-confirmed Desktop check — 2026-10-23
+
+After installing alpha.5, the user reported that manual history querying succeeded and supplied a screenshot of their real DSH Desktop with a custom skin. They explicitly approved a version with only the account text replaced by the fictional label `GPT-Codex@OpenAI.com`.
+
+[Approved screenshot](screenshots/codex-usage-desktop-anonymized.png) · [Privacy edit and provenance](SCREENSHOTS.md).
+
+This adds one real-user confirmation to the prior cloud-only checks; it does not claim all accounts/skins, precise private reset timestamps or native approval paths have been verified. No plugin code, release tag or installation package was changed for this documentation update.
