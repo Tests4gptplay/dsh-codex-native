@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Button, DisclosureRow } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, DisclosureRow, IconChevronDownOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { NativeCodexRpc } from './native-rpc.ts'
 import type { UsageSnapshot } from '../usage.ts'
@@ -50,11 +50,11 @@ export function UsageView({ snapshot, busy, enabled, error, open, onQuery, onCle
         {periods.map(period => (
           <div key={period.id} style={{ borderTop: '0.5px solid var(--dsw-alias-border-l2)', padding: '10px 0' }}>
             <DisclosureRow
-              icon={null}
+              icon={<IconChevronDownOutlineRegular />}
               title={period.startDate ? `${period.startDate} — ${period.endDate}` : t('ungroupedPeriod')}
-              open={open.has(period.id)} expandable expandOnRowClick previewChevron
+              open={open.has(period.id)} expandable expandOnRowClick previewChevron={false}
               onToggle={() => onToggle(period.id)}
-              headerAccessory={<span style={{ ...ui.count, fontSize: 13, paddingInlineStart: 12 }} data-period-total>{format(period.tokens)} <span style={ui.secondary}>tokens</span></span>}
+              headerAccessory={<span style={{ ...ui.count, marginInlineStart: 'auto', fontSize: 13, paddingInlineStart: 12 }} data-period-total>{format(period.tokens)} <span style={ui.secondary}>tokens</span></span>}
             >
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginTop: 8 }}>
                 <thead><tr style={ui.note}>
