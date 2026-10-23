@@ -1,61 +1,73 @@
-name: DSH Codex native build
+name: Prepare isolated official DSH audit workspace
 'on':
   push:
-    branches: [main, 'fix/protocol-stream-lifecycle']
-    paths-ignore: ['docs/**']
-  pull_request:
+    branches: ['audit/alpha6-host-risk-tests']
+    paths: ['.github/workflows/ci.yml']
   workflow_dispatch:
 permissions:
   contents: read
-concurrency:
-  group: dsh-codex-native-${{ github.ref }}
-  cancel-in-progress: true
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - name: Fetch exact official DSH rendering source into disposable workspace
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - name: Read pinned official open-source DSH
         uses: actions/checkout@v4
         with:
           repository: deepseek-ai/deepseek-harness
           ref: 687f282e8625c6b8d11ff58211a90524be2e4317
-          path: .tmp/dsh-reference
+          path: audit-workspace/dsh-source
           persist-credentials: false
-      - uses: pnpm/action-setup@v4
+      - name: Read plugin source corresponding to released alpha.6
+        uses: actions/checkout@v4
         with:
-          version: 11.7.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Install development dependencies only in CI
-        run: pnpm install --no-frozen-lockfile --ignore-scripts
-      - name: Typecheck
-        run: pnpm run typecheck
-      - name: Mock stdio, official DSH renderer, and account-free regression tests
+          repository: Tests4gptplay/dsh-codex-native
+          ref: 718356eb00fde0d7a6002ebcdbe13df5f81e56f8
+          path: audit-workspace/plugin-source
+          persist-credentials: false
+      - name: Assemble portable test workspace from published artifacts
         env:
-          DSH_REFERENCE_ROOT: ${{ github.workspace }}/.tmp/dsh-reference
-          DSH_REPRO_OUTPUT: ${{ runner.temp }}/codex-reproduction
-        run: pnpm run test:ci
-      - name: Build and pack
+          GH_TOKEN: ${{ github.token }}
+          DSH_HOME: ${{ runner.temp }}/audit-empty-dsh
+          CODEX_HOME: ${{ runner.temp }}/audit-empty-codex
         shell: bash
         run: |
           set -euo pipefail
-          pnpm run build
-          test -s lib/index.js
-          test -s lib/client.js
-          mkdir -p dist
-          pnpm pack --pack-destination dist
+          ROOT="$GITHUB_WORKSPACE/audit-workspace"
+          mkdir -p "$ROOT/artifacts" "$ROOT/host" "$ROOT/toolchain/bin" "$ROOT/evidence" "$DSH_HOME" "$CODEX_HOME"
+          cp "$(command -v node)" "$ROOT/toolchain/bin/node"
+          gh release download v0.2.1-alpha.6 --repo Tests4gptplay/dsh-codex-native --pattern dsh-codex-native-0.2.1-alpha.6.tgz --dir "$ROOT/artifacts"
+          echo '25e5fcded66613ac6c3da16acf108d9db9d00ebd8220a4427316f067b03b0db3  '"$ROOT/artifacts/dsh-codex-native-0.2.1-alpha.6.tgz" | sha256sum --check
+          mkdir -p "$ROOT/released-plugin"
+          tar -xzf "$ROOT/artifacts/dsh-codex-native-0.2.1-alpha.6.tgz" --strip-components=1 -C "$ROOT/released-plugin"
+          ROOT="$ROOT" node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {join} from 'node:path';
+          const root=process.env.ROOT;
+          const p=JSON.parse(readFileSync(join(root,'released-plugin/package.json'),'utf8'));
+          const deps={...p.peerDependencies,'@deepseek-ai/cordis':'4.0.4','react':'18.3.1','@deepseek-ai/dsh':'0.2.1-rc.2','@deepseek-ai/dsh-subprocess-local':'0.2.1-rc.2','dsh-codex-native':'file:../artifacts/dsh-codex-native-0.2.1-alpha.6.tgz'};
+          writeFileSync(join(root,'host/package.json'),JSON.stringify({name:'isolated-official-dsh-audit',version:'1.0.0',private:true,type:'module',dependencies:deps},null,2)+'\n');
+          writeFileSync(join(root,'host/pnpm-workspace.yaml'),'packages:\n  - .\nautoInstallPeers: false\n');
+          writeFileSync(join(root,'evidence/provenance.json'),JSON.stringify({pluginVersion:p.version,pluginTag:'v0.2.1-alpha.6',pluginSource:'718356eb00fde0d7a6002ebcdbe13df5f81e56f8',officialDshSource:'687f282e8625c6b8d11ff58211a90524be2e4317',officialDshVersion:'0.2.1-rc.2',node:process.version,credentials:'none',productionChanges:false},null,2)+'\n');
+          NODE
+          cd "$ROOT/host"
+          pnpm install --ignore-scripts
+          pnpm exec dsh --version | tee "$ROOT/evidence/official-dsh-version.txt"
+          pnpm list --depth 0 --json > "$ROOT/evidence/installed-packages.json"
+          cd "$GITHUB_WORKSPACE"
+          tar --exclude='.git' -czf official-dsh-alpha6-audit-workspace.tar.gz audit-workspace
+          sha256sum official-dsh-alpha6-audit-workspace.tar.gz
+          du -h official-dsh-alpha6-audit-workspace.tar.gz
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: codex-reproduction-${{ matrix.os }}
-          path: |
-            ${{ runner.temp }}/codex-reproduction/*.html
-            dist/*.tgz
-          if-no-files-found: ignore
+          name: official-dsh-alpha6-audit-workspace
+          path: official-dsh-alpha6-audit-workspace.tar.gz
+          retention-days: 3
+          compression-level: 0
+          if-no-files-found: error
