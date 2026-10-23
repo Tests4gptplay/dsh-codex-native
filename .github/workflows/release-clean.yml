@@ -8,7 +8,7 @@ name: Publish verified minimal Codex Native release
       tested_run_id:
         description: Successful Linux and Windows regression run
         required: true
-        default: '39947758087'
+        default: '39959031468'
 permissions:
   contents: write
   actions: read
@@ -20,7 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      TESTED_RUN: ${{ inputs.tested_run_id || '39947758087' }}
+      TESTED_RUN: ${{ inputs.tested_run_id || '39959031468' }}
+      RELEASE_VERSION: '0.2.1-alpha.5'
     steps:
       - name: Require successful Ubuntu and Windows regression jobs from this repository
         env:
@@ -68,12 +69,12 @@ jobs:
           import {join,relative} from 'node:path'
           const root=process.env.STAGE
           const p=JSON.parse(readFileSync(join(root,'package.json'),'utf8'))
-          if(p.name!=='dsh-codex-native'||p.version!=='0.2.1-alpha.4')throw Error('Unexpected candidate identity')
+          if(p.name!=='dsh-codex-native'||p.version!==process.env.RELEASE_VERSION)throw Error('Unexpected candidate identity')
           for(const field of ['scripts','devDependencies','packageManager','publishConfig'])delete p[field]
           writeFileSync(join(root,'package.json'),JSON.stringify(p,null,2)+'\n')
-          const intro='DSH Codex Native '+p.version+' — test preview\n\nGitHub installer: github:Tests4gptplay/dsh-codex-native#v'+p.version+'\n\nFixes new codex-action unknown chat blocks and starts the official Codex Windows binary directly through DSH. Historical chat logs are not rewritten. No test, mock backend, source, CI or install scripts are shipped.\n\nLinux/Windows mock-stdio and official DSH renderer regressions passed. The real Windows Codex binary completed an isolated unauthenticated handshake. Actual Desktop console visibility and subscribed model calls are not certified.\n\nSource and attribution: https://github.com/Tests4gptplay/dsh-codex-native\n'
-          writeFileSync(join(root,'README.md'),intro)
-          writeFileSync(join(root,'README.zh.md'),'# DSH Codex Native '+p.version+' 测试版\n\n安装：github:Tests4gptplay/dsh-codex-native#v'+p.version+'\n\n修复新回复里的未知内容块，并在 Windows 由 DSH 直接启动官方 Codex 二进制。不会修改旧聊天记录。发行物没有测试文件、模拟后端、源码、CI 或安装脚本。\n\nLinux/Windows 回归和 Windows 无账号握手已通过；实际桌面窗口可见性和订阅模型调用仍待实机确认。\n\n源码及许可：https://github.com/Tests4gptplay/dsh-codex-native\n')
+          const spec='github:Tests4gptplay/dsh-codex-native#v'+p.version
+          writeFileSync(join(root,'README.md'),'# DSH Codex Native '+p.version+'\n\nInstall: '+spec+'\n\nOfficial Codex app-server main-model adapter. Settings now offers manual account usage queries using account/usage/read, with native DSH Button/DisclosureRow and skin-owned theme tokens. One Clear button, Query, and listed total sit above collapsible reference periods and daily rows. Token and reset provenance appear below the table.\n\nHistorical reset reference: codex-reset.com public announcements. Periods are approximate UTC-date groups, not individual account reset history. Clear removes only the local displayed result; Query restores official history. No usage polling, model hooks, token accumulation, reset-credit consumption or external account credential sharing.\n\nProduction tag contains only compiled runtime, declarations, metadata, license and READMEs. Tests, fixtures, screenshots, source, CI, scripts and devDependencies are excluded. Linux/Windows regressions passed; a real account history response and every third-party skin have not been verified in cloud CI.\n\nSource and MIT attribution: https://github.com/Tests4gptplay/dsh-codex-native\n')
+          writeFileSync(join(root,'README.zh.md'),'# DSH Codex Native '+p.version+'\n\n安装：'+spec+'\n\n设置页新增手动历史查询，使用 Codex 官方 account/usage/read；按钮和折叠行直接复用 DSH 官方控件及皮肤变量。顶部只有清除、查询和列表总用量；下方按参考周期折叠，每组可展开每日明细。表格下标明用量与周期来源。\n\n历史周期参考 codex-reset.com 公共公告，不是个人账户完整重置历史。重置当天用量不拆分；清除只清空本页结果，再次查询会恢复官方历史。没有用量轮询、模型统计钩子或自动重置操作，也不向第三方发送账户凭据或用量。\n\n精简发行标签没有测试、模拟数据、截图、源码、CI、构建脚本或开发依赖。Windows/Linux 回归通过；未在云端使用真实账号查询，也未声称所有第三方皮肤均已实测。\n\n源码、许可与来源：https://github.com/Tests4gptplay/dsh-codex-native\n')
           const all=[]
           function walk(dir){for(const e of readdirSync(dir,{withFileTypes:true})){const f=join(dir,e.name);if(e.isDirectory())walk(f);else all.push(relative(root,f).replaceAll('\\','/'))}}
           walk(root)
@@ -81,21 +82,23 @@ jobs:
           for(const f of all)if(!allowed.has(f)&&!/^lib\/(?:index\.js|client\.js|(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.d\.ts)$/.test(f))throw Error('Unexpected installed file: '+f)
           for(const f of ['lib/index.js','lib/client.js']){
             const js=readFileSync(join(root,f),'utf8')
-            for(const token of ['mock-app-server.mjs','TEST_CODEX_SCENARIO','vitest'])if(js.includes(token))throw Error('Test code leaked into '+f)
+            for(const token of ['mock-app-server.mjs','TEST_CODEX_SCENARIO','vitest','#dsh-primitives','tests/official-primitives'])if(js.includes(token))throw Error('Test code leaked into '+f)
           }
+          const client=readFileSync(join(root,'lib/client.js'),'utf8')
+          if(!client.includes('@deepseek-ai/dsh-client-ui-primitives'))throw Error('Client lost shared official-control dependency')
           if(p.scripts||p.devDependencies)throw Error('Development lifecycle leaked into runtime')
           console.log('SOURCE_FREE_TEST_FREE_RUNTIME files='+all.length)
           appendFileSync(process.env.GITHUB_ENV,'RELEASE_TAG=v'+p.version+'\nDIST_STAGE='+root+'\n')
           NODE
           (cd "$STAGE" && pnpm pack --pack-destination "$GITHUB_WORKSPACE/dist")
-          test -s dist/dsh-codex-native-0.2.1-alpha.4.tgz
+          test -s "dist/dsh-codex-native-$RELEASE_VERSION.tgz"
       - name: Clean installation through official DSH profile
         env:
           DSH_HOME: ${{ runner.temp }}/release-dsh-smoke
         shell: bash
         run: |
           set -euo pipefail
-          pnpm dlx @deepseek-ai/dsh@0.2.1-rc.2 plugin --profile web add "$GITHUB_WORKSPACE/dist/dsh-codex-native-0.2.1-alpha.4.tgz"
+          pnpm dlx @deepseek-ai/dsh@0.2.1-rc.2 plugin --profile web add "$GITHUB_WORKSPACE/dist/dsh-codex-native-$RELEASE_VERSION.tgz"
           pnpm dlx @deepseek-ai/dsh@0.2.1-rc.2 --profile web --dump-config > "$RUNNER_TEMP/composed.txt"
           grep -Fq codex-local "$RUNNER_TEMP/composed.txt"
       - name: Publish immutable runtime-only tag
@@ -141,21 +144,25 @@ jobs:
         run: |
           set -euo pipefail
           cat > "$RUNNER_TEMP/notes.md" <<'NOTES'
-          # Codex Native alpha.4 — unknown-content and Windows launch fix
+          # Codex Native alpha.5 — manual usage history and native DSH controls
           
-          Paste in DSH Desktop Plugins → Add plugin:
+          Desktop Plugins → Add plugin:
           
           ```text
-          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.4
+          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.5
           ```
           
-          - New replies use standard DSH content. Empty moderation/lifecycle diagnostics no longer appear as unknown JSON. Actual errors, replies, tools and replay data are preserved.
-          - Windows login and model processes launch the official packaged Codex executable directly through DSH's process manager, avoiding the wrapper's unhidden second spawn.
-          - Mock stdio + official DSH 0.2.1 renderer tests passed on Linux and Windows; the real Windows Codex binary completed an isolated no-account initialize/account-read.
-          - Historical messages are not rewritten. The hosted Windows test is not a visual Electron Desktop test or a live subscribed model test.
-          - No tests, mock backend, source, CI, scripts or devDependencies in this immutable installation tag.
+          - Manually query official account history; no usage polling or independent token accumulator.
+          - Single top Clear and Query controls alongside the listed total; collapsible reference periods with daily usage rows.
+          - Actual DSH Button/DisclosureRow components and skin-owned tokens, not a separately styled button library.
+          - Below-table notes distinguish OpenAI Codex token history, codex-reset.com public reset announcements, and official current/next quota windows. Periods are reference-only UTC-date groupings; reset-day usage is not split into invented intraday fractions.
+          - Clear empties the local view only. Query restores official history; no server history or conversation is deleted.
+          - Public fallback receives no account data, cookies, tokens or usage; on-demand cache respects the site's publication cadence. An unavailable reference source does not block model execution or discard returned official tokens.
+          - No tests, mock data, source, screenshots, CI, scripts or devDependencies in the installer tag.
           
-          MIT upstream attribution remains in LICENSE. This is a community preview, not an official OpenAI/DeepSeek plugin.
+          Account-authenticated history and every third-party Desktop skin were not tested with real credentials. Current model, login and native-approval limitations are not changed by this reporting feature.
+          
+          Sources: https://developers.openai.com/codex/app-server/ and https://codex-reset.com/developers . MIT attribution remains in LICENSE.
           NOTES
           printf '\nRegression CI: https://github.com/%s/actions/runs/%s\nSource commit: %s\n' "$GITHUB_REPOSITORY" "$TESTED_RUN" "$TESTED_SHA" >> "$RUNNER_TEMP/notes.md"
-          gh release create "$RELEASE_TAG" dist/dsh-codex-native-0.2.1-alpha.4.tgz --repo "$GITHUB_REPOSITORY" --prerelease --title 'DSH Codex Native alpha.4 — native content and Windows launch' --notes-file "$RUNNER_TEMP/notes.md"
+          gh release create "$RELEASE_TAG" "dist/dsh-codex-native-$RELEASE_VERSION.tgz" --repo "$GITHUB_REPOSITORY" --prerelease --title 'DSH Codex Native alpha.5 — manual history and native UI' --notes-file "$RUNNER_TEMP/notes.md"
