@@ -118,6 +118,8 @@ export class JsonRpcConnection {
   private nextId = 1
   private buffer = ''
   private stopped = false
+  private failure: Error | undefined
+  private readonly stopSignal = new AbortController()
 
   /**
    * @param input - writable App Server stdin.
@@ -132,8 +134,16 @@ export class JsonRpcConnection {
     output.setEncoding('utf8')
     output.on('data', this.onData)
     output.once('end', this.onEnd)
+    output.once('close', this.onEnd)
+    input.once('close', this.onEnd)
     output.once('error', this.onError)
     input.once('error', this.onError)
+  }
+
+  /** Observed pipe state only; no heartbeat, polling, or model request. */
+  get closed(): boolean {
+    return this.stopped || this.output.readableEnded || this.output.destroyed
+      || this.input.destroyed || this.input.writableEnded
   }
 
   private readonly onData = (chunk: string): void => {
@@ -219,10 +229,14 @@ export class JsonRpcConnection {
   }
 
   private async send(envelope: JsonObject): Promise<void> {
-    if (this.stopped) throw new LlmError('Codex App Server connection is closed', 'TRANSPORT')
+    if (this.closed) throw this.failure ?? new LlmError('Codex App Server connection is closed', 'TRANSPORT')
     const line = `${JSON.stringify(envelope)}\n`
     if (this.input.write(line)) return
-    await once(this.input, 'drain')
+    try {
+      await once(this.input, 'drain', { signal: this.stopSignal.signal })
+    } catch (error: unknown) {
+      throw this.failure ?? error
+    }
   }
 
   /** Send one client request and resolve its correlated response. */
@@ -230,12 +244,12 @@ export class JsonRpcConnection {
     const id = this.nextId++
     const waiter = Promise.withResolvers<unknown>()
     this.pending.set(rpcKey(id), { method, waiter })
-    try {
-      await this.send({ method, id, params })
-    } catch (error: unknown) {
+    // Adopt the response immediately: a pipe failure can reject it while a
+    // backpressured write is still waiting for drain.
+    void this.send({ method, id, params }).catch((error: unknown) => {
       this.pending.delete(rpcKey(id))
       waiter.reject(error)
-    }
+    })
     return waiter.promise
   }
 
@@ -263,6 +277,8 @@ export class JsonRpcConnection {
   fail(error: Error): void {
     if (this.stopped) return
     this.stopped = true
+    this.failure = error
+    this.stopSignal.abort(error)
     this.detach()
     for (const pending of this.pending.values()) pending.waiter.reject(error)
     this.pending.clear()
@@ -273,8 +289,10 @@ export class JsonRpcConnection {
   dispose(): void {
     if (this.stopped) return
     this.stopped = true
-    this.detach()
     const error = new LlmError('Codex App Server connection disposed', 'ABORTED')
+    this.failure = error
+    this.stopSignal.abort(error)
+    this.detach()
     for (const pending of this.pending.values()) pending.waiter.reject(error)
     this.pending.clear()
     this.events.close()
@@ -283,7 +301,9 @@ export class JsonRpcConnection {
   private detach(): void {
     this.output.off('data', this.onData)
     this.output.off('end', this.onEnd)
-    this.output.off('error', this.onError)
-    this.input.off('error', this.onError)
+    this.output.off('close', this.onEnd)
+    this.input.off('close', this.onEnd)
+    // Keep the once-only error handlers through stream teardown. Late EPIPE
+    // must not become an unhandled EventEmitter error in the DSH host.
   }
 }

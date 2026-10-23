@@ -8,7 +8,7 @@ import { DshCodexAdapter } from '../src/dsh-adapter.ts'
 import { CodexAppServerRunner } from '../src/runner.ts'
 const contexts: Context[]=[]
 afterEach(async()=>{for(const ctx of contexts.splice(0))await ctx.fiber.dispose()})
-async function execute(mode: 'answer' | 'error'): Promise<StreamChunk[]> {
+async function execute(mode: 'answer' | 'error' | 'exit-during-turn'): Promise<StreamChunk[]> {
   const ctx=new Context(); contexts.push(ctx)
   await ctx.plugin(LocalSubprocessRuntime)
   const runner=new CodexAppServerRunner({timeoutMs:15000,disposeGraceMs:1000,maxJsonRpcLineBytes:1024*1024,maxStderrBytes:65536,env:{},
@@ -32,6 +32,14 @@ describe('actual child-process stdio -> plugin -> DSH content',()=>{
     expect(JSON.stringify(blocks)).toContain('Command: completed')
     expect(JSON.stringify(blocks)).not.toContain('codex-action')
     expect(JSON.stringify(blocks)).not.toContain('moderationMetadata')
+  },30000)
+  it('reports stderr from an actual terminated subprocess without an unhandled rejection',async()=>{
+    const error = await execute('exit-during-turn').catch(error => error)
+    expect(error).toBeInstanceOf(Error)
+    expect(error.message).toContain('Fixture fatal process exit')
+    expect(error.message).toContain('local Codex process')
+    expect(error.message).toContain('exit=')
+    expect(error.message).not.toContain('fixture-secret')
   },30000)
   it('preserves a genuine model failure instead of hiding it as diagnostic cleanup',async()=>{
     await expect(execute('error')).rejects.toThrow(/Fixture model rejected/)

@@ -3,6 +3,7 @@ import { homedir } from 'node:os'
 import type { SubprocessHandle, SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
 import { codexCliEntry } from './runner.ts'
 import { JsonRpcConnection, object } from './wire.ts'
+import { connectCodexProcess } from './process-connection.ts'
 import { queryUsage } from './usage-query.ts'
 import type { UsageSnapshot } from './usage.ts'
 
@@ -21,6 +22,7 @@ interface RunningCodex {
   child: SubprocessHandle
   rpc: JsonRpcConnection
   close(): Promise<void>
+  failure(error: unknown): Error
 }
 type Spawn = (spec: SubprocessSpawnSpec) => SubprocessHandle
 
@@ -42,29 +44,36 @@ export class NativeCodexAccount {
       child.terminate()
       throw new Error('Codex app-server did not provide stdio')
     }
-    const rpc = new JsonRpcConnection(child.stdin, child.stdout, 8 * 1024 * 1024)
-    let closed = false
-    const close = async (): Promise<void> => {
-      if (closed) return
-      closed = true
-      rpc.dispose()
-      child.terminate()
-      await child.waitForExit().catch(() => {})
+    const diagnostics = connectCodexProcess(child, 8 * 1024 * 1024)
+    const rpc = diagnostics.rpc
+    let closeTask: Promise<void> | undefined
+    const close = (): Promise<void> => {
+      closeTask ??= (async () => {
+        rpc.dispose()
+        diagnostics.markCleanup()
+        child.terminate()
+        await child.waitForExit(AbortSignal.timeout(6_000)).catch(() => {})
+      })()
+      return closeTask
     }
     try {
       await rpc.request('initialize', {
         clientInfo: { name: 'dsh_codex_native', title: 'DSH Codex Native', version: '0.2.1' },
       })
       await rpc.notify('initialized', {})
-      return { child, rpc, close }
+      return { child, rpc, close, failure: diagnostics.failure }
     } catch (error: unknown) {
       await close()
-      throw error
+      throw diagnostics.failure(error)
     }
   }
   private async withConnection<T>(fn: (rpc: JsonRpcConnection) => Promise<T>): Promise<T> {
     const conn = await this.open()
     try { return await fn(conn.rpc) }
+    catch (error: unknown) {
+      await conn.close()
+      throw conn.failure(error)
+    }
     finally { await conn.close() }
   }
   async status(): Promise<{ authenticated: boolean; email?: string; planType?: string }> {
@@ -112,7 +121,7 @@ export class NativeCodexAccount {
     } catch (error: unknown) {
       if (this.active === conn) this.active = undefined
       await conn.close()
-      throw error
+      throw conn.failure(error)
     }
   }
   private async observeLogin(conn: RunningCodex, loginId: string): Promise<void> {
@@ -129,7 +138,8 @@ export class NativeCodexAccount {
         break
       }
     } catch (error: unknown) {
-      if (this.active === conn) this.flow = { id: loginId, phase: 'failed', mode: this.flow?.mode ?? 'browser', error: error instanceof Error ? error.message.slice(0, 180) : 'Codex login transport failed' }
+      await conn.close()
+      if (this.active === conn) this.flow = { id: loginId, phase: 'failed', mode: this.flow?.mode ?? 'browser', error: conn.failure(error).message }
     } finally {
       if (this.active === conn) this.active = undefined
       await conn.close()
