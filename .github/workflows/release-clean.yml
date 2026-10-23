@@ -1,172 +1,128 @@
-name: Release minimal DSH Codex Native alpha.3
+name: Publish verified minimal Codex Native release
 'on':
   push:
     branches: [main]
     paths: ['.github/workflows/release-clean.yml']
   workflow_dispatch:
+    inputs:
+      tested_run_id:
+        description: Successful Linux and Windows regression run
+        required: true
+        default: '39947758087'
 permissions:
   contents: write
+  actions: read
 concurrency:
-  group: minimal-codex-alpha3
+  group: codex-native-release
   cancel-in-progress: false
 jobs:
-  build-test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.7.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Account-free source verification and production build
-        run: |
-          pnpm install --no-frozen-lockfile --ignore-scripts
-          pnpm run typecheck
-          pnpm run test:ci
-          pnpm run build
-      - name: Assemble minimum source-free runtime
-        shell: bash
-        run: |
-          set -euo pipefail
-          STAGE="$RUNNER_TEMP/runtime-only"
-          mkdir -p "$STAGE/lib" dist
-          cp lib/index.js lib/client.js "$STAGE/lib/"
-          find lib -name '*.d.ts' | while read -r FILE; do
-            mkdir -p "$STAGE/$(dirname "$FILE")"
-            cp "$FILE" "$STAGE/$FILE"
-          done
-          cp LICENSE cordis.patch.yml "$STAGE/"
-          printf '%s\n' '# DSH Codex Native alpha.3' 'GitHub installer: github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.3' 'Source: https://github.com/Tests4gptplay/dsh-codex-native' 'Account login and native approvals remain unverified in the actual desktop Host.' > "$STAGE/README.md"
-          printf '%s\n' '# DSH Codex Native alpha.3 精简版' '桌面安装：github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.3' '源码和审计：https://github.com/Tests4gptplay/dsh-codex-native' '真实账号登录与原生审批尚待桌面实测。' > "$STAGE/README.zh.md"
-          STAGE="$STAGE" node --input-type=module <<'NODE'
-          import {readFileSync,writeFileSync,readdirSync} from 'node:fs'
-          import {join,relative} from 'node:path'
-          const stage=process.env.STAGE, manifest=JSON.parse(readFileSync('package.json','utf8'))
-          if(manifest.version !== '0.2.1-alpha.3') throw Error('Unexpected source version')
-          for(const k of ['scripts','devDependencies','packageManager','publishConfig']) delete manifest[k]
-          manifest.files=['lib/index.js','lib/client.js','lib/**/*.d.ts','cordis.patch.yml','LICENSE','README.md','README.zh.md']
-          writeFileSync(join(stage,'package.json'),JSON.stringify(manifest,null,2)+'\n')
-          const all=[]
-          function visit(d){for(const ent of readdirSync(d,{withFileTypes:true})){const f=join(d,ent.name);if(ent.isDirectory())visit(f);else all.push(relative(stage,f).replaceAll('\\','/'))}}
-          visit(stage)
-          const roots=new Set(['package.json','LICENSE','cordis.patch.yml','README.md','README.zh.md'])
-          for(const f of all) if(!roots.has(f)&&!/^lib\/(?:index\.js|client\.js|(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.d\.ts)$/.test(f))throw Error('Unexpected runtime path '+f)
-          for(const f of ['lib/index.js','lib/client.js',...roots])if(!all.includes(f))throw Error('Missing runtime path '+f)
-          if(manifest.scripts||manifest.devDependencies)throw Error('Development lifecycle in package')
-          console.log('MINIMAL_RUNTIME_PACKAGED '+all.length+' files')
-          NODE
-          (cd "$STAGE" && pnpm pack --pack-destination "$GITHUB_WORKSPACE/dist")
-          test -s dist/dsh-codex-native-0.2.1-alpha.3.tgz
-          tar -czf dist/minimal-runtime-tree.tar.gz -C "$STAGE" .
-      - name: Clean pnpm tarball installation without allowBuilds changes
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/pnpm-consumer"
-          cd "$RUNNER_TEMP/pnpm-consumer"
-          printf '{"name":"temporary-consumer","private":true,"version":"1.0.0"}\n' > package.json
-          printf 'packages:\n  - .\nautoInstallPeers: false\n' > pnpm-workspace.yaml
-          pnpm add "$GITHUB_WORKSPACE/dist/dsh-codex-native-0.2.1-alpha.3.tgz"
-          P="$(realpath node_modules/dsh-codex-native)"
-          test -s "$P/lib/index.js"
-          test -s "$P/lib/client.js"
-          for NAME in tests src scripts .github; do test ! -e "$P/$NAME"; done
-          P="$P" node --input-type=module <<'NODE'
-          import {readFileSync} from 'node:fs'
-          import {join} from 'node:path'
-          const p=JSON.parse(readFileSync(join(process.env.P,'package.json'),'utf8'))
-          if(p.scripts||p.devDependencies)throw Error('Unexpected test/build lifecycle')
-          console.log('CLEAN_PNPM_INSTALL_PASSED')
-          NODE
-      - name: DSH official Web profile loading smoke on Linux
-        shell: bash
-        env:
-          DSH_HOME: ${{ runner.temp }}/dsh-linux-smoke
-        run: |
-          set -euo pipefail
-          pnpm dlx @deepseek-ai/dsh@0.2.1-rc.2 plugin --profile web add "$GITHUB_WORKSPACE/dist/dsh-codex-native-0.2.1-alpha.3.tgz"
-          pnpm dlx @deepseek-ai/dsh@0.2.1-rc.2 --profile web --dump-config > "$RUNNER_TEMP/dsh-profile.txt"
-          grep -Fq codex-local "$RUNNER_TEMP/dsh-profile.txt"
-          echo LINUX_DSH_BUNDLE_SMOKE_PASSED
-      - uses: actions/upload-artifact@v4
-        with:
-          name: minimal-alpha3-packages
-          path: |
-            dist/dsh-codex-native-0.2.1-alpha.3.tgz
-            dist/minimal-runtime-tree.tar.gz
-  windows-smoke:
-    needs: build-test
-    runs-on: windows-latest
-    timeout-minutes: 35
-    steps:
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.7.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - uses: actions/download-artifact@v4
-        with:
-          name: minimal-alpha3-packages
-          path: dist
-      - name: DSH official Web profile loading smoke on Windows
-        shell: pwsh
-        env:
-          DSH_HOME: ${{ runner.temp }}/dsh-windows-smoke
-        run: |
-          $ErrorActionPreference='Stop'
-          pnpm dlx @deepseek-ai/dsh@0.2.1-rc.2 plugin --profile web add "$env:GITHUB_WORKSPACE/dist/dsh-codex-native-0.2.1-alpha.3.tgz"
-          if($LASTEXITCODE -ne 0) { throw 'Windows DSH plugin install failed' }
-          pnpm dlx @deepseek-ai/dsh@0.2.1-rc.2 --profile web --dump-config | Out-File -Encoding utf8 "$env:RUNNER_TEMP/dsh-profile.txt"
-          if($LASTEXITCODE -ne 0) { throw 'Windows DSH profile composition failed' }
-          if(-not (Select-String -Path "$env:RUNNER_TEMP/dsh-profile.txt" -Pattern 'codex-local' -Quiet)) { throw 'No Codex main-model route in DSH config' }
-          Write-Output WINDOWS_DSH_BUNDLE_SMOKE_PASSED
   publish:
-    needs: [build-test, windows-smoke]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      TESTED_RUN: ${{ inputs.tested_run_id || '39947758087' }}
     steps:
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.7.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - uses: actions/download-artifact@v4
-        with:
-          name: minimal-alpha3-packages
-          path: dist
-      - name: Create immutable minimal GitHub tag after both Host smoke tests
+      - name: Require successful Ubuntu and Windows regression jobs from this repository
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          TAG=v0.2.1-alpha.3
-          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then echo 'Ref already exists'; exit 1; fi
-          mkdir -p "$RUNNER_TEMP/git-snapshot"
-          tar -xzf dist/minimal-runtime-tree.tar.gz -C "$RUNNER_TEMP/git-snapshot"
-          cd "$RUNNER_TEMP/git-snapshot"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TESTED_RUN" > "$RUNNER_TEMP/run.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TESTED_RUN/jobs" > "$RUNNER_TEMP/jobs.json"
+          node --input-type=module <<'NODE'
+          import {readFileSync,appendFileSync} from 'node:fs'
+          import {join} from 'node:path'
+          const run=JSON.parse(readFileSync(join(process.env.RUNNER_TEMP,'run.json'),'utf8'))
+          const jobs=JSON.parse(readFileSync(join(process.env.RUNNER_TEMP,'jobs.json'),'utf8')).jobs
+          if(run.status!=='completed'||run.conclusion!=='success')throw Error('Tested CI has not passed')
+          for(const name of ['build (ubuntu-latest)','build (windows-latest)']){
+            if(!jobs.some(j=>j.name===name&&j.conclusion==='success'))throw Error('Missing passed job: '+name)
+          }
+          appendFileSync(process.env.GITHUB_ENV,'TESTED_SHA='+run.head_sha+'\n')
+          NODE
+      - uses: actions/download-artifact@v4
+        with:
+          repository: ${{ github.repository }}
+          run-id: ${{ env.TESTED_RUN }}
+          github-token: ${{ github.token }}
+          name: codex-reproduction-ubuntu-latest
+          path: verified-artifact
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Form source-free runtime from tested bundle only
+        shell: bash
+        run: |
+          set -euo pipefail
+          TGZ="$(find verified-artifact -type f -name 'dsh-codex-native-*.tgz' -print -quit)"
+          test -n "$TGZ"
+          STAGE="$RUNNER_TEMP/release-runtime"
+          mkdir -p "$STAGE" dist
+          tar -xzf "$TGZ" --strip-components=1 -C "$STAGE"
+          STAGE="$STAGE" node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync,readdirSync,appendFileSync} from 'node:fs'
+          import {join,relative} from 'node:path'
+          const root=process.env.STAGE
+          const p=JSON.parse(readFileSync(join(root,'package.json'),'utf8'))
+          if(p.name!=='dsh-codex-native'||p.version!=='0.2.1-alpha.4')throw Error('Unexpected candidate identity')
+          for(const field of ['scripts','devDependencies','packageManager','publishConfig'])delete p[field]
+          writeFileSync(join(root,'package.json'),JSON.stringify(p,null,2)+'\n')
+          const intro='DSH Codex Native '+p.version+' — test preview\n\nGitHub installer: github:Tests4gptplay/dsh-codex-native#v'+p.version+'\n\nFixes new codex-action unknown chat blocks and starts the official Codex Windows binary directly through DSH. Historical chat logs are not rewritten. No test, mock backend, source, CI or install scripts are shipped.\n\nLinux/Windows mock-stdio and official DSH renderer regressions passed. The real Windows Codex binary completed an isolated unauthenticated handshake. Actual Desktop console visibility and subscribed model calls are not certified.\n\nSource and attribution: https://github.com/Tests4gptplay/dsh-codex-native\n'
+          writeFileSync(join(root,'README.md'),intro)
+          writeFileSync(join(root,'README.zh.md'),'# DSH Codex Native '+p.version+' 测试版\n\n安装：github:Tests4gptplay/dsh-codex-native#v'+p.version+'\n\n修复新回复里的未知内容块，并在 Windows 由 DSH 直接启动官方 Codex 二进制。不会修改旧聊天记录。发行物没有测试文件、模拟后端、源码、CI 或安装脚本。\n\nLinux/Windows 回归和 Windows 无账号握手已通过；实际桌面窗口可见性和订阅模型调用仍待实机确认。\n\n源码及许可：https://github.com/Tests4gptplay/dsh-codex-native\n')
+          const all=[]
+          function walk(dir){for(const e of readdirSync(dir,{withFileTypes:true})){const f=join(dir,e.name);if(e.isDirectory())walk(f);else all.push(relative(root,f).replaceAll('\\','/'))}}
+          walk(root)
+          const allowed=new Set(['package.json','cordis.patch.yml','LICENSE','README.md','README.zh.md'])
+          for(const f of all)if(!allowed.has(f)&&!/^lib\/(?:index\.js|client\.js|(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.d\.ts)$/.test(f))throw Error('Unexpected installed file: '+f)
+          for(const f of ['lib/index.js','lib/client.js']){
+            const js=readFileSync(join(root,f),'utf8')
+            for(const token of ['mock-app-server.mjs','TEST_CODEX_SCENARIO','vitest'])if(js.includes(token))throw Error('Test code leaked into '+f)
+          }
+          if(p.scripts||p.devDependencies)throw Error('Development lifecycle leaked into runtime')
+          console.log('SOURCE_FREE_TEST_FREE_RUNTIME files='+all.length)
+          appendFileSync(process.env.GITHUB_ENV,'RELEASE_TAG=v'+p.version+'\nDIST_STAGE='+root+'\n')
+          NODE
+          (cd "$STAGE" && pnpm pack --pack-destination "$GITHUB_WORKSPACE/dist")
+          test -s dist/dsh-codex-native-0.2.1-alpha.4.tgz
+      - name: Clean installation through official DSH profile
+        env:
+          DSH_HOME: ${{ runner.temp }}/release-dsh-smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm dlx @deepseek-ai/dsh@0.2.1-rc.2 plugin --profile web add "$GITHUB_WORKSPACE/dist/dsh-codex-native-0.2.1-alpha.4.tgz"
+          pnpm dlx @deepseek-ai/dsh@0.2.1-rc.2 --profile web --dump-config > "$RUNNER_TEMP/composed.txt"
+          grep -Fq codex-local "$RUNNER_TEMP/composed.txt"
+      - name: Publish immutable runtime-only tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then echo 'Tag already exists; refusing overwrite'; exit 1; fi
+          cd "$DIST_STAGE"
           git init -q -b release-snapshot
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -qm 'release: minimum audited DSH Codex runtime alpha.3'
-          git tag "$TAG"
+          git commit -qm "release: verified runtime $RELEASE_TAG from $TESTED_SHA"
+          git tag "$RELEASE_TAG"
           git remote add origin "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git"
-          git push -q origin "refs/tags/$TAG"
-      - name: Confirm GitHub tag resolves without build approval
+          git push -q origin "refs/tags/$RELEASE_TAG"
+      - name: Verify exact GitHub installation without build exceptions
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/tag-consumer"
-          cd "$RUNNER_TEMP/tag-consumer"
-          printf '{"name":"tag-consumer","private":true,"version":"1.0.0"}\n' > package.json
+          mkdir -p "$RUNNER_TEMP/git-consumer"
+          cd "$RUNNER_TEMP/git-consumer"
+          printf '{"name":"temporary-consumer","private":true,"version":"1.0.0"}\n' > package.json
           printf 'packages:\n  - .\nautoInstallPeers: false\n' > pnpm-workspace.yaml
-          pnpm add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.3'
+          pnpm add "github:$GITHUB_REPOSITORY#$RELEASE_TAG"
           P="$(realpath node_modules/dsh-codex-native)"
           test -s "$P/lib/index.js"
           test -s "$P/lib/client.js"
@@ -175,16 +131,31 @@ jobs:
           import {readFileSync} from 'node:fs'
           import {join} from 'node:path'
           const p=JSON.parse(readFileSync(join(process.env.P,'package.json'),'utf8'))
-          if(p.scripts||p.devDependencies)throw Error('Development scripts or dependencies installed')
-          console.log('CLEAN_GITHUB_INSTALL_PASSED')
+          if(p.scripts||p.devDependencies)throw Error('Unexpected install scripts or dev dependencies')
+          console.log('EXACT_GITHUB_INSTALL_PASSED')
           NODE
-      - name: Attach slim package to testing GitHub prerelease
+      - name: Publish verified GitHub pre-release
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          gh release create v0.2.1-alpha.3 dist/dsh-codex-native-0.2.1-alpha.3.tgz \
-            --repo "$GITHUB_REPOSITORY" --prerelease \
-            --title "DSH Codex Native alpha.3 (minimal runtime testing)" \
-            --notes "GitHub install: github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.3. This test build has no tests, source, install hooks or development dependencies. Hosted Linux/Windows DSH composition and clean Git installation passed. Live subscribed authentication, DSH Desktop use and native Codex approval interaction are not yet verified."
+          cat > "$RUNNER_TEMP/notes.md" <<'NOTES'
+          # Codex Native alpha.4 — unknown-content and Windows launch fix
+          
+          Paste in DSH Desktop Plugins → Add plugin:
+          
+          ```text
+          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.4
+          ```
+          
+          - New replies use standard DSH content. Empty moderation/lifecycle diagnostics no longer appear as unknown JSON. Actual errors, replies, tools and replay data are preserved.
+          - Windows login and model processes launch the official packaged Codex executable directly through DSH's process manager, avoiding the wrapper's unhidden second spawn.
+          - Mock stdio + official DSH 0.2.1 renderer tests passed on Linux and Windows; the real Windows Codex binary completed an isolated no-account initialize/account-read.
+          - Historical messages are not rewritten. The hosted Windows test is not a visual Electron Desktop test or a live subscribed model test.
+          - No tests, mock backend, source, CI, scripts or devDependencies in this immutable installation tag.
+          
+          MIT upstream attribution remains in LICENSE. This is a community preview, not an official OpenAI/DeepSeek plugin.
+          NOTES
+          printf '\nRegression CI: https://github.com/%s/actions/runs/%s\nSource commit: %s\n' "$GITHUB_REPOSITORY" "$TESTED_RUN" "$TESTED_SHA" >> "$RUNNER_TEMP/notes.md"
+          gh release create "$RELEASE_TAG" dist/dsh-codex-native-0.2.1-alpha.4.tgz --repo "$GITHUB_REPOSITORY" --prerelease --title 'DSH Codex Native alpha.4 — native content and Windows launch' --notes-file "$RUNNER_TEMP/notes.md"
