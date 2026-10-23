@@ -1,7 +1,7 @@
 name: DSH Codex native build
 'on':
   push:
-    branches: [main]
+    branches: [main, 'fix/protocol-stream-lifecycle']
     paths-ignore: ['docs/**']
   pull_request:
   workflow_dispatch:
@@ -20,6 +20,15 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - name: Export exact tracked source for isolated protocol investigation
+        if: runner.os == 'Linux' && github.ref == 'refs/heads/fix/protocol-stream-lifecycle'
+        run: git archive --format=tar.gz -o "$RUNNER_TEMP/protocol-source.tar.gz" HEAD
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux' && github.ref == 'refs/heads/fix/protocol-stream-lifecycle'
+        with:
+          name: protocol-source
+          path: ${{ runner.temp }}/protocol-source.tar.gz
+          retention-days: 3
       - name: Fetch exact official DSH rendering source into disposable workspace
         uses: actions/checkout@v4
         with:
