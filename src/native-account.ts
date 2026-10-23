@@ -30,6 +30,8 @@ export class NativeCodexAccount {
   private active: RunningCodex | undefined
   private flow: LoginFlow | undefined
   private disposed = false
+  private readonly connections = new Set<RunningCodex>()
+  private disposeTask: Promise<void> | undefined
   constructor(private readonly spawn: Spawn) {}
 
   private async open(): Promise<RunningCodex> {
@@ -47,21 +49,25 @@ export class NativeCodexAccount {
     const diagnostics = connectCodexProcess(child, 8 * 1024 * 1024)
     const rpc = diagnostics.rpc
     let closeTask: Promise<void> | undefined
+    let running: RunningCodex
     const close = (): Promise<void> => {
       closeTask ??= (async () => {
         rpc.dispose()
         diagnostics.markCleanup()
         child.terminate()
         await child.waitForExit(AbortSignal.timeout(6_000)).catch(() => {})
-      })()
+      })().finally(() => { this.connections.delete(running) })
       return closeTask
     }
+    // Own the process before initialize can suspend, not only after login starts.
+    running = { child, rpc, close, failure: diagnostics.failure }
+    this.connections.add(running)
     try {
       await rpc.request('initialize', {
         clientInfo: { name: 'dsh_codex_native', title: 'DSH Codex Native', version: '0.2.1' },
       })
       await rpc.notify('initialized', {})
-      return { child, rpc, close, failure: diagnostics.failure }
+      return running
     } catch (error: unknown) {
       await close()
       throw diagnostics.failure(error)
@@ -152,23 +158,28 @@ export class NativeCodexAccount {
   async cancel(id: string): Promise<LoginFlow> {
     if (!this.flow || this.flow.id !== id) throw new Error('Unknown Codex login attempt')
     const conn = this.active
+    const cancelled: LoginFlow = { id, phase: 'cancelled', mode: this.flow.mode }
+    this.active = undefined
+    this.flow = cancelled
     if (conn) {
-      await conn.rpc.request('account/login/cancel', { loginId: id }).catch(() => {})
-      if (this.active === conn) this.active = undefined
+      // Best-effort protocol cancellation; local cancellation must not depend
+      // on a stalled server sending an acknowledgement before we close it.
+      void conn.rpc.request('account/login/cancel', { loginId: id }).catch(() => {})
       await conn.close()
     }
-    this.flow = { id, phase: 'cancelled', mode: this.flow.mode }
-    return { ...this.flow }
+    return { ...cancelled }
   }
+
   async logout(): Promise<{ authenticated: false }> {
     if (this.flow?.phase === 'pending') await this.cancel(this.flow.id)
     await this.withConnection(rpc => rpc.request('account/logout', {}).then(() => undefined))
     return { authenticated: false }
   }
-  async dispose(): Promise<void> {
+  dispose(): Promise<void> {
+    if (this.disposeTask) return this.disposeTask
     this.disposed = true
-    const conn = this.active
     this.active = undefined
-    if (conn) await conn.close()
+    this.disposeTask = Promise.all([...this.connections].map(conn => conn.close())).then(() => {})
+    return this.disposeTask
   }
 }

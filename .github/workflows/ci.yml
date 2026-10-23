@@ -1,8 +1,9 @@
 name: DSH Codex native build
 'on':
   push:
-    branches: ['audit/reproduce-alpha6-risks']
-    paths: ['.github/workflows/ci.yml']
+    branches: [main, 'fix/protocol-stream-lifecycle', 'audit/reproduce-alpha6-risks']
+    paths-ignore: ['docs/**']
+  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
@@ -10,14 +11,17 @@ concurrency:
   group: dsh-codex-native-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  lab:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/checkout@v4
+      - name: Fetch exact official DSH rendering source into disposable workspace
+        uses: actions/checkout@v4
         with:
           repository: deepseek-ai/deepseek-harness
           ref: 687f282e8625c6b8d11ff58211a90524be2e4317
@@ -29,28 +33,29 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Fetch development dependencies into disposable runner only
+      - name: Install development dependencies only in CI
         run: pnpm install --no-frozen-lockfile --ignore-scripts
-      - name: Verify unchanged alpha.6 baseline
+      - name: Typecheck
+        run: pnpm run typecheck
+      - name: Mock stdio, official DSH renderer, and account-free regression tests
         env:
           DSH_REFERENCE_ROOT: ${{ github.workspace }}/.tmp/dsh-reference
-        run: |
-          pnpm run typecheck
-          pnpm run test:ci
-      - name: Export offline lab for the assistant temporary workspace
+          DSH_REPRO_OUTPUT: ${{ runner.temp }}/codex-reproduction
+        run: pnpm run test:ci
+      - name: Build and pack
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p .tmp/lab-bin
-          cp "$(command -v node)" .tmp/lab-bin/node
-          git rev-parse HEAD > .tmp/lab-source-commit.txt
-          git -C .tmp/dsh-reference rev-parse HEAD > .tmp/dsh-source-commit.txt
-          du -sh node_modules .tmp/dsh-reference .tmp/lab-bin
-          tar --exclude='.git' --exclude='*/.git' --exclude='.tmp/dsh-reference/node_modules' -czf "$RUNNER_TEMP/codex-alpha6-offline-lab.tar.gz" src tests docs package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json tsconfig.build.json tsdown.config.ts vitest.config.ts cordis.patch.yml README.md README.zh.md LICENSE node_modules .tmp/dsh-reference .tmp/lab-bin .tmp/lab-source-commit.txt .tmp/dsh-source-commit.txt
-          ls -lh "$RUNNER_TEMP/codex-alpha6-offline-lab.tar.gz"
+          pnpm run build
+          test -s lib/index.js
+          test -s lib/client.js
+          mkdir -p dist
+          pnpm pack --pack-destination dist
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: codex-alpha6-offline-lab
-          path: ${{ runner.temp }}/codex-alpha6-offline-lab.tar.gz
-          compression-level: 0
-          retention-days: 3
+          name: codex-reproduction-${{ matrix.os }}
+          path: |
+            ${{ runner.temp }}/codex-reproduction/*.html
+            dist/*.tgz
+          if-no-files-found: ignore

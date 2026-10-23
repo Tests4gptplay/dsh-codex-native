@@ -1,5 +1,5 @@
 {
-  "name": "dsh-codex-native", "version": "0.2.1-alpha.6",
+  "name": "dsh-codex-native", "version": "0.2.1-alpha.7",
   "description": "Community DSH main-model adapter using the official OpenAI Codex app-server and native ChatGPT sign-in.",
   "type": "module", "repository": { "type": "git", "url": "git+https://github.com/Tests4gptplay/dsh-codex-native.git" },
   "homepage": "https://github.com/Tests4gptplay/dsh-codex-native#readme", "bugs": { "url": "https://github.com/Tests4gptplay/dsh-codex-native/issues" },

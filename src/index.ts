@@ -320,6 +320,6 @@ export function apply(ctx: Context, config: Config): void {
       'dsh-codex-native: authenticated account RPC',
     )
   })
-  ctx.effect(() => () => { void account.dispose() }, 'dsh-codex-native: close account login process')
+  ctx.effect(() => () => account.dispose(), 'dsh-codex-native: close account processes')
   ctx.effect(() => () => adapter.dispose(), 'llm-codex-app-server: dispose cached sessions')
 }
