@@ -12,10 +12,15 @@ const directories:string[]=[]
 afterEach(()=>{for(const p of directories.splice(0))rmSync(p,{recursive:true,force:true})})
 function temporary():string{const p=mkdtempSync(join(tmpdir(),'codex-launch-test-'));directories.push(p);return p}
 describe('plugin-owned official Codex launch',()=>{
-  it('resolves the official Windows vendor binary without inventing a shell command',()=>{
+  it('resolves the official Windows optional-package layout without a shell',()=>{
     const home=temporary(),manifest=join(home,'package.json')
     writeFileSync(manifest,'{"name":"fixture-codex"}')
-    const binary=join(home,'vendor','x86_64-pc-windows-msvc','bin','codex.exe')
+    // Own the alias as well as the vendor file. Otherwise a global NODE_PATH in
+    // a Windows runner can resolve the real installed alias instead of the fixture.
+    const alias=join(home,'node_modules','@openai','codex-win32-x64')
+    mkdirSync(alias,{recursive:true})
+    writeFileSync(join(alias,'package.json'),'{"name":"@openai/codex-win32-x64","version":"0.0.0"}')
+    const binary=join(alias,'vendor','x86_64-pc-windows-msvc','bin','codex.exe')
     mkdirSync(join(binary,'..'),{recursive:true});writeFileSync(binary,'test-only placeholder, not executed')
     expect(windowsCodexBinary(manifest,'x64')).toBe(binary)
   })
