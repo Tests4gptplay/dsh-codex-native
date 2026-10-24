@@ -8,7 +8,7 @@ name: Publish verified minimal Codex Native release
       tested_run_id:
         description: Successful versioned candidate run (must match the pinned source)
         required: true
-        default: '40077977631'
+        default: '40078589328'
 permissions:
   contents: write
   actions: read
@@ -20,8 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
-      TESTED_RUN: ${{ inputs.tested_run_id || '40077977631' }}
-      EXPECTED_SOURCE_SHA: 'a37ad914015d9cd1d94c75e86df472b9af6e58b9'
+      TESTED_RUN: ${{ inputs.tested_run_id || '40078589328' }}
+      EXPECTED_SOURCE_SHA: '455d273e8ea6825a5275e665845a5557e068b0cd'
       RELEASE_VERSION: '0.2.1-alpha.8'
       RELEASE_TAG: 'v0.2.1-alpha.8'
     steps:
