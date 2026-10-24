@@ -8,7 +8,7 @@ Codex App Server reports one generated image in two provider events: the complet
 
 Decode each supported native image before publishing its event and commit the verified bytes through `ctx.attachments`. Emit the returned reference as one standard Harness `image` block. Replace the binary field in both provider records with a versioned `dsh-image-attachment` marker containing only the durable `ImageAttachmentRef`. Replay state version `4` owns this representation.
 
-Cold reconstruction reads and verifies each referenced attachment, restores the provider data URL in memory, and injects that transient value into App Server. Warm session continuation compares the externalized history and does not read or encode image bytes. A provider echo of an image already present in durable history does not emit another Harness image block.
+Cold reconstruction reads and verifies each referenced attachment, restores the provider data URL in memory, and injects that transient value into App Server. Warm session continuation compares the externalized history by durable marker. Provider echoes of previously stored images are deduplicated in the Harness image stream.
 
 Attachment media, byte, count, aggregate-byte, and pixel limits apply before a provider image can reach the Session Log. Missing attachment storage, malformed base64, unsupported media, invalid markers, missing objects, and integrity failures stop the model request instead of recording an incomplete image result.
 

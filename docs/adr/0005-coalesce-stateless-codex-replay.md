@@ -8,7 +8,7 @@ status: accepted
 
 Reconstruct one ordered Responses history from all logged assistant replay snapshots, with at most one item for each stable Codex response identity. An item `id` identifies message and reasoning outputs; a type plus `call_id` identifies call and call-output items that have no item id. The newest provider representation replaces an older provider representation in its original timeline position. A Harness-derived call or call output remains authoritative over a later provider echo with the same identity. Items without either identity remain distinct and ordered.
 
-Treat absent and `null` optional response fields as equivalent when the mapper classifies an App Server raw item against the history injected for the current request. App Server can echo the same completed item with these two JSON encodings. Encoding-only changes do not create a new provider output or replay checkpoint entry.
+Treat absent and `null` optional response fields as equivalent when the mapper classifies an App Server raw item against the history injected for the current request. App Server can echo the same completed item with these two JSON encodings. Encoding-only changes map to the existing provider output identity and replay checkpoint entry.
 
 ## Context
 
