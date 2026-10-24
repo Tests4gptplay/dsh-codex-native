@@ -1,0 +1,179 @@
+name: Refresh historical release descriptions once
+'on':
+  push:
+    branches: [main]
+    paths: ['.github/workflows/refresh-historical-release-copy.yml']
+permissions:
+  contents: write
+jobs:
+  update-history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Replace historical release descriptions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/v0.2.1-alpha.7.md" <<'MARKDOWN_v0_2_1_alpha_7'
+          # Codex Native alpha.7 — account lifecycle stability
+          
+          **Install in DSH Desktop → Plugins → Add plugin**
+          
+          ```text
+          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.7
+          ```
+          
+          ## Improvements
+          
+          - Account-owned connections are registered before initialization, enabling reliable disposal of pending status, quota and history requests.
+          - Login cancellation updates local state promptly, sends protocol cancellation and closes the login connection.
+          - The existing Codex model runner and DSH tool bridging continue operating with the transport improvements delivered in alpha.6.
+          - Manual Token history and the account settings interface are retained from alpha.5.
+          
+          ## Verification
+          
+          Six account lifecycle failure cases were reproduced at the alpha.6 baseline on both Windows and Ubuntu. The repaired version passed the same eight new assertions and the full applicable suites on both platforms.
+          
+          [Before-fix CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40047676806) · [After-fix CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40048042517) · [Technical audit](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/ACCOUNT_LIFECYCLE_AUDIT.md)
+          
+          Source: `e434e5fc57fd647fac7332c6304e6515cd11c5bd`. Restart DSH after installing.
+          MARKDOWN_v0_2_1_alpha_7
+          gh release edit v0.2.1-alpha.7 --repo "$GITHUB_REPOSITORY" --notes-file "$RUNNER_TEMP/v0.2.1-alpha.7.md"
+          echo "UPDATED v0.2.1-alpha.7"
+          cat > "$RUNNER_TEMP/v0.2.1-alpha.6.md" <<'MARKDOWN_v0_2_1_alpha_6'
+          # Codex Native alpha.6 — resilient protocol connections
+          
+          **Install in DSH Desktop → Plugins → Add plugin**
+          
+          ```text
+          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.6
+          ```
+          
+          ## Improvements
+          
+          - Resolve pending requests promptly when the Codex protocol stream closes during a backpressured write.
+          - Preserve process exit code, signal and bounded stderr diagnostics, with credential masking.
+          - Reconstruct closed cached Codex connections from recorded history on the following request.
+          - Improve account-process startup and cleanup handling.
+          - Retain native DSH UI components and manual Token history from alpha.5.
+          
+          ## Verification
+          
+          Ubuntu and Windows isolated process and transport regressions passed with the official DSH subprocess runtime. The fixed-tag installation and runtime build were verified.
+          
+          [Transport audit](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/PROTOCOL_STREAM_FIX.md) · [Regression CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39996592077)
+          
+          Source: `80175849c80d2cc688ac77276bb0588262bb8e95`. Restart DSH after installing.
+          MARKDOWN_v0_2_1_alpha_6
+          gh release edit v0.2.1-alpha.6 --repo "$GITHUB_REPOSITORY" --notes-file "$RUNNER_TEMP/v0.2.1-alpha.6.md"
+          echo "UPDATED v0.2.1-alpha.6"
+          cat > "$RUNNER_TEMP/v0.2.1-alpha.5.md" <<'MARKDOWN_v0_2_1_alpha_5'
+          # Codex Native alpha.5 — Token history and native DSH UI
+          
+          **Install in DSH Desktop → Plugins → Add plugin**
+          
+          ```text
+          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.5
+          ```
+          
+          ## Features
+          
+          - Manual **Query** for official Codex account Token usage history.
+          - **Clear** and **Query** controls above the total, with collapsible reference periods and daily usage.
+          - Native DSH `Button` and `DisclosureRow` components with theme adaptation.
+          - Token counts from the official `account/usage/read` endpoint and public historical reset-date references from **codex-reset.com**.
+          - Current quota windows and next reset times shown through official account rate-limit data.
+          
+          ## Verification
+          
+          Windows and Ubuntu regression, package build and fixed GitHub installation passed. On 2026-10-23, the user confirmed successful manual history retrieval in DSH Desktop and approved the anonymized [real usage screenshot](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/screenshots/codex-usage-desktop-anonymized.png).
+          
+          [Candidate CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39959031468) · [Usage source mapping](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/USAGE.md) · [Screenshot record](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/SCREENSHOTS.md)
+          
+          Source: `de9f3b766a5bbc9d03f2846186c8f1f8eee6424a`.
+          MARKDOWN_v0_2_1_alpha_5
+          gh release edit v0.2.1-alpha.5 --repo "$GITHUB_REPOSITORY" --notes-file "$RUNNER_TEMP/v0.2.1-alpha.5.md"
+          echo "UPDATED v0.2.1-alpha.5"
+          cat > "$RUNNER_TEMP/v0.2.1-alpha.4.md" <<'MARKDOWN_v0_2_1_alpha_4'
+          # Codex Native alpha.4 — chat presentation and Windows launch
+          
+          **Install in DSH Desktop → Plugins → Add plugin**
+          
+          ```text
+          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.4
+          ```
+          
+          ## Improvements
+          
+          - Map Codex lifecycle and action events to standard DSH chat presentation.
+          - Render assistant responses and meaningful tool status while organizing lifecycle metadata.
+          - Launch the official packaged Codex Windows executable directly through DSH process management.
+          - Preserve Codex protocol, DSH tools and conversation replay behavior.
+          
+          ## Verification
+          
+          Official DSH 0.2.1 renderer and protocol regressions passed on Linux and Windows. The Windows Codex executable completed a controlled initialization and account-read test. The fixed Git tag and installation snapshot were verified.
+          
+          [Regression CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39947758087) · [Technical record](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/REPRODUCTION.md)
+          
+          Source: `141dfa2960fbd58f2e43d361745e6ca3b815dbbc`. MIT upstream attribution is retained in LICENSE.
+          MARKDOWN_v0_2_1_alpha_4
+          gh release edit v0.2.1-alpha.4 --repo "$GITHUB_REPOSITORY" --notes-file "$RUNNER_TEMP/v0.2.1-alpha.4.md"
+          echo "UPDATED v0.2.1-alpha.4"
+          cat > "$RUNNER_TEMP/v0.2.1-alpha.3.md" <<'MARKDOWN_v0_2_1_alpha_3'
+          # Codex Native alpha.3 — build and installation verification
+          
+          ```text
+          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.3
+          ```
+          
+          This milestone verifies the DSH plugin package layout, GitHub fixed-tag installation and hosted Windows/Ubuntu integration checks. It provides a compiled Codex main-model adapter with its runtime metadata and MIT attribution.
+          MARKDOWN_v0_2_1_alpha_3
+          gh release edit v0.2.1-alpha.3 --repo "$GITHUB_REPOSITORY" --notes-file "$RUNNER_TEMP/v0.2.1-alpha.3.md"
+          echo "UPDATED v0.2.1-alpha.3"
+          cat > "$RUNNER_TEMP/v0.2.1-alpha.1.md" <<'MARKDOWN_v0_2_1_alpha_1'
+          # Codex Native alpha.1 — GitHub installation improvement
+          
+          This release addresses the `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` package-install error observed with alpha.0.
+          
+          The Git tag includes compiled `lib/index.js`, `lib/client.js` and type declarations. A clean pnpm consumer successfully installed the fixed GitHub tag in the release workflow.
+          
+          ## Install in DSH Desktop
+          
+          ```text
+          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.1
+          ```
+          
+          Enable the plugin, restart DSH, open **Settings → Codex official login**, connect the ChatGPT account, and choose `codex-local` as the main model.
+          
+          MIT attribution is retained in LICENSE and README.
+          MARKDOWN_v0_2_1_alpha_1
+          gh release edit v0.2.1-alpha.1 --repo "$GITHUB_REPOSITORY" --notes-file "$RUNNER_TEMP/v0.2.1-alpha.1.md"
+          echo "UPDATED v0.2.1-alpha.1"
+          cat > "$RUNNER_TEMP/v0.2.1-alpha.0.md" <<'MARKDOWN_v0_2_1_alpha_0'
+          # Codex Native alpha.0 — first DSH integration milestone
+          
+          This initial prerelease packages the Codex app-server adapter for DSH 0.2.1-rc.2, with type-contract checks and CI packaging completed.
+          
+          ## Install in DSH Desktop
+          
+          ```text
+          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.0
+          ```
+          
+          Enable the plugin, restart DSH, open **Settings → Codex official login**, connect a ChatGPT account and choose the `codex-local` main model.
+          
+          ## DSH Web CLI
+          
+          ```bash
+          dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.0'
+          ```
+          
+          The release TGZ and the source installation reference are provided for plugin integration testing.
+          
+          [Repository README](https://github.com/Tests4gptplay/dsh-codex-native) · [Release history](https://github.com/Tests4gptplay/dsh-codex-native/releases)
+          MARKDOWN_v0_2_1_alpha_0
+          gh release edit v0.2.1-alpha.0 --repo "$GITHUB_REPOSITORY" --notes-file "$RUNNER_TEMP/v0.2.1-alpha.0.md"
+          echo "UPDATED v0.2.1-alpha.0"
