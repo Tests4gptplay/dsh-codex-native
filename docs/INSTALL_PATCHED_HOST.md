@@ -82,9 +82,9 @@ pnpm dsh --profile web --dump-config
 pnpm dsh web --no-open
 ```
 
-Open the local address printed by DSH (default `http://127.0.0.1:3080`). Use **Settings → Codex official login**, then choose `codex-local` as the main-model provider.
+Open the **complete local startup URL printed by DSH**, including its `?token=…` parameter (default origin `http://127.0.0.1:3080`). DSH exchanges this local launch token for a browser cookie and redirects to the clean address. Opening only the bare origin in a fresh browser returns 401. Treat the startup URL as a local access credential. Then use **Settings → Codex official login** and choose `codex-local` as the main-model provider.
 
-打开 DSH 输出的本地地址，默认是 `http://127.0.0.1:3080`。通过 **设置 → Codex 官方登录** 登录，主模型提供方选择 `codex-local`。
+打开 DSH 输出的**完整启动地址**，保留其中的 `?token=…` 参数。DSH 会用本地启动令牌换取浏览器 Cookie，再跳转到干净地址；新浏览器直接访问裸地址会返回 401。启动地址属于本地访问凭据，不要公开分享。进入页面后，通过 **设置 → Codex 官方登录** 登录，主模型提供方选择 `codex-local`。
 
 Use the same `DSH_HOME` and this same source checkout on subsequent starts. `pnpm dsh` resolves host packages from this checkout's CLI workspace. A new profile disables automatic peer installation, so the plugin uses the patched host packages. An older profile may contain nearer stock packages and is outside this installation check.
 

@@ -10,6 +10,14 @@ Release delivery must additionally consume the versioned candidate artifact, ver
 
 The first versioned candidate [run 40077424515](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40077424515) passed the original Windows/Ubuntu suite and build, but the new packaged-runtime gate failed while importing the complete official LLM source: its standard decorators had not been transformed. The release-only configuration now reuses the fixed host's own `standardDecoratorPlugin`; two already-locked host dependencies are made explicit development dependencies. The same real candidate TGZ then passed all 28 package/normalizer checks locally. This correction changes test loading, not production runtime behavior. Publication still requires the corrected candidate and final delivery gates to pass.
 
+## Final package and source-host delivery gate
+
+Candidate `a37ad914015d9cd1d94c75e86df472b9af6e58b9` passed [versioned CI 40077977631](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40077977631): Windows 188/188, Ubuntu 187 passed / one platform skip, and the separate packaged-runtime suite 28/28 on both.
+
+The first [delivery run 40078120740](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40078120740) passed the final cleaned TGZ's 28 tests, the complete **final patched host build (9/9)**, fresh-profile plugin installation and actual host-package resolution. It stopped before creating a tag because the new startup verifier requested the bare root URL and correctly received the host's authentication response, 401.
+
+The verifier now follows the fixed host's own browser-auth smoke: read its complete ready URL, exchange the local launch token for a cookie through HTTP 303, then use that cookie for HTTP 200 HTML. This is local host authentication, independent of model/account login. Saved startup logs redact the temporary token. Host authentication, runtime code and the published patch are unchanged. The corrected delivery gate must succeed before publication.
+
 ## Published release
 
 Updated 2026-10-24 JST. Published preview: **v0.2.1-alpha.7**, DSH **0.2.1-rc.2**, official Codex **0.154.0**. Dependencies were not upgraded.

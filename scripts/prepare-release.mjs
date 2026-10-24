@@ -41,6 +41,7 @@ if (process.argv[2] === 'finalize') {
   const host = json('.tmp/paired-host-smoke.json')
   assert.equal(host.hostBase, hostBase)
   assert.equal(host.hostPatchSha256, patchHash)
+  assert.equal(host.bootstrapHttpStatus, 303)
   assert.equal(host.httpStatus, 200)
   manifest.verification = { packagedRuntimeTests: 28, pairedSourceHost: host }
   manifest.assets = Object.fromEntries([tgzName, patchName, 'INSTALL_PATCHED_HOST.md', 'DSH-LICENSE.txt'].map(name => [name, {

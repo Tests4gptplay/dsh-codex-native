@@ -46,6 +46,7 @@ let stopped = false
 let timer
 const closed = new Promise(resolveClose => child.once('close', (...args) => resolveClose(args)))
 let httpStatus
+let bootstrapHttpStatus
 try {
   httpStatus = await new Promise((resolveReady, reject) => {
     timer = setTimeout(() => reject(new Error('Patched Web host did not become ready within 45 seconds')), 45_000)
@@ -55,14 +56,31 @@ try {
     })
     const observe = data => {
       log = (log + data.toString()).slice(-100_000)
-      if (checking || !log.includes('http://127.0.0.1:3080')) return
+      // Wait for the complete ready line, including the local launch token.
+      const ready = /^dsh web: (http:\/\/127\.0\.0\.1:3080\/[^\r\n]*)\r?\n/m.exec(log)
+      if (checking || !ready) return
       checking = true
-      fetch('http://127.0.0.1:3080', { signal: AbortSignal.timeout(10_000) }).then(async response => {
+      ;(async () => {
+        const launch = new URL(ready[1])
+        assert.equal(launch.origin, 'http://127.0.0.1:3080')
+        assert.equal(launch.searchParams.getAll('token').length, 1, 'Expected the official local launch token')
+        const bootstrap = await fetch(launch, { redirect: 'manual', signal: AbortSignal.timeout(10_000) })
+        bootstrapHttpStatus = bootstrap.status
+        assert.equal(bootstrap.status, 303, 'Official browser-auth bootstrap status')
+        assert.equal(bootstrap.headers.get('location'), './')
+        const cookies = bootstrap.headers.getSetCookie().filter(value => value.startsWith('dsh-auth-'))
+        assert.equal(cookies.length, 1, 'Expected one local browser-auth cookie')
+        const cookie = cookies[0].split(';', 1)[0]
+        const clean = new URL('./', launch)
+        assert.equal(clean.search, '')
+        const response = await fetch(clean, {
+          headers: { Cookie: cookie }, redirect: 'manual', signal: AbortSignal.timeout(10_000),
+        })
         assert.equal(response.status, 200, 'Patched Web host HTTP status')
         assert.match(response.headers.get('content-type') ?? '', /text\/html/i)
         assert((await response.text()).length > 100, 'Empty Web UI document')
         resolveReady(response.status)
-      }).catch(reject)
+      })().catch(reject)
     }
     child.stdout.on('data', observe)
     child.stderr.on('data', observe)
@@ -70,7 +88,7 @@ try {
 } finally {
   clearTimeout(timer)
   stopped = true
-  writeFileSync(join(root, '.tmp/paired-host-startup.log'), log)
+  writeFileSync(join(root, '.tmp/paired-host-startup.log'), log.replace(/([?&]token=)[A-Za-z0-9_-]+/g, '$1[REDACTED]'))
   if (child.pid) {
     const signal = name => {
       try { process.kill(-child.pid, name) } catch (error) { if (error.code !== 'ESRCH') throw error }
@@ -83,6 +101,7 @@ try {
 const evidence = {
   hostBase: execFileSync('git', ['-C', host, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
   hostPatchSha256: digest('dist/dsh-context-usage-0.2.1-rc.2.patch'),
+  bootstrapHttpStatus,
   httpStatus,
   resolvedHostPackages,
   installedPluginVersion: JSON.parse(readFileSync(join(plugin, 'package.json'), 'utf8')).version,
