@@ -1,7 +1,7 @@
 name: DSH Codex native build
 'on':
   push:
-    branches: [main, 'fix/protocol-stream-lifecycle']
+    branches: [main, 'fix/protocol-stream-lifecycle', 'audit/account-lifecycle-20261024']
     paths-ignore: ['docs/**']
   pull_request:
   workflow_dispatch:
