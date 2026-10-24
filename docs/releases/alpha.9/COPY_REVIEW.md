@@ -14,7 +14,7 @@
 | Historical reference periods | Public reset announcements by UTC date |
 | Clear and Query | Clear the current table; use Query to reload the official account history |
 | Quota | Official current quota windows and next reset |
-| Market tile | Codex App icon in `docs/icons/codex-app.png` |
+| Market tile | ChatGPT account authentication icon at [docs/icons/chatgpt-auth.png](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/icons/chatgpt-auth.png) |
 | Store detail screenshots | Three curated images in `screenshots.json`; real anonymized Desktop usage capture first |
 
 ## Verification
@@ -29,10 +29,10 @@ The development CI assembles a cleaned TGZ for `0.2.1-alpha.9`, unpacks it and c
 - 30 allowed runtime files, excluding source, test fixtures, CI scripts and development dependencies;
 - unchanged plugin and DSH-host behavioral regression tests.
 
-CI uploads `candidate-copy-audit.json` with the actual candidate TGZ and SHA256. The `docs/icons/codex-app.png` asset is in the plugin repository for the market card; the packaged README references the real Token-history screenshot separately.
+CI uploads `candidate-copy-audit.json` with the actual candidate TGZ and SHA256. The ChatGPT authentication-channel icon is at [docs/icons/chatgpt-auth.png](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/icons/chatgpt-auth.png) for the market card; the packaged README references the real Token-history screenshot separately.
 
 ## Review links
 
-[Draft PR #2](https://github.com/Tests4gptplay/dsh-codex-native/pull/2) · [Screenshots](../../screenshots.json) · [Icon](../icons/codex-app.png)
+[Draft PR #2](https://github.com/Tests4gptplay/dsh-codex-native/pull/2) · [Screenshots](../../screenshots.json) · [ChatGPT sign-in icon](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/icons/chatgpt-auth.png)
 
 Release and upstream marketplace PR remain separate from this development candidate.
