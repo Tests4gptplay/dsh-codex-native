@@ -28,7 +28,7 @@ export {
   codexFailureCode,
   harnessToolCall,
 } from './protocol.ts'
-export type { CodexActionBlock, CodexReplayState, HarnessToolCall } from './protocol.ts'
+export type { CodexActionBlock, CodexContextUsage, CodexReplayState, CodexTokenUsage, HarnessToolCall } from './protocol.ts'
 export {
   CODEX_APP_SERVER_VERSION,
   CodexAppServerRunner,

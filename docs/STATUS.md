@@ -1,5 +1,11 @@
 # Release status
 
+## Unreleased development work
+
+Publication is paused. [Context accounting and Codex automatic compaction](CONTEXT_COMPACTION_AUDIT.md) are implemented and locally verified with a companion host patch; cross-platform results are recorded on the draft pull request. This does not update the published plugin or the user's installation.
+
+## Published release
+
 Updated 2026-10-24 JST. Published preview: **v0.2.1-alpha.7**, DSH **0.2.1-rc.2**, official Codex **0.154.0**. Dependencies were not upgraded.
 
 [Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.7) · [Before-fix reproduction](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40047676806) · [After-fix cross-platform CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40048042517) · [Publication and exact Git install](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40048610503).

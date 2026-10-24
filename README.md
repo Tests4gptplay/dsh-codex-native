@@ -4,6 +4,8 @@
 
 [简体中文](README.zh.md) · [Release status and evidence](docs/STATUS.md) · [Usage rules](docs/USAGE.md) · [Protocol repair](docs/PROTOCOL_STREAM_FIX.md) · [Account lifecycle audit](docs/ACCOUNT_LIFECYCLE_AUDIT.md)
 
+Development work: [context accounting and Codex automatic compaction](docs/CONTEXT_COMPACTION_AUDIT.md). This repair is unreleased and requires a paired host change; the published installation below remains alpha.7.
+
 ## Current preview: v0.2.1-alpha.7
 
 2026-10-24 JST: fixes two account-lifecycle defects reproduced on Windows and Linux before modifying runtime code; retains alpha.6 protocol repairs. Targets **DSH 0.2.1-rc.2**, official **Codex 0.154.0**. The original initiating process-exit cause remains unproven; the earlier stream-closed message alone does not establish an OpenAI cloud outage.

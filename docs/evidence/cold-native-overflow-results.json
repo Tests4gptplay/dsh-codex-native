@@ -1,0 +1,803 @@
+{
+  "binary": "official @openai/codex 0.154.0",
+  "contextWindow": 8192,
+  "autoCompactLimit": 6000,
+  "history": [
+    {
+      "type": "message",
+      "role": "user",
+      "textChars": 184000
+    },
+    {
+      "type": "message",
+      "role": "assistant",
+      "textChars": 29
+    },
+    {
+      "type": "message",
+      "role": "user",
+      "textChars": 8
+    }
+  ],
+  "artificialOnly": true,
+  "runs": [
+    {
+      "index": 1,
+      "http": [
+        {
+          "kind": "http",
+          "method": "POST",
+          "path": "/v1/responses",
+          "compact": false,
+          "bodyBytes": 205835,
+          "input": [
+            {
+              "type": "additional_tools",
+              "role": "developer",
+              "id": "at_e206afda-b3fd-5ad3-beb2-46640a3d3cd2"
+            },
+            {
+              "type": "message",
+              "role": "developer",
+              "id": "msg_f712e75e-1e4c-57cb-b148-3554dd361f40",
+              "textChars": 30
+            },
+            {
+              "type": "message",
+              "role": "developer",
+              "id": "msg_01a16bc7-abae-7033-b697-1cf72494fa5c",
+              "textChars": 1642
+            },
+            {
+              "type": "message",
+              "role": "developer",
+              "id": "msg_01a16bc7-abae-7033-b697-1d0cdc3fc340",
+              "textChars": 2264
+            },
+            {
+              "type": "message",
+              "role": "developer",
+              "id": "msg_01a16bc7-abae-7033-b697-1d16e25d925a",
+              "textChars": 271
+            },
+            {
+              "type": "message",
+              "role": "user",
+              "id": "msg_01a16bc7-abae-7033-b697-1d20aaa3fd7c",
+              "textChars": 333
+            },
+            {
+              "type": "message",
+              "role": "user",
+              "id": "msg_01a16bc7-abae-7033-b697-1d3d583a5035",
+              "textChars": 184000
+            },
+            {
+              "type": "message",
+              "role": "assistant",
+              "id": "msg_01a16bc7-abae-7033-b697-1d489d09f17d",
+              "textChars": 29
+            },
+            {
+              "type": "message",
+              "role": "user",
+              "id": "msg_01a16bc7-abae-7033-b697-1d5cf072ab2b",
+              "textChars": 8
+            }
+          ],
+          "bodyKeys": [
+            "model",
+            "input",
+            "tool_choice",
+            "parallel_tool_calls",
+            "reasoning",
+            "store",
+            "stream",
+            "include",
+            "prompt_cache_key",
+            "text",
+            "client_metadata"
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "kind": "request",
+          "method": "initialize"
+        },
+        {
+          "kind": "request",
+          "method": "thread/start"
+        },
+        {
+          "kind": "notification",
+          "method": "remoteControl/status/changed"
+        },
+        {
+          "kind": "request",
+          "method": "thread/inject_items"
+        },
+        {
+          "kind": "notification",
+          "method": "thread/started"
+        },
+        {
+          "kind": "notification",
+          "method": "deprecationNotice"
+        },
+        {
+          "kind": "notification",
+          "method": "deprecationNotice"
+        },
+        {
+          "kind": "request",
+          "method": "turn/start"
+        },
+        {
+          "kind": "notification",
+          "method": "warning"
+        },
+        {
+          "kind": "notification",
+          "method": "rawResponseItem/completed",
+          "turnId": "auto-compact-0",
+          "item": {
+            "type": "message",
+            "role": "developer",
+            "id": "msg_01a16bc7-abae-7033-b697-1cf72494fa5c",
+            "textChars": 1642
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "rawResponseItem/completed",
+          "turnId": "auto-compact-0",
+          "item": {
+            "type": "message",
+            "role": "developer",
+            "id": "msg_01a16bc7-abae-7033-b697-1d0cdc3fc340",
+            "textChars": 2264
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "rawResponseItem/completed",
+          "turnId": "auto-compact-0",
+          "item": {
+            "type": "message",
+            "role": "developer",
+            "id": "msg_01a16bc7-abae-7033-b697-1d16e25d925a",
+            "textChars": 271
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "rawResponseItem/completed",
+          "turnId": "auto-compact-0",
+          "item": {
+            "type": "message",
+            "role": "user",
+            "id": "msg_01a16bc7-abae-7033-b697-1d20aaa3fd7c",
+            "textChars": 333
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "rawResponseItem/completed",
+          "turnId": "auto-compact-0",
+          "item": {
+            "type": "message",
+            "role": "user",
+            "id": "msg_01a16bc7-abae-7033-b697-1d3d583a5035",
+            "textChars": 184000
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "rawResponseItem/completed",
+          "turnId": "auto-compact-0",
+          "item": {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_01a16bc7-abae-7033-b697-1d489d09f17d",
+            "textChars": 29
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "rawResponseItem/completed",
+          "turnId": "auto-compact-0",
+          "item": {
+            "type": "message",
+            "role": "user",
+            "id": "msg_01a16bc7-abae-7033-b697-1d5cf072ab2b",
+            "textChars": 8
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "warning"
+        },
+        {
+          "kind": "notification",
+          "method": "thread/status/changed"
+        },
+        {
+          "kind": "notification",
+          "method": "turn/started",
+          "turnId": "01a16bc7-abb0-7643-8a68-58f9d92e6635",
+          "turn": {
+            "id": "01a16bc7-abb0-7643-8a68-58f9d92e6635",
+            "items": [],
+            "itemsView": "notLoaded",
+            "status": "inProgress",
+            "error": null,
+            "startedAt": 1792809610,
+            "completedAt": null,
+            "durationMs": null
+          }
+        },
+        {
+          "kind": "http",
+          "method": "POST",
+          "path": "/v1/responses",
+          "compact": false,
+          "bodyBytes": 205835,
+          "input": [
+            {
+              "type": "additional_tools",
+              "role": "developer",
+              "id": "at_e206afda-b3fd-5ad3-beb2-46640a3d3cd2"
+            },
+            {
+              "type": "message",
+              "role": "developer",
+              "id": "msg_f712e75e-1e4c-57cb-b148-3554dd361f40",
+              "textChars": 30
+            },
+            {
+              "type": "message",
+              "role": "developer",
+              "id": "msg_01a16bc7-abae-7033-b697-1cf72494fa5c",
+              "textChars": 1642
+            },
+            {
+              "type": "message",
+              "role": "developer",
+              "id": "msg_01a16bc7-abae-7033-b697-1d0cdc3fc340",
+              "textChars": 2264
+            },
+            {
+              "type": "message",
+              "role": "developer",
+              "id": "msg_01a16bc7-abae-7033-b697-1d16e25d925a",
+              "textChars": 271
+            },
+            {
+              "type": "message",
+              "role": "user",
+              "id": "msg_01a16bc7-abae-7033-b697-1d20aaa3fd7c",
+              "textChars": 333
+            },
+            {
+              "type": "message",
+              "role": "user",
+              "id": "msg_01a16bc7-abae-7033-b697-1d3d583a5035",
+              "textChars": 184000
+            },
+            {
+              "type": "message",
+              "role": "assistant",
+              "id": "msg_01a16bc7-abae-7033-b697-1d489d09f17d",
+              "textChars": 29
+            },
+            {
+              "type": "message",
+              "role": "user",
+              "id": "msg_01a16bc7-abae-7033-b697-1d5cf072ab2b",
+              "textChars": 8
+            }
+          ],
+          "bodyKeys": [
+            "model",
+            "input",
+            "tool_choice",
+            "parallel_tool_calls",
+            "reasoning",
+            "store",
+            "stream",
+            "include",
+            "prompt_cache_key",
+            "text",
+            "client_metadata"
+          ]
+        },
+        {
+          "kind": "notification",
+          "method": "account/rateLimits/updated"
+        },
+        {
+          "kind": "notification",
+          "method": "thread/tokenUsage/updated",
+          "turnId": "01a16bc7-abb0-7643-8a68-58f9d92e6635",
+          "tokenUsage": {
+            "total": {
+              "totalTokens": 7782,
+              "inputTokens": 0,
+              "cachedInputTokens": 0,
+              "cacheWriteInputTokens": 0,
+              "outputTokens": 0,
+              "reasoningOutputTokens": 0
+            },
+            "last": {
+              "totalTokens": 7782,
+              "inputTokens": 0,
+              "cachedInputTokens": 0,
+              "cacheWriteInputTokens": 0,
+              "outputTokens": 0,
+              "reasoningOutputTokens": 0
+            },
+            "modelContextWindow": 7782
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "account/rateLimits/updated"
+        },
+        {
+          "kind": "notification",
+          "method": "thread/status/changed"
+        },
+        {
+          "kind": "notification",
+          "method": "error",
+          "turnId": "01a16bc7-abb0-7643-8a68-58f9d92e6635",
+          "error": {
+            "message": "Codex ran out of room in the model's context window. Start a new thread or clear earlier history before retrying.",
+            "codexErrorInfo": "contextWindowExceeded",
+            "additionalDetails": null,
+            "misalignment": null
+          },
+          "params": {
+            "error": {
+              "message": "Codex ran out of room in the model's context window. Start a new thread or clear earlier history before retrying.",
+              "codexErrorInfo": "contextWindowExceeded",
+              "additionalDetails": null,
+              "misalignment": null
+            },
+            "willRetry": false,
+            "threadId": "01a16bc7-aba2-7a72-b9a7-2a49e0f391d6",
+            "turnId": "01a16bc7-abb0-7643-8a68-58f9d92e6635"
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "turn/completed",
+          "turnId": "01a16bc7-abb0-7643-8a68-58f9d92e6635",
+          "turn": {
+            "id": "01a16bc7-abb0-7643-8a68-58f9d92e6635",
+            "items": [],
+            "itemsView": "notLoaded",
+            "status": "failed",
+            "error": {
+              "message": "Codex ran out of room in the model's context window. Start a new thread or clear earlier history before retrying.",
+              "codexErrorInfo": "contextWindowExceeded",
+              "additionalDetails": null,
+              "misalignment": null
+            },
+            "startedAt": 1792809610,
+            "completedAt": 1792809610,
+            "durationMs": 34
+          }
+        }
+      ],
+      "compactions": 0,
+      "threadId": "01a16bc7-aba2-7a72-b9a7-2a49e0f391d6",
+      "terminal": {
+        "id": "01a16bc7-abb0-7643-8a68-58f9d92e6635",
+        "items": [],
+        "itemsView": "notLoaded",
+        "status": "failed",
+        "error": {
+          "message": "Codex ran out of room in the model's context window. Start a new thread or clear earlier history before retrying.",
+          "codexErrorInfo": "contextWindowExceeded",
+          "additionalDetails": null,
+          "misalignment": null
+        },
+        "startedAt": 1792809610,
+        "completedAt": 1792809610,
+        "durationMs": 34
+      },
+      "stderr": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"<isolated-fixture>/codex-config\"))\n"
+    },
+    {
+      "index": 2,
+      "http": [
+        {
+          "kind": "http",
+          "method": "POST",
+          "path": "/v1/responses",
+          "compact": false,
+          "bodyBytes": 205836,
+          "input": [
+            {
+              "type": "additional_tools",
+              "role": "developer",
+              "id": "at_1cc2bdcd-be3a-5ece-9bc2-ba736eb8ef37"
+            },
+            {
+              "type": "message",
+              "role": "developer",
+              "id": "msg_53c1143c-36a8-5951-b9c9-12b439f604b5",
+              "textChars": 30
+            },
+            {
+              "type": "message",
+              "role": "developer",
+              "id": "msg_01a16bc7-ac77-7a60-9a8d-20f3c6f24297",
+              "textChars": 1642
+            },
+            {
+              "type": "message",
+              "role": "developer",
+              "id": "msg_01a16bc7-ac77-7a60-9a8d-210097ee6966",
+              "textChars": 2264
+            },
+            {
+              "type": "message",
+              "role": "developer",
+              "id": "msg_01a16bc7-ac77-7a60-9a8d-2119a07d6462",
+              "textChars": 271
+            },
+            {
+              "type": "message",
+              "role": "user",
+              "id": "msg_01a16bc7-ac77-7a60-9a8d-2125b86febb1",
+              "textChars": 333
+            },
+            {
+              "type": "message",
+              "role": "user",
+              "id": "msg_01a16bc7-ac77-7a60-9a8d-213bb82ff7a7",
+              "textChars": 184000
+            },
+            {
+              "type": "message",
+              "role": "assistant",
+              "id": "msg_01a16bc7-ac77-7a60-9a8d-214a7baab1a9",
+              "textChars": 29
+            },
+            {
+              "type": "message",
+              "role": "user",
+              "id": "msg_01a16bc7-ac77-7a60-9a8d-21556a6d248c",
+              "textChars": 8
+            }
+          ],
+          "bodyKeys": [
+            "model",
+            "input",
+            "tool_choice",
+            "parallel_tool_calls",
+            "reasoning",
+            "store",
+            "stream",
+            "include",
+            "prompt_cache_key",
+            "text",
+            "client_metadata"
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "kind": "request",
+          "method": "initialize"
+        },
+        {
+          "kind": "notification",
+          "method": "remoteControl/status/changed"
+        },
+        {
+          "kind": "request",
+          "method": "thread/start"
+        },
+        {
+          "kind": "notification",
+          "method": "thread/started"
+        },
+        {
+          "kind": "request",
+          "method": "thread/inject_items"
+        },
+        {
+          "kind": "notification",
+          "method": "deprecationNotice"
+        },
+        {
+          "kind": "notification",
+          "method": "deprecationNotice"
+        },
+        {
+          "kind": "request",
+          "method": "turn/start"
+        },
+        {
+          "kind": "notification",
+          "method": "warning"
+        },
+        {
+          "kind": "notification",
+          "method": "rawResponseItem/completed",
+          "turnId": "auto-compact-0",
+          "item": {
+            "type": "message",
+            "role": "developer",
+            "id": "msg_01a16bc7-ac77-7a60-9a8d-20f3c6f24297",
+            "textChars": 1642
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "rawResponseItem/completed",
+          "turnId": "auto-compact-0",
+          "item": {
+            "type": "message",
+            "role": "developer",
+            "id": "msg_01a16bc7-ac77-7a60-9a8d-210097ee6966",
+            "textChars": 2264
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "rawResponseItem/completed",
+          "turnId": "auto-compact-0",
+          "item": {
+            "type": "message",
+            "role": "developer",
+            "id": "msg_01a16bc7-ac77-7a60-9a8d-2119a07d6462",
+            "textChars": 271
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "rawResponseItem/completed",
+          "turnId": "auto-compact-0",
+          "item": {
+            "type": "message",
+            "role": "user",
+            "id": "msg_01a16bc7-ac77-7a60-9a8d-2125b86febb1",
+            "textChars": 333
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "rawResponseItem/completed",
+          "turnId": "auto-compact-0",
+          "item": {
+            "type": "message",
+            "role": "user",
+            "id": "msg_01a16bc7-ac77-7a60-9a8d-213bb82ff7a7",
+            "textChars": 184000
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "rawResponseItem/completed",
+          "turnId": "auto-compact-0",
+          "item": {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_01a16bc7-ac77-7a60-9a8d-214a7baab1a9",
+            "textChars": 29
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "rawResponseItem/completed",
+          "turnId": "auto-compact-0",
+          "item": {
+            "type": "message",
+            "role": "user",
+            "id": "msg_01a16bc7-ac77-7a60-9a8d-21556a6d248c",
+            "textChars": 8
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "warning"
+        },
+        {
+          "kind": "notification",
+          "method": "thread/status/changed"
+        },
+        {
+          "kind": "notification",
+          "method": "turn/started",
+          "turnId": "01a16bc7-ac79-7852-b877-b8503b853191",
+          "turn": {
+            "id": "01a16bc7-ac79-7852-b877-b8503b853191",
+            "items": [],
+            "itemsView": "notLoaded",
+            "status": "inProgress",
+            "error": null,
+            "startedAt": 1792809610,
+            "completedAt": null,
+            "durationMs": null
+          }
+        },
+        {
+          "kind": "http",
+          "method": "POST",
+          "path": "/v1/responses",
+          "compact": false,
+          "bodyBytes": 205836,
+          "input": [
+            {
+              "type": "additional_tools",
+              "role": "developer",
+              "id": "at_1cc2bdcd-be3a-5ece-9bc2-ba736eb8ef37"
+            },
+            {
+              "type": "message",
+              "role": "developer",
+              "id": "msg_53c1143c-36a8-5951-b9c9-12b439f604b5",
+              "textChars": 30
+            },
+            {
+              "type": "message",
+              "role": "developer",
+              "id": "msg_01a16bc7-ac77-7a60-9a8d-20f3c6f24297",
+              "textChars": 1642
+            },
+            {
+              "type": "message",
+              "role": "developer",
+              "id": "msg_01a16bc7-ac77-7a60-9a8d-210097ee6966",
+              "textChars": 2264
+            },
+            {
+              "type": "message",
+              "role": "developer",
+              "id": "msg_01a16bc7-ac77-7a60-9a8d-2119a07d6462",
+              "textChars": 271
+            },
+            {
+              "type": "message",
+              "role": "user",
+              "id": "msg_01a16bc7-ac77-7a60-9a8d-2125b86febb1",
+              "textChars": 333
+            },
+            {
+              "type": "message",
+              "role": "user",
+              "id": "msg_01a16bc7-ac77-7a60-9a8d-213bb82ff7a7",
+              "textChars": 184000
+            },
+            {
+              "type": "message",
+              "role": "assistant",
+              "id": "msg_01a16bc7-ac77-7a60-9a8d-214a7baab1a9",
+              "textChars": 29
+            },
+            {
+              "type": "message",
+              "role": "user",
+              "id": "msg_01a16bc7-ac77-7a60-9a8d-21556a6d248c",
+              "textChars": 8
+            }
+          ],
+          "bodyKeys": [
+            "model",
+            "input",
+            "tool_choice",
+            "parallel_tool_calls",
+            "reasoning",
+            "store",
+            "stream",
+            "include",
+            "prompt_cache_key",
+            "text",
+            "client_metadata"
+          ]
+        },
+        {
+          "kind": "notification",
+          "method": "account/rateLimits/updated"
+        },
+        {
+          "kind": "notification",
+          "method": "thread/tokenUsage/updated",
+          "turnId": "01a16bc7-ac79-7852-b877-b8503b853191",
+          "tokenUsage": {
+            "total": {
+              "totalTokens": 7782,
+              "inputTokens": 0,
+              "cachedInputTokens": 0,
+              "cacheWriteInputTokens": 0,
+              "outputTokens": 0,
+              "reasoningOutputTokens": 0
+            },
+            "last": {
+              "totalTokens": 7782,
+              "inputTokens": 0,
+              "cachedInputTokens": 0,
+              "cacheWriteInputTokens": 0,
+              "outputTokens": 0,
+              "reasoningOutputTokens": 0
+            },
+            "modelContextWindow": 7782
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "account/rateLimits/updated"
+        },
+        {
+          "kind": "notification",
+          "method": "thread/status/changed"
+        },
+        {
+          "kind": "notification",
+          "method": "error",
+          "turnId": "01a16bc7-ac79-7852-b877-b8503b853191",
+          "error": {
+            "message": "Codex ran out of room in the model's context window. Start a new thread or clear earlier history before retrying.",
+            "codexErrorInfo": "contextWindowExceeded",
+            "additionalDetails": null,
+            "misalignment": null
+          },
+          "params": {
+            "error": {
+              "message": "Codex ran out of room in the model's context window. Start a new thread or clear earlier history before retrying.",
+              "codexErrorInfo": "contextWindowExceeded",
+              "additionalDetails": null,
+              "misalignment": null
+            },
+            "willRetry": false,
+            "threadId": "01a16bc7-ac6a-7ed1-b871-b49043957743",
+            "turnId": "01a16bc7-ac79-7852-b877-b8503b853191"
+          }
+        },
+        {
+          "kind": "notification",
+          "method": "turn/completed",
+          "turnId": "01a16bc7-ac79-7852-b877-b8503b853191",
+          "turn": {
+            "id": "01a16bc7-ac79-7852-b877-b8503b853191",
+            "items": [],
+            "itemsView": "notLoaded",
+            "status": "failed",
+            "error": {
+              "message": "Codex ran out of room in the model's context window. Start a new thread or clear earlier history before retrying.",
+              "codexErrorInfo": "contextWindowExceeded",
+              "additionalDetails": null,
+              "misalignment": null
+            },
+            "startedAt": 1792809610,
+            "completedAt": 1792809610,
+            "durationMs": 26
+          }
+        }
+      ],
+      "compactions": 0,
+      "threadId": "01a16bc7-ac6a-7ed1-b871-b49043957743",
+      "terminal": {
+        "id": "01a16bc7-ac79-7852-b877-b8503b853191",
+        "items": [],
+        "itemsView": "notLoaded",
+        "status": "failed",
+        "error": {
+          "message": "Codex ran out of room in the model's context window. Start a new thread or clear earlier history before retrying.",
+          "codexErrorInfo": "contextWindowExceeded",
+          "additionalDetails": null,
+          "misalignment": null
+        },
+        "startedAt": 1792809610,
+        "completedAt": 1792809610,
+        "durationMs": 26
+      },
+      "stderr": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"<isolated-fixture>/codex-config\"))\n"
+    }
+  ]
+}

@@ -20,13 +20,15 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - name: Fetch exact official DSH rendering source into disposable workspace
+      - name: Fetch exact official DSH source into disposable workspace
         uses: actions/checkout@v4
         with:
           repository: deepseek-ai/deepseek-harness
           ref: 687f282e8625c6b8d11ff58211a90524be2e4317
           path: .tmp/dsh-reference
           persist-credentials: false
+      - name: Apply paired context-usage API patch to isolated host
+        run: git -C .tmp/dsh-reference apply ../../patches/dsh-context-usage-0.2.1-rc.2.patch
       - uses: pnpm/action-setup@v4
         with:
           version: 11.7.0

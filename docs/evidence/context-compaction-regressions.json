@@ -1,0 +1,213 @@
+{
+  "stage": "accounting repair before compaction-ownership extension",
+  "pluginBaseline": "ff4f4073ee4ca164a58089ad498a6b3663ead265",
+  "officialHostBaseline": "687f282e8625c6b8d11ff58211a90524be2e4317",
+  "notes": [
+    "Reports retain the original failed assertions; no model or account calls were used.",
+    "The 16 original failures include absence of the new metadata contract, not 16 independent customer defects.",
+    "The cached baseline is the earlier two-step reproduction; final tests additionally verify the third real receipt."
+  ],
+  "reports": [
+    {
+      "report": "final-old-plugin-stock-host-vitest.json",
+      "sha256": "8705316882a2407f9398fa40a7af794f099e16ed1e0593f57f09bf4a2139bafd",
+      "startedAtEpochMs": 1792808540941,
+      "total": 20,
+      "passed": 4,
+      "failed": 16,
+      "failedAssertions": [
+        {
+          "test": "consumption survives separation from context pressure keeps cache-read, cache-write and uncached input disjoint, with reasoning included in output",
+          "messages": [
+            "AssertionError: expected { inputTokens: 30000, …(4) } to deeply equal { inputTokens: 30000, …(5) }\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-accounting.spec.ts:17:19\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "consumption survives separation from context pressure does not double-count matching raw and last-window notifications (raw-first)",
+          "messages": [
+            "AssertionError: expected { inputTokens: 60000, …(4) } to deeply equal { inputTokens: 60000, …(5) }\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-accounting.spec.ts:29:19\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "consumption survives separation from context pressure does not double-count matching raw and last-window notifications (fallback-first)",
+          "messages": [
+            "AssertionError: expected { inputTokens: 60000, …(4) } to deeply equal { inputTokens: 60000, …(5) }\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-accounting.spec.ts:29:19\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "consumption survives separation from context pressure does not bill fallback-only snapshots that cannot be attributed to the current Harness step",
+          "messages": [
+            "AssertionError: expected { inputTokens: 30000, …(4) } to be undefined\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-accounting.spec.ts:38:19\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "consumption survives separation from context pressure uses the latest smaller window rather than a previous maximum while retaining all consumption",
+          "messages": [
+            "AssertionError: expected { inputTokens: 70000, …(4) } to deeply equal { inputTokens: 70000, …(5) }\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-accounting.spec.ts:46:19\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "consumption survives separation from context pressure does not let a delayed duplicate last snapshot overwrite a newer raw response window",
+          "messages": [
+            "AssertionError: expected { inputTokens: 60000, …(4) } to match object { inputTokens: 60000, …(4) }\n(1 matching property omitted from actual)\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1283:10)\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1700:25)\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-accounting.spec.ts:56:19\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "consumption survives separation from context pressure marks the window unknown after a raw response without usage rather than keeping an old small snapshot",
+          "messages": [
+            "AssertionError: expected { inputTokens: 30000, …(4) } to match object { inputTokens: 30000, …(4) }\n(1 matching property omitted from actual)\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1283:10)\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1700:25)\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-accounting.spec.ts:64:19\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "consumption survives separation from context pressure does not fabricate usage from an estimated-only fallback snapshot",
+          "messages": [
+            "AssertionError: expected { inputTokens: +0, outputTokens: +0 } to be undefined\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-accounting.spec.ts:71:19\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "consumption survives separation from context pressure leaves accounting absent when a raw response has no usage and only a possibly stale last snapshot follows",
+          "messages": [
+            "AssertionError: expected { inputTokens: 30000, …(4) } to be undefined\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-accounting.spec.ts:75:97\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "consumption survives separation from context pressure preserves compaction request consumption without treating its prompt or estimated zero buckets as the post-compaction window",
+          "messages": [
+            "AssertionError: expected { inputTokens: 60000, …(4) } to match object { inputTokens: 60000, …(5) }\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1283:10)\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1700:25)\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-accounting.spec.ts:83:19\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "consumption survives separation from context pressure restores a measured current window after compaction when the next normal response completes",
+          "messages": [
+            "AssertionError: expected { inputTokens: 100000, …(4) } to match object { inputTokens: 100000, …(5) }\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1283:10)\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1700:25)\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-accounting.spec.ts:96:19\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "accounting across cached Harness tool continuations does not bill an already reported response again when its delayed last snapshot arrives in the next mapper",
+          "messages": [
+            "AssertionError: expected 182000 to be 91000 // Object.is equality\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-cached-accounting.spec.ts:128:70\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "current context pressure across native Codex responses keeps the latest 91k window after 1 native responses in one DSH step",
+          "messages": [
+            "AssertionError: expected { inputTokens: 30000, …(3) } to match object { inputTokens: 30000, …(4) }\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1283:10)\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1700:25)\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-pressure.spec.ts:14:35\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "current context pressure across native Codex responses keeps the latest 91k window after 2 native responses in one DSH step",
+          "messages": [
+            "AssertionError: expected { inputTokens: 60000, …(3) } to match object { inputTokens: 60000, …(4) }\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1283:10)\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1700:25)\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-pressure.spec.ts:14:35\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "current context pressure across native Codex responses keeps the latest 91k window after 3 native responses in one DSH step",
+          "messages": [
+            "AssertionError: expected { inputTokens: 90000, …(3) } to match object { inputTokens: 90000, …(4) }\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1283:10)\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1700:25)\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-pressure.spec.ts:14:35\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "current context pressure across native Codex responses clears a previous known context snapshot when the next provider marks its window unknown",
+          "messages": [
+            "AssertionError: expected 'usage' to be 'estimated' // Object.is equality\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-pressure.spec.ts:63:35\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        }
+      ]
+    },
+    {
+      "report": "final-new-plugin-stock-host-vitest.json",
+      "sha256": "684df1dc6e1dae713207291671839375c435ba76e66143837118911d99d10943",
+      "startedAtEpochMs": 1792808540947,
+      "total": 20,
+      "passed": 17,
+      "failed": 3,
+      "failedAssertions": [
+        {
+          "test": "current context pressure across native Codex responses keeps the latest 91k window after 2 native responses in one DSH step",
+          "messages": [
+            "AssertionError: expected 182000 to be 91000 // Object.is equality\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-pressure.spec.ts:24:34\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "current context pressure across native Codex responses keeps the latest 91k window after 3 native responses in one DSH step",
+          "messages": [
+            "AssertionError: expected 273000 to be 91000 // Object.is equality\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-pressure.spec.ts:24:34\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "test": "current context pressure across native Codex responses clears a previous known context snapshot when the next provider marks its window unknown",
+          "messages": [
+            "AssertionError: expected 'usage' to be 'estimated' // Object.is equality\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-pressure.spec.ts:63:35\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        }
+      ]
+    },
+    {
+      "report": "final-new-plugin-patched-host-vitest.json",
+      "sha256": "bf4e614bfd1ecad5914e8fafa6aa0e5058df5e595c9ceb7549e599050da93aa6",
+      "startedAtEpochMs": 1792808514307,
+      "total": 20,
+      "passed": 20,
+      "failed": 0,
+      "failedAssertions": []
+    },
+    {
+      "report": "cached-accounting-baseline-vitest.json",
+      "sha256": "e6d66a2ff51827763246bcc716edd28b853524006d4d9f7686be0a59288e4627",
+      "startedAtEpochMs": 1792808103346,
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "failedAssertions": [
+        {
+          "test": "accounting across cached Harness tool continuations does not bill an already reported response again when its delayed last snapshot arrives in the next mapper",
+          "messages": [
+            "AssertionError: expected 182000 to be 91000 // Object.is equality\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-cached-accounting.spec.ts:111:70\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        }
+      ]
+    }
+  ],
+  "pressureAndErrorBaseline": {
+    "report": "native-pressure-and-error-before-vitest.json",
+    "sha256": "873137371ef2f424b57b1047b1adc8dd224ea3258eff966d0df5025ebf7ce319",
+    "startedAtEpochMs": 1792809729683,
+    "total": 26,
+    "passed": 22,
+    "failed": 4,
+    "failedAssertions": [
+      {
+        "test": "consumption survives separation from context pressure preserves the structured context-overflow classification from the real native cold-replay failure",
+        "messages": [
+          "AssertionError: expected LlmError: Codex ran out of room in the mo… { …(2) } to match object { code: 'CONTEXT_WINDOW_EXCEEDED' }\n(4 matching properties omitted from actual)\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1283:10)\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1700:25)\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-accounting.spec.ts:29:21\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+        ]
+      },
+      {
+        "test": "Codex owns proactive pressure compaction declares provider pressure ownership in real catalogued model metadata while preserving its context capacity",
+        "messages": [
+          "AssertionError: expected { provider: 'codex-local', …(5) } to match object { provider: 'codex-local', …(3) }\n(3 matching properties omitted from actual)\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1283:10)\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1700:25)\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-pressure.spec.ts:85:38\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+        ]
+      },
+      {
+        "test": "Codex owns proactive pressure compaction declares ownership for an uncatalogued Codex model even when no context capacity is known",
+        "messages": [
+          "AssertionError: expected { provider: 'codex-local', …(4) } to match object { provider: 'codex-local', …(2) }\n(3 matching properties omitted from actual)\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1283:10)\n    at Proxy.<anonymous> (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1700:25)\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-pressure.spec.ts:93:18\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+        ]
+      },
+      {
+        "test": "Codex owns proactive pressure compaction delegates proactive pressure while retaining emergency recovery at a 220k window (pressure)",
+        "messages": [
+          "AssertionError: expected true to be false // Object.is equality\n    at /workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/tests/compaction-pressure.spec.ts:116:43\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at file:///workspace/scratch/7fb43f7b7c95/work/dsh-codex-native/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+        ]
+      }
+    ]
+  },
+  "finalFocused": {
+    "report": "native-pressure-and-error-final-vitest.json",
+    "sha256": "8ca7f74134244cb665e8cee3d1ff87ce9a830443cdc9abe4a6f0be9e2152deac",
+    "startedAtEpochMs": 1792809899485,
+    "total": 26,
+    "passed": 26,
+    "failed": 0
+  }
+}

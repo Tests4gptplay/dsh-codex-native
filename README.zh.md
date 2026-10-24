@@ -4,6 +4,8 @@
 
 [English](README.md) · [发布状态与证据](docs/STATUS.md) · [用量规则](docs/USAGE.md) · [协议修复说明](docs/PROTOCOL_STREAM_FIX.md) · [账号生命周期审计](docs/ACCOUNT_LIFECYCLE_AUDIT.md)
 
+开发中：[上下文计量与 Codex 自动压缩接管修复](docs/CONTEXT_COMPACTION_AUDIT.md)。此修复尚未发布，需要配套宿主改动；下方正式安装版本仍为 alpha.7。
+
 ## 当前测试版：v0.2.1-alpha.7
 
 2026-10-24（日本时间）：先在 Windows/Linux 隔离环境复现，再修复两类账号生命周期缺陷；保留 alpha.6 的协议断流修复。适配 **DSH 0.2.1-rc.2**，使用官方 **Codex 0.154.0**。尚未确定用户最初进程退出的原因，不能只凭此前的断流提示判断 OpenAI 云端宕机。

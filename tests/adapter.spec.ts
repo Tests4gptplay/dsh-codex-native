@@ -373,6 +373,7 @@ describe('CodexAppServerAdapter', () => {
           cacheReadTokens: 4,
           cacheWriteTokens: 1,
           reasoningTokens: 2,
+          contextUsage: { inputTokens: 10, outputTokens: 6 },
         },
       },
     ]))
@@ -800,7 +801,7 @@ describe('CodexAppServerAdapter', () => {
     const firstChunks = await collect(cached.adapter, firstRequest)
     expect(firstChunks).toContainEqual({
       type: 'usage',
-      usage: { inputTokens: 20, outputTokens: 5, cacheReadTokens: 80 },
+      usage: { inputTokens: 20, outputTokens: 5, cacheReadTokens: 80, contextUsage: { inputTokens: 100, outputTokens: 5 } },
     })
     const callId = ToolCallId('call-1')
     const firstAnswer: Message = {
