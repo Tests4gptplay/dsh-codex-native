@@ -8,6 +8,8 @@ The final source repair at `0108d12eae09630e3e927ac4e16dd2fa11176d5e` passed [Wi
 
 Release delivery must additionally consume the versioned candidate artifact, verify the cleaned TGZ against the companion host, and record the immutable source, CI run and asset checksums. This section does not claim publication before those steps finish.
 
+The first versioned candidate [run 40077424515](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40077424515) passed the original Windows/Ubuntu suite and build, but the new packaged-runtime gate failed while importing the complete official LLM source: its standard decorators had not been transformed. The release-only configuration now reuses the fixed host's own `standardDecoratorPlugin`; two already-locked host dependencies are made explicit development dependencies. The same real candidate TGZ then passed all 28 package/normalizer checks locally. This correction changes test loading, not production runtime behavior. Publication still requires the corrected candidate and final delivery gates to pass.
+
 ## Published release
 
 Updated 2026-10-24 JST. Published preview: **v0.2.1-alpha.7**, DSH **0.2.1-rc.2**, official Codex **0.154.0**. Dependencies were not upgraded.

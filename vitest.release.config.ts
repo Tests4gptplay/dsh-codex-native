@@ -1,6 +1,6 @@
 import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
 const projectRoot = fileURLToPath(new URL('.', import.meta.url))
@@ -19,10 +19,14 @@ function requiredFile(path: string, label: string): string {
 const releaseEntry = requiredFile(resolve(releaseRoot, 'lib/index.js'), 'Release entry')
 const referenceRoot = resolve(process.env.DSH_REFERENCE_ROOT ?? resolve(projectRoot, '.tmp/dsh-reference'))
 const hostEntry = (path: string) => requiredFile(resolve(referenceRoot, path), 'Patched official host source')
+// The full host LlmRuntime uses standard decorators. Reuse its own test
+// transform so Vite does not pass unsupported @Remote syntax to Node.
+const { standardDecoratorPlugin } = await import(pathToFileURL(hostEntry('vitest.shared.ts')).href)
 
 // Standalone config: never merge the ordinary suite's broad include pattern.
 export default defineConfig({
   root: projectRoot,
+  plugins: [standardDecoratorPlugin()],
   resolve: {
     alias: [
       // Both existing fixtures and the normalizer smoke must use the TGZ export.
