@@ -6,11 +6,13 @@
 
 ## alpha.8: paired-host preview
 
-[Context accounting and Codex pressure compaction](docs/CONTEXT_COMPACTION_AUDIT.md) are prepared for **v0.2.1-alpha.8**. This version requires the companion patch on exact official DSH rc.2 source `687f282e8625c6b8d11ff58211a90524be2e4317` to enable the context-pressure repair. Installing the plugin alone on an unchanged Desktop does not enable that repair.
+[Context accounting and Codex pressure compaction](docs/CONTEXT_COMPACTION_AUDIT.md) are released in **v0.2.1-alpha.8**. This version requires the companion patch on exact official DSH rc.2 source `687f282e8625c6b8d11ff58211a90524be2e4317` to enable the context-pressure repair. Installing the plugin alone on an unchanged Desktop does not enable that repair.
 
 The prerelease delivers a minimal plugin TGZ/tag, a separate host patch, checksums and [source-host installation instructions](docs/INSTALL_PATCHED_HOST.md). Codex owns routine pressure compaction; DSH still handles a real context-overflow error. The first-step skills-description warning is a separate catalog budget and may still appear.
 
-For an unchanged official Desktop, the directly installable version below remains alpha.7. See [release status](docs/STATUS.md) for publication and verification results.
+[Download alpha.8](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.8) · [Verified publication and installation](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40078708238)
+
+For an unchanged official DSH rc.2 Desktop, the directly installable version below remains alpha.7. See [release status](docs/STATUS.md) for publication and verification results.
 
 ## Direct installation on stock DSH: v0.2.1-alpha.7
 

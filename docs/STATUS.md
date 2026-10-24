@@ -1,24 +1,62 @@
 # Release status
 
-## Alpha.8 release preparation
+## Published paired-host preview: alpha.8
 
-The user authorized release preparation on 2026-10-24. **v0.2.1-alpha.8 is a paired-host prerelease**, with a minimal plugin, a separate fixed-baseline DSH patch, checksums and [installation instructions](INSTALL_PATCHED_HOST.md). It is not an automatic upgrade of stock DSH Desktop. The ordinary Desktop installation below remains alpha.7 until the required host contract is available there.
+**v0.2.1-alpha.8** was published on **2026-10-24 08:40:42 UTC / 17:40:42 JST**. [Release and six assets](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.8) · [Installation guide](INSTALL_PATCHED_HOST.md) · [Repair audit](CONTEXT_COMPACTION_AUDIT.md).
 
-The final source repair at `0108d12eae09630e3e927ac4e16dd2fa11176d5e` passed [Windows/Ubuntu CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40075868770): Windows 188/188; Ubuntu 187 passed and one existing Windows-only skip. Both platforms applied the companion patch, typechecked, built and packed. The final focused regression set was 22 passed / 4 failed before and 26/26 after. [Full audit](CONTEXT_COMPACTION_AUDIT.md).
+The complete context-pressure repair requires the companion patch on exact official DSH rc.2 source `687f282e8625c6b8d11ff58211a90524be2e4317`. Unchanged official rc.2 Desktop users can continue with alpha.7 below. The plugin does not apply the host patch automatically; rc.3 is outside this preview's supported peer versions.
 
-Release delivery must additionally consume the versioned candidate artifact, verify the cleaned TGZ against the companion host, and record the immutable source, CI run and asset checksums. This section does not claim publication before those steps finish.
+Codex manages routine pressure compaction; DSH's existing actual-overflow recovery remains. Consumption and the latest native context sample are separate. Delayed last-window snapshots are no longer billed as new receipts. The first-step skills-description warning remains a separate catalog budget.
 
-The first versioned candidate [run 40077424515](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40077424515) passed the original Windows/Ubuntu suite and build, but the new packaged-runtime gate failed while importing the complete official LLM source: its standard decorators had not been transformed. The release-only configuration now reuses the fixed host's own `standardDecoratorPlugin`; two already-locked host dependencies are made explicit development dependencies. The same real candidate TGZ then passed all 28 package/normalizer checks locally. This correction changes test loading, not production runtime behavior. Publication still requires the corrected candidate and final delivery gates to pass.
+## Alpha.8 verification
 
-## Final package and source-host delivery gate
+| Gate | Result |
+|---|---|
+| Same focused regression assertions | 22 passed / 4 failed before; 26/26 after |
+| Versioned Windows candidate | 188/188 ordinary tests; 28/28 packaged-runtime/real-normalizer tests |
+| Versioned Ubuntu candidate | 187 passed / one existing Windows-only skip; 28/28 packaged-runtime/real-normalizer tests |
+| Final cleaned release TGZ | 28/28 with complete patched official host modules |
+| Complete final patched host build | 9/9 tasks |
+| Fresh source-host profile | TGZ installation and configuration passed |
+| Actual host package resolution | LLM, token-meter and compaction-basic resolve to the patched checkout; no stock profile shadow |
+| Actual Web startup | Official local launch-token exchange 303, authenticated HTML 200 |
+| Immutable GitHub tag installation | Passed without build exceptions; runtime hashes match candidate |
 
-Candidate `a37ad914015d9cd1d94c75e86df472b9af6e58b9` passed [versioned CI 40077977631](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40077977631): Windows 188/188, Ubuntu 187 passed / one platform skip, and the separate packaged-runtime suite 28/28 on both.
+[Versioned candidate CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40078589328) · [Successful publication workflow](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40078708238) · [Merged PR #1](https://github.com/Tests4gptplay/dsh-codex-native/pull/1).
 
-The first [delivery run 40078120740](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40078120740) passed the final cleaned TGZ's 28 tests, the complete **final patched host build (9/9)**, fresh-profile plugin installation and actual host-package resolution. It stopped before creating a tag because the new startup verifier requested the bare root URL and correctly received the host's authentication response, 401.
+These tests use artificial history, isolated peers and an isolated local host. They do not use account credentials or paid model calls, and do not replace native long-session acceptance on the user's Desktop.
 
-The verifier now follows the fixed host's own browser-auth smoke: read its complete ready URL, exchange the local launch token for a cookie through HTTP 303, then use that cookie for HTTP 200 HTML. This is local host authentication, independent of model/account login. Saved startup logs redact the temporary token. Host authentication, runtime code and the published patch are unchanged. The corrected delivery gate must succeed before publication.
+## Alpha.8 delivery identity
 
-## Published release
+| Item | Exact identity |
+|---|---|
+| Tested source | `455d273e8ea6825a5275e665845a5557e068b0cd` |
+| Tested source tree | `d3783189984d765ad8e148c67156dd2aa84c5994` |
+| Runtime tag commit | `1a1c0f7b044df93ffec1689418d8835c73ff346a` |
+| Runtime tag tree | `52ad629ef7e027ae3fbb6702f0bb3ed10153773b` |
+| Final TGZ | `dsh-codex-native-0.2.1-alpha.8.tgz`, 52,848 bytes |
+| TGZ SHA256 | `e9b65da495cac7fe7b86626da7482076d2e9e4ede9bdc2bdced5712653962eda` |
+| Host patch SHA256 | `dd8049f33fea9187cc025e792fc25feb68a8ad5ccb1044cc85e063429c2b717e` |
+
+The Release provides the TGZ, host patch, installation guide, upstream host license, provenance manifest and SHA256SUMS. The plugin tag/TGZ has 30 runtime/declaration/configuration/license/README files and no tests, fixtures, development source, CI, scripts or devDependencies. Runtime dependencies remain `@openai/codex 0.154.0` and the existing Schemastery range.
+
+All six published assets were independently downloaded. Their bytes match GitHub's reported SHA256 digests; `SHA256SUMS` matches its five covered assets, and the release manifest matches the tested candidate and runtime files. The tag and final TGZ contain the same 30-file set. Their `package.json` values are identical; the tag retains one final LF that pnpm pack removes from the TGZ. No whole-archive or all-files byte-identity claim is made.
+
+The original CI artifact and final TGZ differ intentionally in development manifest fields and release READMEs. The server JS, client JS and Cordis patch retain the candidate's exact bytes:
+
+| Runtime file | SHA256 |
+|---|---|
+| `lib/index.js` | `2851a7ef05e9a0df791a0cc15ca5f6b80e83f0bee337a67b319f848efb0685bf` |
+| `lib/client.js` | `1f352ff0320a1089eded7a239af6c69c1941dcb90501cccab184aa08ecd8d0ea` |
+| `cordis.patch.yml` | `dd0abdd62d928e3081c9cd84b2c3d01e1862cbd04e1196b9f6603d7044a8d7d6` |
+
+## Release preparation findings
+
+The first added package gate failed to import the complete official LLM source because its standard decorators had not been transformed. Reusing the fixed host's own test transformer and declaring two already-locked development dependencies made all 28 checks pass. Production logic and the original assertions were unchanged.
+
+The first delivery run passed the final TGZ, the final host's complete 9/9 build, installation and package resolution, then stopped before tag creation when the new startup checker requested a bare unauthenticated URL and received 401. The checker now follows the official ready URL → 303/cookie → 200 flow and redacts the temporary launch token in saved logs. Host authentication and the companion patch were unchanged. The later publication run above passed every step.
+
+## Previous stock-Desktop release: alpha.7
 
 Updated 2026-10-24 JST. Published preview: **v0.2.1-alpha.7**, DSH **0.2.1-rc.2**, official Codex **0.154.0**. Dependencies were not upgraded.
 
@@ -32,7 +70,7 @@ Only production source `src/native-account.ts` changed (18 added / 11 removed li
 
 The isolated setup uses the official DSH subprocess runtime and actual child processes, with only the Codex peer replaced by deterministic fixtures. No user computer, real credentials or live model quota was used. The active-turn/cache-expiry control is accelerated, not a one-hour real-model soak.
 
-## Published installer verification
+## Alpha.7 installer verification
 
 The existing release workflow consumed the exact successful Ubuntu artifact, stripped development manifest fields, checked its runtime-only whitelist, installed it through an isolated official DSH Web profile, verified the fixed GitHub tag installation with no allowBuilds exception, and uploaded the prerelease. Every publication job step passed. Release published at **2026-10-24 01:11:37 UTC / 10:11:37 JST**.
 
@@ -48,13 +86,13 @@ The actual CI artifact `12542246673` was independently downloaded and its runtim
 
 The browser bundle and patch are byte-identical to alpha.6. Server JS grew by 170 bytes. The published manifest was read back: no scripts or devDependencies. The published tree contains no tests, fixtures, source, CI, screenshots or helper scripts. Tests remain development-only source files, never startup tasks in the installed plugin. Runtime dependencies still take normal installation space.
 
-## Preserved behavior and limits
+## Alpha.7 behavior and inherited limits
 
 No new Watchdog, heartbeat, background reconnect, usage poller, model-task deadline or automatic in-flight tool replay. Default model timeout remains zero. The existing six-second account teardown wait applies only when closing a process; it was not introduced or extended by alpha.7. Normal official initialization remains once per connection. Model runner, session cache, permissions and UI sources are unchanged from alpha.6.
 
 Manual Query/Clear, official controls and skins remain. Public reset announcements remain approximate reference groupings. Real-account OAuth acceptance, every Electron/skin combination, concurrent-login races and complete native approval/elicitation bridging are not certified by these tests. The initiating cause of the original user's protocol-stream closure remains unproven. No untested broader cleanup was applied.
 
-## Historical evidence
+## Earlier releases
 
 Alpha.6 EOF/backpressure, diagnostics and dead-session recovery are retained: [repair details](PROTOCOL_STREAM_FIX.md), [regression CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39996592077), [release installation](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39997058708).
 

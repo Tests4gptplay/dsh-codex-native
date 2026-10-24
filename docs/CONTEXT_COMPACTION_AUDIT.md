@@ -1,6 +1,6 @@
 # Context accounting and Codex automatic compaction
 
-**Alpha.8 release candidate; paired host required.** The plugin and the companion DSH host patch must be used together. An unchanged stock host ignores the new contracts. See [installation and compatibility](INSTALL_PATCHED_HOST.md) and [release status](STATUS.md).
+**Released in v0.2.1-alpha.8; paired host required.** The plugin and the companion DSH host patch must be used together. An unchanged stock host ignores the new contracts. See [installation and compatibility](INSTALL_PATCHED_HOST.md) and [release status](STATUS.md).
 
 ## Decision and compatibility
 
@@ -100,6 +100,7 @@ The paired patch is fixed to official rc.2 commit `687f282e8625c6b8d11ff58211a90
 | Context usage focused tests | 54/54 |
 | Pressure ownership official tests | 269/269; strengthened Loader file 7/7, overlapping the 269 |
 | Complete official build before the pressure-only extension | 9/9 tasks |
+| Final published patch: complete official build | 9/9 tasks in the successful [release workflow](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40078708238) |
 | Final combined source compilation | Host contracts and Client compiler passed |
 | Final runtime bundles | Official builder rebuilt LLM, token-meter, compaction-basic and tool-cordis; actual JavaScript imports and ownership/validation behavior passed |
 | Final aggregate build checks | Host and Client, 2/2 |
@@ -109,6 +110,14 @@ The paired patch is fixed to official rc.2 commit `687f282e8625c6b8d11ff58211a90
 | Documentation | 494 original type excerpts and 494 translated derivatives matched; seven changed document pairs passed |
 
 The initial official doc-sync aggregate was 41/43. Its two failing components were a documentation-graph Node heap limit and the expected stale generated API catalog. Increasing only the documentation tool's heap and using the official catalog generator made both component checks pass. The original aggregate exit status is not rewritten as a successful run. Final source freshness and type-equivalence gates were checked again after the pressure-only extension.
+
+## Published delivery
+
+Released **v0.2.1-alpha.8** at **2026-10-24 08:40:42 UTC / 17:40:42 JST**. The release is explicitly a paired-host preview; unchanged rc.2 Desktop users keep the alpha.7 installation path.
+
+The final source `455d273e8ea6825a5275e665845a5557e068b0cd` passed [versioned Windows/Ubuntu CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40078589328), including 28 packaged-runtime/normalizer checks on each platform. The [publication run](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40078708238) then consumed that exact artifact, verified the final cleaned TGZ with the same 28 checks, completed the full patched host build, installed in a fresh profile, verified the three host package locations, and served the authenticated Web UI (303 cookie exchange, then 200 HTML). Exact immutable GitHub installation and runtime byte identity also passed.
+
+The published TGZ is **52,848 bytes**; SHA256 `e9b65da495cac7fe7b86626da7482076d2e9e4ede9bdc2bdced5712653962eda`. The separate host patch retains the SHA256 recorded above. [Assets and checksums](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.8) · [installation guide](INSTALL_PATCHED_HOST.md) · [release status](STATUS.md).
 
 ## Evidence boundaries
 

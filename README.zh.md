@@ -6,11 +6,13 @@
 
 ## alpha.8：需要配套宿主补丁的预发布
 
-[上下文计量与 Codex 压力压缩接管修复](docs/CONTEXT_COMPACTION_AUDIT.md)已准备为 **v0.2.1-alpha.8**。完整修复要求对官方 DSH rc.2 的固定源码 `687f282e8625c6b8d11ff58211a90524be2e4317` 应用配套补丁；只在原版 Desktop 中升级插件，不会启用这次上下文压力修复。
+[上下文计量与 Codex 压力压缩接管修复](docs/CONTEXT_COMPACTION_AUDIT.md)已发布为 **v0.2.1-alpha.8**。完整修复要求对官方 DSH rc.2 的固定源码 `687f282e8625c6b8d11ff58211a90524be2e4317` 应用配套补丁；只在原版 Desktop 中升级插件，不会启用这次上下文压力修复。
 
 预发布交付极简插件 TGZ/标签、独立宿主补丁、校验和及[源码宿主安装步骤](docs/INSTALL_PATCHED_HOST.md)。日常压力压缩交给 Codex，真实上下文溢出仍由 DSH 原有机制恢复。新对话第一步的 skills 描述缩短提示属于独立目录预算，仍可能出现。
 
-使用未修改的官方 Desktop 时，下方可直接安装的版本仍为 alpha.7。实际发布和验证结果见[发布状态](docs/STATUS.md)。
+[下载 alpha.8](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.8) · [发布与安装验收](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40078708238)
+
+使用未修改的官方 DSH rc.2 Desktop 时，下方可直接安装的版本仍为 alpha.7。实际发布和验证结果见[发布状态](docs/STATUS.md)。
 
 ## 原版 DSH 可直接安装：v0.2.1-alpha.7
 

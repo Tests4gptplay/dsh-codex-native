@@ -104,6 +104,6 @@ Billing uses complete raw response receipts; context pressure uses the latest in
 
 The “Skill descriptions were shortened” warning can still appear in a new conversation. It comes from Codex's skill-catalog budget and is not conversation compaction. This release does not change that budget.
 
-See the [repair audit](https://github.com/Tests4gptplay/dsh-codex-native/blob/__SOURCE_SHA__/docs/CONTEXT_COMPACTION_AUDIT.md) and [candidate CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/__CI_RUN__). Account-free regression tests and isolated host startup do not replace native long-session acceptance on a user's machine.
+See the [repair audit](https://github.com/Tests4gptplay/dsh-codex-native/blob/455d273e8ea6825a5275e665845a5557e068b0cd/docs/CONTEXT_COMPACTION_AUDIT.md) and [candidate CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40078589328). Account-free regression tests and isolated host startup do not replace native long-session acceptance on a user's machine.
 
 To stop this isolated installation, quit its Web process. Your original Desktop and its data remain separate. Keep the patched source checkout and its profile together until moving to a future host version with an explicitly supported equivalent contract; no downgrade or migration of that profile is asserted here.
