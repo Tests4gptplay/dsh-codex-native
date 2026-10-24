@@ -75,6 +75,63 @@ jobs:
             runtimeSha256: Object.fromEntries(['lib/index.js', 'lib/client.js', 'cordis.patch.yml'].map(path => [path, digest(path)])),
           }, null, 2) + '\n')
           NODE
+      - name: Assemble and inspect clean candidate TGZ
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p 'require("./package.json").version')"
+          test "$VERSION" = '0.2.1-alpha.9'
+          mkdir -p .tmp/clean-candidate .tmp/candidate-unpacked
+          tar -xzf "dist/dsh-codex-native-$VERSION.tgz" --strip-components=1 -C .tmp/clean-candidate
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict'
+          import { copyFileSync, readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs'
+          import { join, relative } from 'node:path'
+          const dir = '.tmp/clean-candidate'
+          const manifest = JSON.parse(readFileSync(join(dir,'package.json'),'utf8'))
+          for (const field of ['scripts','devDependencies','packageManager','publishConfig']) delete manifest[field]
+          writeFileSync(join(dir,'package.json'),JSON.stringify(manifest,null,2)+'\n')
+          for (const locale of ['README.md','README.zh.md']) copyFileSync(join('docs/releases/alpha.9',locale),join(dir,locale))
+          const files = folder => readdirSync(folder).flatMap(name => {
+            const p = join(folder,name)
+            return statSync(p).isDirectory() ? files(p) : [relative(dir,p).replaceAll('\\','/')]
+          })
+          const items = files(dir)
+          const allowed = new Set(['package.json','LICENSE','cordis.patch.yml','README.md','README.zh.md'])
+          for (const p of items) assert(allowed.has(p)||/^lib\/(?:index\.js|client\.js|(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.d\.ts)$/.test(p),'Unexpected file: '+p)
+          assert(!manifest.scripts && !manifest.devDependencies)
+          assert.equal(manifest.version,'0.2.1-alpha.9')
+          const client = readFileSync(join(dir,'lib/client.js'),'utf8')
+          const old = ['不会自动刷新','非仅本插件','不是历史重置流水','不拆分当天用量','No automatic refresh','not only this plugin','not a historical reset ledger','no separate API key is needed']
+          const docs = ['README.md','README.zh.md'].map(name=>readFileSync(join(dir,name),'utf8'))
+          for (const snippet of old) for (const payload of [client,...docs]) assert(!payload.includes(snippet),'Old copy in installed package: '+snippet)
+          for (const payload of docs) {
+            assert(payload.includes('v0.2.1-alpha.9'))
+            assert(payload.includes('https://raw.githubusercontent.com/Tests4gptplay/dsh-codex-native/main/docs/screenshots/codex-usage-desktop-anonymized.png'))
+          }
+          assert(client.includes('账号总用量') && client.includes('ChatGPT account total'),'Refined UI labels missing from compiled client')
+          console.log('CLEAN_CANDIDATE_COPY_VERIFIED', {version:manifest.version,files:items.length})
+          NODE
+          rm "dist/dsh-codex-native-$VERSION.tgz"
+          (cd .tmp/clean-candidate && pnpm pack --pack-destination "$GITHUB_WORKSPACE/dist")
+          tar -xzf "dist/dsh-codex-native-$VERSION.tgz" --strip-components=1 -C .tmp/candidate-unpacked
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict'
+          import { readFileSync,writeFileSync } from 'node:fs'
+          import { createHash } from 'node:crypto'
+          const pkg = JSON.parse(readFileSync('.tmp/candidate-unpacked/package.json','utf8'))
+          assert.equal(pkg.version,'0.2.1-alpha.9')
+          assert(!pkg.scripts && !pkg.devDependencies)
+          const manifest = JSON.parse(readFileSync('dist/source-manifest.json','utf8'))
+          const bundle = readFileSync('dist/dsh-codex-native-0.2.1-alpha.9.tgz')
+          manifest.artifactSha256 = createHash('sha256').update(bundle).digest('hex')
+          for (const [path,hash] of Object.entries(manifest.runtimeSha256)) {
+            const data = readFileSync('.tmp/candidate-unpacked/'+path)
+            assert.equal(createHash('sha256').update(data).digest('hex'),hash)
+          }
+          writeFileSync('dist/source-manifest.json',JSON.stringify(manifest,null,2)+'\n')
+          console.log('CLEAN_TGZ_VERIFIED', {version:pkg.version,sha256:manifest.artifactSha256})
+          NODE
       - name: Verify packed adapter against complete paired host modules
         shell: bash
         env:
