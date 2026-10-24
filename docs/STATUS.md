@@ -1,39 +1,41 @@
 # Release status
 
-Updated 2026-10-24 JST. Published preview: **v0.2.1-alpha.6**, DSH **0.2.1-rc.2**, official Codex **0.154.0**. No dependency upgrade is part of this repair.
+Updated 2026-10-24 JST. Published preview: **v0.2.1-alpha.7**, DSH **0.2.1-rc.2**, official Codex **0.154.0**. Dependencies were not upgraded.
 
-[Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.6) · [Cross-platform CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39996592077) · [Publication and exact Git install](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39997058708).
+[Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.7) · [Before-fix reproduction](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40047676806) · [After-fix cross-platform CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40048042517) · [Publication and exact Git install](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40048610503).
 
-## Verified alpha.6 repair
+## Verified alpha.7 audit
 
-Fixes protocol EOF/close leaving requests blocked on stdin drain, preserves late process-exit diagnostics, observes account-process startup failure, and rebuilds an already-closed cached process from durable history on the next request. It does not prove the initiating cause of the user's original exit. See [reproduction and boundaries](PROTOCOL_STREAM_FIX.md).
+The unchanged alpha.6 runtime failed six new fault cases on both Windows and Ubuntu while all existing tests and two new positive controls passed. Those six cases share two causes: account service disposal did not own opening/query connections; login cancellation waited indefinitely for an unresponsive peer's acknowledgement. Tests ran first, before production modification.
 
-Both Ubuntu and Windows typecheck, account-free regression, build and pack jobs passed at source `80175849c80d2cc688ac77276bb0588262bb8e95`. Ubuntu ran 153 passed tests with one Windows-only test skipped. The Windows job passed its applicable suite, including native Windows launch. Fifteen added tests cover pipe lifecycle, diagnostics, cache recovery and a real fixture child exiting through the official DSH subprocess runtime. No real account or paid model request was used.
+Only production source `src/native-account.ts` changed (18 added / 11 removed lines). It owns account connections before initialize, releases owned connections on disposal, and makes explicit login cancel independent of peer acknowledgement. The same eight new assertions and full existing regression suite passed on both platforms at source `e434e5fc57fd647fac7332c6304e6515cd11c5bd`; typecheck, build and pack passed too. [Detailed reproduction, scope and limits](ACCOUNT_LIFECYCLE_AUDIT.md).
 
-Main source commit `5ca7899967b8551d8a9e9f7ecac3696b289e38a5` has exactly the tested source tree `62c0539daf759656b931390be1393d61285b2ea7`. Temporary patch/export helpers are absent from the final tree and were not incorporated into main history. Tests remain development-only.
+The isolated setup uses the official DSH subprocess runtime and actual child processes, with only the Codex peer replaced by deterministic fixtures. No user computer, real credentials or live model quota was used. The active-turn/cache-expiry control is accelerated, not a one-hour real-model soak.
 
-The release job consumed that tested artifact, stripped development manifest fields, checked the runtime file list, installed through the official DSH Web profile, and installed the exact GitHub tag without an allowBuilds exception. The published TGZ is 51,784 bytes; GitHub reports SHA-256 `25e5fcded66613ac6c3da16acf108d9db9d00ebd8220a4427316f067b03b0db3`.
+## Published installer verification
 
-The tested artifact was downloaded and its runtime bytes compared to the published tag:
+The existing release workflow consumed the exact successful Ubuntu artifact, stripped development manifest fields, checked its runtime-only whitelist, installed it through an isolated official DSH Web profile, verified the fixed GitHub tag installation with no allowBuilds exception, and uploaded the prerelease. Every publication job step passed. Release published at **2026-10-24 01:11:37 UTC / 10:11:37 JST**.
 
-| Runtime file | Bytes | Git blob |
+TGZ: `dsh-codex-native-0.2.1-alpha.7.tgz`, **52,264 bytes**. GitHub reports SHA-256 `3cec67b8c13f91c8a9d84f2a2a8ff458ca3deaf9ee655e3c6899880f06b39295`; this is GitHub's asset digest, not a claim that its TGZ bytes were independently downloaded in this audit.
+
+The actual CI artifact `12542246673` was independently downloaded and its runtime blobs calculated. All match the published tag tree `4bd4a0a7b8ae849a4c8db8424eaaa937bf76f3b4`:
+
+| Runtime file | Bytes | Git blob SHA-1 |
 |---|---:|---|
-| lib/index.js | 125070 | 91b20cb4dbc9563433ecba41b321bdc067769242 |
+| lib/index.js | 125240 | b43ab035cd141d1459123b3412c4f36c085a5d80 |
 | lib/client.js | 25925 | ba4fd9fbaba03f81fa4e4beb24901ae4083716d8 |
 | cordis.patch.yml | 2304 | 135a27ce43c9be6350ec495502f6645208569c12 |
 
-The browser bundle and patch are unchanged from alpha.5. The actual alpha.6 compiled transport was also rerun in the isolated local EOF/backpressure reproduction: the two formerly pending requests now reject, with no unhandled rejection. Late exit details are tested through the shared process wrapper and real-child CI case, not claimed from the wire class alone.
-
-Published tag tree: `26ae7657756c8cc3280f0b59becf3fc556cbd4c8`. Its manifest has no scripts or devDependencies; no source, tests, mock backend, CI, screenshots or patch helper is shipped. Runtime dependencies still take normal installation space.
+The browser bundle and patch are byte-identical to alpha.6. Server JS grew by 170 bytes. The published manifest was read back: no scripts or devDependencies. The published tree contains no tests, fixtures, source, CI, screenshots or helper scripts. Tests remain development-only source files, never startup tasks in the installed plugin. Runtime dependencies still take normal installation space.
 
 ## Preserved behavior and limits
 
-No new watchdog, heartbeat, background reconnect loop, usage poller, active-task deadline, or automatic in-flight tool replay. Existing host retry policy and cancellation remain unchanged. Account teardown's bounded wait only runs when closing a process; it is not a model task time limit.
+No new Watchdog, heartbeat, background reconnect, usage poller, model-task deadline or automatic in-flight tool replay. Default model timeout remains zero. The existing six-second account teardown wait applies only when closing a process; it was not introduced or extended by alpha.7. Normal official initialization remains once per connection. Model runner, session cache, permissions and UI sources are unchanged from alpha.6.
 
-Manual history Query/Clear, official native controls and skin variables are retained. Historical reset periods remain approximate reference groupings. Real-account availability, every Electron/skin combination, the original user's exit cause and complete native Codex interactive approval remain outside this account-free certification.
+Manual Query/Clear, official controls and skins remain. Public reset announcements remain approximate reference groupings. Real-account OAuth acceptance, every Electron/skin combination, concurrent-login races and complete native approval/elicitation bridging are not certified by these tests. The initiating cause of the original user's protocol-stream closure remains unproven. No untested broader cleanup was applied.
 
 ## Historical evidence
 
-The user confirmed alpha.5 history querying in their actual Desktop/skin environment and approved an anonymized screenshot. That remains evidence for the UI, not a claim that alpha.6's transport repair has already been exercised on their machine.
+Alpha.6 EOF/backpressure, diagnostics and dead-session recovery are retained: [repair details](PROTOCOL_STREAM_FIX.md), [regression CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39996592077), [release installation](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39997058708).
 
-[Approved screenshot](screenshots/codex-usage-desktop-anonymized.png) · [Screenshot provenance](SCREENSHOTS.md) · [alpha.5 delivery](DELIVERY-alpha5.md) · [alpha.4 reproduction](REPRODUCTION.md) · [Cleanup audit](AUDIT.md).
+The user-confirmed alpha.5 Desktop history screenshot remains evidence for that UI in their environment, not acceptance of later transport/account repairs on their machine. [Screenshot](screenshots/codex-usage-desktop-anonymized.png) · [provenance](SCREENSHOTS.md) · [alpha.5 delivery](DELIVERY-alpha5.md) · [alpha.4 reproduction](REPRODUCTION.md).
