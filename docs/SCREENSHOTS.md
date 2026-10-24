@@ -1,22 +1,20 @@
 # Screenshot provenance / 截图来源
 
-## Approved user Desktop screenshot — 2026-10-23
+## User-confirmed DSH Desktop image — 2026-10-23
 
-[codex-usage-desktop-anonymized.png](screenshots/codex-usage-desktop-anonymized.png) is a user-provided screenshot of the installed alpha.5 history panel in DSH Desktop with the user's skin. The user explicitly confirmed successful history retrieval and approved public upload of this edited image.
+[codex-usage-desktop-anonymized.png](screenshots/codex-usage-desktop-anonymized.png) shows the actual alpha.5 Token-history panel in DSH Desktop with the user's theme. The user confirmed successful manual history retrieval and approved this image for public display.
 
-- Original dimensions: 776 × 622. Published PNG: 250,713 bytes.
-- Privacy edit: the account row alone now reads `GPT-Codex@OpenAI.com · 套餐: pro`; the email-like label is fictional display text, not a real OpenAI identity.
-- The approved file was edited directly from the original screenshot, not generated or redrawn by an image model. Pixels outside the account rectangle were verified unchanged before approval. Dates, totals and layout are unaltered.
-- No original account-bearing screenshot or original email was uploaded. No original metadata was retained in the approved PNG.
-- SHA-256: `3d832f887fdd2a1d56516513a8978fb990bc53dce20f5580a511d7865fe7d36b`.
-- This is user-reported success in one environment. It does not validate every skin, account or native Codex approval path. Public reference periods are not a verified private-account reset ledger.
+- Original size: **776 × 622**; published PNG: **250,713 bytes**.
+- Privacy edit: the account line uses the fictional label `GPT-Codex@OpenAI.com · 套餐: pro`.
+- The screenshot was edited directly, preserving dates, totals, interface arrangement and all pixels outside the account-label area.
+- SHA256: `3d832f887fdd2a1d56516513a8978fb990bc53dce20f5580a511d7865fe7d36b`.
 
-中文：用户已确认 alpha.5 手动历史查询成功并授权公开。图片只将账号一行改为展示用假账号，其他像素、日期和用量不变；未上传含原始账号的截图，也未使用生图重绘版作为实测证据。
+中文：这是用户确认成功的 alpha.5 DSH Desktop 历史查询实测画面。发布版对账号一行进行了脱敏，其他界面、日期、Token 数据与原图一致。
 
-## Development-only component previews
+## Theme examples / 主题示例
 
-[Light usage preview](screenshots/codex-usage-light.png) and [dark usage preview](screenshots/codex-usage-dark.png) use the actual plugin component and official DSH controls with explicitly illustrative data. They are not signed-in account screenshots. See `tests/docs-preview.spec.tsx` and `docs/USAGE.md` for reproduction and scope.
+[Light usage example](screenshots/codex-usage-light.png) · [Dark usage example](screenshots/codex-usage-dark.png)
 
-The earlier [English login preview](screenshots/codex-native-login-en.png) is an isolated, unauthenticated component capture with a test shell, retained as historical development evidence rather than current Desktop acceptance.
+These images use the plugin's DSH components and illustrative values to demonstrate theme adaptation. The [English login example](screenshots/codex-native-login-en.png) demonstrates the settings component.
 
-No upstream-author screenshots are used. Real account identifiers, tokens, device codes, OAuth URLs or private paths must not be published without specific authorization and redaction.
+The curated market carousel uses [screenshots.json](../screenshots.json), with the user-confirmed image first.

@@ -1,11 +1,9 @@
-# Publishing the minimal runtime
+# Release build and distribution
 
-Current release: [v0.2.1-alpha.4](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.4).
+Current release: [v0.2.1-alpha.8](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.8).
 
-`ci.yml` fetches pinned official DSH source into an ignored temporary directory and tests on Linux/Windows. Its artifacts include the built plugin and neutral before/after rendering HTML; the HTML is test evidence, not an installed component.
+The Windows and Ubuntu candidate pipeline uses pinned DSH source, tests the adapter and prepares a plugin artifact. The publication pipeline builds the minimal runtime snapshot, validates it against the companion DSH host patch, checks clean installation and publishes a fixed Git tag with SHA256 checksums.
 
-`release-clean.yml` accepts a completed successful matrix run, extracts its tested package, removes development metadata and scripts, verifies only runtime files remain, runs official DSH profile installation, creates a fresh minimal tag, verifies the exact GitHub install, and publishes a prerelease. It does not rebuild untested runtime code or overwrite old tags.
+Alpha.8 assets: compiled plugin TGZ, paired DSH rc.2 host patch, setup guide, upstream license, provenance manifest and SHA256SUMS.
 
-The published tag contains 25 files, including three additional runtime declaration files for the presentation and native launch fix. No test/mock code, CI or src directory is included. Source remains in main for maintainability.
-
-[Reproduction and limitations](REPRODUCTION.md) · [Release CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/39948312538).
+[Candidate CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40078589328) · [Release CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40078708238) · [Installation guide](INSTALL_PATCHED_HOST.md) · [Release status](STATUS.md)
