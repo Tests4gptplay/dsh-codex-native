@@ -43,8 +43,9 @@ describe('official DSH controls with exclusively manual history requests', () =>
     const notes = box.querySelector('[data-usage-sources]')!
     expect(notes.textContent).toContain('account/usage/read')
     expect(notes.textContent).toContain('codex-reset.com')
-    expect(notes.textContent).toContain('重置周期仅供参考')
-    expect(notes.textContent).toContain('清除仅清空本页结果')
+    expect(notes.textContent).toContain('ChatGPT 账号总用量')
+    expect(notes.textContent).toContain('历史周期参考公开重置公告')
+    expect(notes.textContent).toContain('清除当前表格')
     expect(box.querySelectorAll('[data-usage-clear]')).toHaveLength(1)
     expect(box.querySelectorAll('tr')).toHaveLength(2)
   })
