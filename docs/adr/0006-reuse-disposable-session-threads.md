@@ -4,7 +4,7 @@ status: accepted
 
 # Reuse disposable App Server threads per Harness session
 
-> Update: the automatic-compaction ownership decision below is superseded by [the context compaction repair](../CONTEXT_COMPACTION_AUDIT.md). Codex owns routine pressure compaction on the paired host; actual context-overflow recovery remains available in Harness. Existing replay deduplication and cold-reconstruction boundaries remain; native checkpoints are not made portable by this change.
+> Update: the automatic-compaction ownership decision below is superseded by [the context compaction repair](../CONTEXT_COMPACTION_AUDIT.md). Codex owns routine pressure compaction on the paired host; Harness handles actual context-overflow recovery. Replay deduplication and cold reconstruction continue through the Harness session log.
 
 Reuse one live ephemeral Codex App Server thread for consecutive conversation requests carrying the same Harness `sessionId` and request epoch. The Harness session log and each fully assembled `GenerateOptions` request remain authoritative; the live thread is a disposable transport cache that may be destroyed without losing the ability to issue the request again.
 
@@ -18,9 +18,9 @@ Cold reconstruction injects the complete logged history into a new thread and st
 
 When Codex requests a declared Harness dynamic tool, the adapter emits the normal Harness `tool-call` and leaves the App Server JSON-RPC request pending. The next request may resume that Codex turn when its derived history is the expected prefix followed by the matching `function_call_output` and then zero or more ordinary user messages. The lease replies with that logged result, steers each following message into the active turn in order, and Codex continues the same turn. A replacement, reordering, another tool result, or any unsupported history disposes the lease and reconstructs a new thread instead of guessing how to merge state.
 
-Successful output advances the lease's expected history from the same replay items written to the Harness assistant message. Cancellation, transport failure, malformed output, consumer abandonment, or an unrecognized state transition disposes the lease. The App Server process raises `model_auto_compact_token_limit` to Harness's safe integer ceiling so Harness compaction can replace logged history first. Native Codex compaction may still finish the active Codex turn, but it makes the lease ineligible for another Harness request: opaque native compaction state is provider trajectory, not a portable Harness checkpoint. Harness compaction remains the durable history-replacement mechanism and naturally forces a cold thread from its logged summary.
+Successful output advances the lease's expected history from the replay items written to the Harness assistant message. Cancellation, transport failure, malformed output, consumer abandonment or unexpected state transitions dispose the lease. The current alpha.8 integration delegates routine context compaction to Codex and retains the compressed native context in a live thread. When DSH replaces durable history through its overflow-recovery path, the next request reconstructs the thread from the updated Harness log.
 
-Calls without `sessionId` and auxiliary calls keep the one-shot path. Session disposal, plugin unload, configurable idle expiry, and configurable least-recently-used capacity eviction close listeners before terminating the process tree and await quiescence. Threads stay `ephemeral: true`; the plugin does not resume Codex rollout files after process or application restart.
+Calls without `sessionId` and auxiliary calls keep the one-shot path. Session disposal, plugin unload, configurable idle expiry, and configurable least-recently-used capacity eviction close listeners before terminating the process tree and await quiescence. Threads use `ephemeral: true`; after a process or application restart the adapter reconstructs the thread from session history.
 
 ## Evidence
 
@@ -36,4 +36,4 @@ The [Codex configuration reference](https://developers.openai.com/codex/config-r
 
 ## Consequences
 
-Normal consecutive turns and Harness tool loops reuse Codex's provider cache without turning the plugin into a second Agent implementation. The common path avoids full-history reinjection, while every unusual prefix or lifecycle event pays a cold-start cost rather than adding reconciliation branches. One active cached session consumes one App Server process, so deployments must choose bounded capacity and idle expiry appropriate to their host. Token usage for a Codex turn that spans several Harness tool steps arrives when that native turn completes and is attributed to the completing Harness step.
+Consecutive turns and Harness tool loops reuse Codex's provider cache. The common path efficiently continues the live thread; history replacements and lifecycle transitions reconstruct from the Harness session log. One active cached session consumes one App Server process, so deployments must choose bounded capacity and idle expiry appropriate to their host. Token usage for a Codex turn that spans several Harness tool steps arrives when that native turn completes and is attributed to the completing Harness step.

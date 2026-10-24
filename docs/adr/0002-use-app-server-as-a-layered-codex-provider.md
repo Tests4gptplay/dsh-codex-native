@@ -10,8 +10,8 @@ Replace the `codex exec` bridge with pinned Codex `0.147.0` App Server after exp
 
 - Use a direct Responses API provider. This preserves exact prompt and tool ownership but requires API credentials instead of the existing local Codex login.
 - Keep `codex exec`. This preserves the existing OAuth bridge but buffers trajectory and simulates Harness tool calls through structured output.
-- Use App Server as if it were a raw model transport. The outbound wire proof in ADR 0001 rejects this claim.
+- Treat App Server as a raw model transport. The ADR 0001 wire capture instead supports the layered-provider architecture.
 
 ## Consequences
 
-The provider can reuse the local Codex OAuth session and stream App Server events, but its documentation and diagnostics must never claim prompt ownership. Harness tools are supplied as App Server dynamic tools; their requests are handed back to the Harness agent loop and are never executed inside the provider. Code Mode remains enabled because `gpt-5.6-sol` uses it to dispatch dynamic tools. Shell, file, web, MCP, collaboration, and other Codex-native action events remain owned by Codex: each lifecycle snapshot is logged as a distinct `codex-action` content block and displayed in Harness without producing `tool/call` or `tool/result` events.
+The provider reuses the local Codex OAuth session and streams App Server events. Documentation and diagnostics identify Codex-owned prompt layers. Harness tools are exposed as App Server dynamic tools and their requests are routed to the Harness agent loop for execution. Code Mode remains enabled because `gpt-5.6-sol` uses it to dispatch dynamic tools. Shell, file, web, MCP, collaboration and other native action events are owned by Codex; their lifecycle snapshots appear in Harness as provider trajectory.
