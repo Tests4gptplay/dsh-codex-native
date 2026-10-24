@@ -132,6 +132,9 @@ export class CodexAppServerAdapter extends LlmAdapter {
     const resolved = configured ?? fallback
     return Promise.resolve({
       ...modelInfo(provider, resolved),
+      // Codex manages pressure in its live thread. The paired host still
+      // handles an actual overflow, including a cold history reconstruction.
+      pressureCompaction: 'provider' as const,
       ...(resolved.contextWindow === undefined
         ? {}
         : { context: { contextWindow: resolved.contextWindow } }),

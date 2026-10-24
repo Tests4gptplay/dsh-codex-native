@@ -63,6 +63,20 @@ export interface CodexReplayState {
   readonly contextItems: readonly JsonValue[]
 }
 
+/** One current native request's window, separate from cumulative consumption. */
+export interface CodexContextUsage {
+  /** Complete prompt input, including cache reads and cache writes. */
+  readonly inputTokens: number
+  /** Response output, already including reasoning tokens. */
+  readonly outputTokens: number
+}
+
+/** Requires the matching DSH contextUsage contract for pressure measurement. */
+export interface CodexTokenUsage extends TokenUsage {
+  /** null means consumption is known but the current window is not. */
+  readonly contextUsage: CodexContextUsage | null
+}
+
 /** Validated Harness dynamic-tool call decoded from an App Server callback. */
 export interface HarnessToolCall {
   readonly id: ToolCallId
@@ -651,8 +665,9 @@ export class AppServerEventMapper {
     cacheWriteTokens: 0,
     reasoningTokens: 0,
   }
-  private fallbackUsage: UsageAccumulator | undefined
   private rawUsageSeen = false
+  private contextCompacting = false
+  private currentContextUsage: CodexContextUsage | null = null
   private nativeCompactionSeen = false
   private nextIndex = 0
   private nextRawAction = 0
@@ -692,7 +707,10 @@ export class AppServerEventMapper {
   private retainRawItem(value: unknown): RetainedRawItem {
     const candidate = responseItem(value, `raw response item ${this.rawItems.length + this.contextItems.length}`)
     if (this.consumeBaseline(candidate)) return { kind: 'known' }
-    if (NATIVE_COMPACTION_ITEM_TYPES.has(candidate.type)) this.nativeCompactionSeen = true
+    if (NATIVE_COMPACTION_ITEM_TYPES.has(candidate.type)) {
+      this.nativeCompactionSeen = true
+      this.currentContextUsage = null
+    }
     const disposition = rawItemDisposition(candidate)
     if (disposition === 'replay') {
       this.rawItems.push(candidate)
@@ -804,6 +822,10 @@ export class AppServerEventMapper {
   }
 
   private addUsage(value: unknown, raw: boolean): void {
+    if (raw) {
+      // A completed response with no usage must not inherit an older window.
+      this.currentContextUsage = null
+    }
     if (value === null || value === undefined) return
     const usage = object(value, 'token usage')
     const totalInput = finiteInteger(usage.inputTokens, 'usage.inputTokens')
@@ -820,8 +842,12 @@ export class AppServerEventMapper {
       reasoningTokens: finiteInteger(usage.reasoningOutputTokens ?? 0, 'usage.reasoningOutputTokens'),
     }
     if (!raw) {
-      this.fallbackUsage = decoded
+      // thread.last is a snapshot, not a new receipt. It can arrive in the
+      // next Harness step after its raw response has already been counted.
       return
+    }
+    if (!this.contextCompacting) {
+      this.currentContextUsage = { inputTokens: totalInput, outputTokens: decoded.outputTokens }
     }
     this.rawUsageSeen = true
     for (const [field, label] of USAGE_FIELDS) {
@@ -857,7 +883,10 @@ export class AppServerEventMapper {
       )
     }
     const { method, params } = event
-    if (method === 'thread/compacted') this.nativeCompactionSeen = true
+    if (method === 'thread/compacted') {
+      this.nativeCompactionSeen = true
+      this.currentContextUsage = null
+    }
     if (method === 'rawResponseItem/completed') {
       return this.rawItemAction(params)
     }
@@ -888,6 +917,13 @@ export class AppServerEventMapper {
     }
     if (method === 'item/started' || method === 'item/completed') {
       const current = item(params.item, `${method} item`)
+      if (current.type === 'contextCompaction') {
+        // The compaction request's own input is not the replacement window.
+        // Wait for the next ordinary response's authoritative usage. This is
+        // independent of the existing thread-cache/replay policy.
+        this.contextCompacting = method === 'item/started'
+        this.currentContextUsage = null
+      }
       if (current.type === 'agentMessage') {
         if (method === 'item/started') return []
         if (typeof current.text !== 'string') {
@@ -982,16 +1018,18 @@ export class AppServerEventMapper {
     ]
   }
 
-  /** Return disjoint token accounting for the whole App Server turn when available. */
-  usage(): TokenUsage | undefined {
-    const source = this.rawUsageSeen ? this.accumulatedUsage : this.fallbackUsage
-    if (source === undefined) return undefined
+  /** Return disjoint accounting for raw responses observed in this Harness step. */
+  usage(): CodexTokenUsage | undefined {
+    // Without a raw receipt, consumption is unknown; do not invent a zero bill.
+    if (!this.rawUsageSeen) return undefined
+    const source = this.accumulatedUsage
     return {
       inputTokens: source.inputTokens,
       outputTokens: source.outputTokens,
       ...(source.cacheReadTokens === 0 ? {} : { cacheReadTokens: source.cacheReadTokens }),
       ...(source.cacheWriteTokens === 0 ? {} : { cacheWriteTokens: source.cacheWriteTokens }),
       ...(source.reasoningTokens === 0 ? {} : { reasoningTokens: source.reasoningTokens }),
+      contextUsage: this.currentContextUsage === null ? null : { ...this.currentContextUsage },
     }
   }
 
@@ -1041,12 +1079,19 @@ export function assertCompletedTurn(event: CodexAppServerEvent): void {
   }
   const turn = object(event.params.turn, 'turn/completed turn')
   if (turn.status === 'completed') return
-  const error = turn.error === null || turn.error === undefined
+  const details = turn.error === null || turn.error === undefined
+    ? undefined
+    : object(turn.error, 'turn error')
+  const error = details === undefined
     ? `Codex turn ended with status ${String(turn.status)}`
-    : typeof object(turn.error, 'turn error').message === 'string'
-      ? String(object(turn.error, 'turn error').message)
+    : typeof details.message === 'string'
+      ? details.message
       : JSON.stringify(turn.error)
-  const code = turn.status === 'interrupted' ? 'ABORTED' : codexFailureCode(error)
+  const code = turn.status === 'interrupted'
+    ? 'ABORTED'
+    : details?.codexErrorInfo === 'contextWindowExceeded'
+      ? CONTEXT_WINDOW_EXCEEDED_CODE
+      : codexFailureCode(error)
   throw new LlmError(error, code, code === CODEX_MODEL_CAPACITY_CODE
     ? { providerRetryAfterMs: CODEX_MODEL_CAPACITY_RETRY_AFTER_MS }
     : undefined)

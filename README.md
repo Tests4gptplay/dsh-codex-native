@@ -4,7 +4,15 @@
 
 [简体中文](README.zh.md) · [Release status and evidence](docs/STATUS.md) · [Usage rules](docs/USAGE.md) · [Protocol repair](docs/PROTOCOL_STREAM_FIX.md) · [Account lifecycle audit](docs/ACCOUNT_LIFECYCLE_AUDIT.md)
 
-## Current preview: v0.2.1-alpha.7
+## alpha.8: paired-host preview
+
+[Context accounting and Codex pressure compaction](docs/CONTEXT_COMPACTION_AUDIT.md) are prepared for **v0.2.1-alpha.8**. This version requires the companion patch on exact official DSH rc.2 source `687f282e8625c6b8d11ff58211a90524be2e4317` to enable the context-pressure repair. Installing the plugin alone on an unchanged Desktop does not enable that repair.
+
+The prerelease delivers a minimal plugin TGZ/tag, a separate host patch, checksums and [source-host installation instructions](docs/INSTALL_PATCHED_HOST.md). Codex owns routine pressure compaction; DSH still handles a real context-overflow error. The first-step skills-description warning is a separate catalog budget and may still appear.
+
+For an unchanged official Desktop, the directly installable version below remains alpha.7. See [release status](docs/STATUS.md) for publication and verification results.
+
+## Direct installation on stock DSH: v0.2.1-alpha.7
 
 2026-10-24 JST: fixes two account-lifecycle defects reproduced on Windows and Linux before modifying runtime code; retains alpha.6 protocol repairs. Targets **DSH 0.2.1-rc.2**, official **Codex 0.154.0**. The original initiating process-exit cause remains unproven; the earlier stream-closed message alone does not establish an OpenAI cloud outage.
 

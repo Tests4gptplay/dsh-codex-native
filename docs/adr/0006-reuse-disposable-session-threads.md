@@ -4,6 +4,8 @@ status: accepted
 
 # Reuse disposable App Server threads per Harness session
 
+> Update: the automatic-compaction ownership decision below is superseded by [the context compaction repair](../CONTEXT_COMPACTION_AUDIT.md). Codex owns routine pressure compaction on the paired host; actual context-overflow recovery remains available in Harness. Existing replay deduplication and cold-reconstruction boundaries remain; native checkpoints are not made portable by this change.
+
 Reuse one live ephemeral Codex App Server thread for consecutive conversation requests carrying the same Harness `sessionId` and request epoch. The Harness session log and each fully assembled `GenerateOptions` request remain authoritative; the live thread is a disposable transport cache that may be destroyed without losing the ability to issue the request again.
 
 ## State ownership

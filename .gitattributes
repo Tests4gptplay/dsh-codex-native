@@ -5,3 +5,4 @@
 *.mjs text eol=lf
 *.ts text eol=lf
 *.yml text eol=lf
+*.patch text eol=lf

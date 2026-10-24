@@ -20,13 +20,17 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - name: Fetch exact official DSH rendering source into disposable workspace
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Fetch exact official DSH source into disposable workspace
         uses: actions/checkout@v4
         with:
           repository: deepseek-ai/deepseek-harness
           ref: 687f282e8625c6b8d11ff58211a90524be2e4317
           path: .tmp/dsh-reference
           persist-credentials: false
+      - name: Apply paired context-usage API patch to isolated host
+        run: git -C .tmp/dsh-reference apply ../../patches/dsh-context-usage-0.2.1-rc.2.patch
       - uses: pnpm/action-setup@v4
         with:
           version: 11.7.0
@@ -51,6 +55,37 @@ jobs:
           test -s lib/client.js
           mkdir -p dist
           pnpm pack --pack-destination dist
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs'
+          import { createHash } from 'node:crypto'
+          import { execFileSync } from 'node:child_process'
+          const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
+          const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim()
+          const digest = path => createHash('sha256').update(readFileSync(path)).digest('hex')
+          const artifact = `dsh-codex-native-${pkg.version}.tgz`
+          writeFileSync('dist/source-manifest.json', JSON.stringify({
+            version: pkg.version,
+            sourceCommit: git('rev-parse', 'HEAD'),
+            sourceTree: git('rev-parse', 'HEAD^{tree}'),
+            ciRun: process.env.GITHUB_RUN_ID,
+            hostBase: git('-C', '.tmp/dsh-reference', 'rev-parse', 'HEAD'),
+            hostPatchSha256: digest('patches/dsh-context-usage-0.2.1-rc.2.patch'),
+            artifact,
+            artifactSha256: digest(`dist/${artifact}`),
+            runtimeSha256: Object.fromEntries(['lib/index.js', 'lib/client.js', 'cordis.patch.yml'].map(path => [path, digest(path)])),
+          }, null, 2) + '\n')
+          NODE
+      - name: Verify packed adapter against complete paired host modules
+        shell: bash
+        env:
+          DSH_RELEASE_ROOT: ${{ github.workspace }}/.tmp/release-candidate
+          DSH_REFERENCE_ROOT: ${{ github.workspace }}/.tmp/dsh-reference
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p 'require("./package.json").version')"
+          mkdir -p .tmp/release-candidate
+          tar -xzf "dist/dsh-codex-native-$VERSION.tgz" --strip-components=1 -C .tmp/release-candidate
+          pnpm exec vitest run --config vitest.release.config.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -58,4 +93,5 @@ jobs:
           path: |
             ${{ runner.temp }}/codex-reproduction/*.html
             dist/*.tgz
+            dist/source-manifest.json
           if-no-files-found: ignore
