@@ -28,6 +28,7 @@ type Spawn = (spec: SubprocessSpawnSpec) => SubprocessHandle
 
 export class NativeCodexAccount {
   private active: RunningCodex | undefined
+  private readonly connections = new Set<RunningCodex>()
   private flow: LoginFlow | undefined
   private disposed = false
   constructor(private readonly spawn: Spawn) {}
@@ -49,19 +50,24 @@ export class NativeCodexAccount {
     let closeTask: Promise<void> | undefined
     const close = (): Promise<void> => {
       closeTask ??= (async () => {
-        rpc.dispose()
-        diagnostics.markCleanup()
-        child.terminate()
-        await child.waitForExit(AbortSignal.timeout(6_000)).catch(() => {})
+        try {
+          rpc.dispose()
+          diagnostics.markCleanup()
+          child.terminate()
+          await child.waitForExit(AbortSignal.timeout(6_000)).catch(() => {})
+        } finally { this.connections.delete(conn) }
       })()
       return closeTask
     }
+    const conn: RunningCodex = { child, rpc, close, failure: diagnostics.failure }
+    // Own every account process before initialize can suspend, including short queries.
+    this.connections.add(conn)
     try {
       await rpc.request('initialize', {
         clientInfo: { name: 'dsh_codex_native', title: 'DSH Codex Native', version: '0.2.1' },
       })
       await rpc.notify('initialized', {})
-      return { child, rpc, close, failure: diagnostics.failure }
+      return conn
     } catch (error: unknown) {
       await close()
       throw diagnostics.failure(error)
@@ -152,13 +158,15 @@ export class NativeCodexAccount {
   async cancel(id: string): Promise<LoginFlow> {
     if (!this.flow || this.flow.id !== id) throw new Error('Unknown Codex login attempt')
     const conn = this.active
+    const cancelled: LoginFlow = { id, phase: 'cancelled', mode: this.flow.mode }
+    this.active = undefined
+    this.flow = cancelled
     if (conn) {
-      await conn.rpc.request('account/login/cancel', { loginId: id }).catch(() => {})
-      if (this.active === conn) this.active = undefined
+      // Cancellation cannot depend on acknowledgement from a stalled peer.
+      void conn.rpc.request('account/login/cancel', { loginId: id }).catch(() => {})
       await conn.close()
     }
-    this.flow = { id, phase: 'cancelled', mode: this.flow.mode }
-    return { ...this.flow }
+    return { ...cancelled }
   }
   async logout(): Promise<{ authenticated: false }> {
     if (this.flow?.phase === 'pending') await this.cancel(this.flow.id)
@@ -167,8 +175,7 @@ export class NativeCodexAccount {
   }
   async dispose(): Promise<void> {
     this.disposed = true
-    const conn = this.active
     this.active = undefined
-    if (conn) await conn.close()
+    await Promise.all([...this.connections].map(conn => conn.close()))
   }
 }
