@@ -6,9 +6,9 @@ name: Publish verified minimal Codex Native release
   workflow_dispatch:
     inputs:
       tested_run_id:
-        description: Successful Linux and Windows regression run
+        description: Successful versioned candidate run (must match the pinned source)
         required: true
-        default: '40048042517'
+        default: '40077977631'
 permissions:
   contents: write
   actions: read
@@ -18,130 +18,129 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     env:
-      TESTED_RUN: ${{ inputs.tested_run_id || '40048042517' }}
-      RELEASE_VERSION: '0.2.1-alpha.7'
+      TESTED_RUN: ${{ inputs.tested_run_id || '40077977631' }}
+      EXPECTED_SOURCE_SHA: 'a37ad914015d9cd1d94c75e86df472b9af6e58b9'
+      RELEASE_VERSION: '0.2.1-alpha.8'
+      RELEASE_TAG: 'v0.2.1-alpha.8'
     steps:
-      - name: Require successful Ubuntu and Windows regression jobs from this repository
+      - name: Bind release to successful versioned Windows and Ubuntu candidate
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TESTED_RUN" > "$RUNNER_TEMP/run.json"
-          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TESTED_RUN/jobs" > "$RUNNER_TEMP/jobs.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TESTED_RUN/jobs?filter=latest&per_page=100" > "$RUNNER_TEMP/jobs.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TESTED_RUN/artifacts?per_page=100" > "$RUNNER_TEMP/artifacts.json"
           node --input-type=module <<'NODE'
-          import {readFileSync,appendFileSync} from 'node:fs'
-          import {join} from 'node:path'
-          const run=JSON.parse(readFileSync(join(process.env.RUNNER_TEMP,'run.json'),'utf8'))
-          const jobs=JSON.parse(readFileSync(join(process.env.RUNNER_TEMP,'jobs.json'),'utf8')).jobs
-          if(run.status!=='completed'||run.conclusion!=='success')throw Error('Tested CI has not passed')
-          for(const name of ['build (ubuntu-latest)','build (windows-latest)']){
-            if(!jobs.some(j=>j.name===name&&j.conclusion==='success'))throw Error('Missing passed job: '+name)
+          import assert from 'node:assert/strict'
+          import { readFileSync } from 'node:fs'
+          import { join } from 'node:path'
+          const read = name => JSON.parse(readFileSync(join(process.env.RUNNER_TEMP, name), 'utf8'))
+          const run = read('run.json')
+          assert.equal(run.repository.full_name, process.env.GITHUB_REPOSITORY)
+          assert.equal(run.head_repository.full_name, process.env.GITHUB_REPOSITORY)
+          assert.equal(run.path, '.github/workflows/ci.yml')
+          assert.equal(run.head_sha, process.env.EXPECTED_SOURCE_SHA)
+          assert.equal(run.status, 'completed')
+          assert.equal(run.conclusion, 'success')
+          const jobs = read('jobs.json').jobs
+          for (const name of ['build (ubuntu-latest)', 'build (windows-latest)']) {
+            assert(jobs.some(job => job.name === name && job.conclusion === 'success'), 'Missing passed job: ' + name)
           }
-          appendFileSync(process.env.GITHUB_ENV,'TESTED_SHA='+run.head_sha+'\n')
+          const candidates = read('artifacts.json').artifacts.filter(artifact => artifact.name === 'codex-reproduction-ubuntu-latest')
+          assert.equal(candidates.length, 1)
+          assert.equal(candidates[0].expired, false)
+          assert.equal(candidates[0].workflow_run.head_sha, process.env.EXPECTED_SOURCE_SHA)
+          console.log('VERIFIED_CANDIDATE', { sha: run.head_sha, run: run.id, attempt: run.run_attempt, artifact: candidates[0].id })
           NODE
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXPECTED_SOURCE_SHA }}
+          persist-credentials: false
+      - name: Fetch exact companion host baseline
+        uses: actions/checkout@v4
+        with:
+          repository: deepseek-ai/deepseek-harness
+          ref: 687f282e8625c6b8d11ff58211a90524be2e4317
+          path: .tmp/dsh-reference
+          persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
           repository: ${{ github.repository }}
           run-id: ${{ env.TESTED_RUN }}
           github-token: ${{ github.token }}
           name: codex-reproduction-ubuntu-latest
-          path: verified-artifact
+          path: .tmp/verified-artifact
       - uses: pnpm/action-setup@v4
         with:
           version: 11.7.0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Form source-free runtime from tested bundle only
+      - name: Form minimal runtime and separate companion assets from tested source
         shell: bash
         run: |
           set -euo pipefail
-          TGZ="$(find verified-artifact -type f -name 'dsh-codex-native-*.tgz' -print -quit)"
-          test -n "$TGZ"
-          STAGE="$RUNNER_TEMP/release-runtime"
-          mkdir -p "$STAGE" dist
-          tar -xzf "$TGZ" --strip-components=1 -C "$STAGE"
-          STAGE="$STAGE" node --input-type=module <<'NODE'
-          import {readFileSync,writeFileSync,readdirSync,appendFileSync} from 'node:fs'
-          import {join,relative} from 'node:path'
-          const root=process.env.STAGE
-          const p=JSON.parse(readFileSync(join(root,'package.json'),'utf8'))
-          if(p.name!=='dsh-codex-native'||p.version!==process.env.RELEASE_VERSION)throw Error('Unexpected candidate identity')
-          for(const field of ['scripts','devDependencies','packageManager','publishConfig'])delete p[field]
-          writeFileSync(join(root,'package.json'),JSON.stringify(p,null,2)+'\n')
-          const spec='github:Tests4gptplay/dsh-codex-native#v'+p.version
-          writeFileSync(join(root,'README.md'),[
-            '# DSH Codex Native '+p.version, '',
-            'Install in DSH Plugins → Add plugin:', '', spec, '',
-            'Official Codex app-server main-model adapter with native ChatGPT login and manual account usage history. Independent community integration; original MIT attribution is retained in LICENSE.', '',
-            '## alpha.7 account lifecycle repair', '',
-            'Two defects were reproduced BEFORE changing runtime code, using real isolated children under the official DSH subprocess runtime on Windows and Linux. Disposing the account service left stalled initialize/status/quota/usage requests alive, and cancelling login waited for an unresponsive server acknowledgement.', '',
-            'The account service now owns each of its children before initialization and closes those owned children on disposal. Explicit login cancellation sends its protocol request best-effort and closes that login connection without waiting indefinitely for acknowledgement. It does not terminate model-task processes or delete saved credentials.', '',
-            'The same eight new checks and the existing regression suite passed after the fix. Normal initialization still occurs once per connection; an active model turn survived an accelerated idle-cache-expiry test. This is not a one-hour real-model soak or proof of the initiating cause of an earlier user-reported protocol exit.', '',
-            'Only src/native-account.ts changed in production source relative to alpha.6. No dependency, model policy, approval policy, frontend bundle, watchdog, heartbeat, usage poller, task timeout or in-flight replay change was introduced. Prior alpha.6 protocol-closure fixes are retained.', '',
-            'Manual Query/Clear history and native DSH controls remain. Token history is account-wide. Historical reset grouping references codex-reset.com public announcements and is approximate. Clear only empties the view.', '',
-            'The installation snapshot excludes tests, fixtures, source, CI, screenshots, installation scripts and devDependencies. Test fixture peers run only in the isolated development tests. No real account or paid model request was used for this audit.', '',
-            'Fully quit and reopen DSH after upgrading. Existing native interactive-approval limitations remain. Detailed audit and test evidence: https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/ACCOUNT_LIFECYCLE_AUDIT.md', ''
-          ].join('\n'))
-          writeFileSync(join(root,'README.zh.md'),[
-            '# DSH Codex Native '+p.version, '',
-            'DSH 插件 → 添加插件：', '', spec, '',
-            '通过 OpenAI 官方 Codex app-server 接入 DSH 主模型，提供 ChatGPT 原生登录和手动账号历史用量查询。独立社区项目，保留原 MIT 许可和署名。', '',
-            '## alpha.7 账号生命周期修复', '',
-            '先在 Windows/Linux 的官方 DSH 子进程运行时中复现，再修改代码：停用账号服务后，卡住的初始化、状态/额度/历史查询仍挂起；取消登录也可能卡在等待服务端确认。', '',
-            '现在从初始化之前开始记录本服务拥有的账号子进程，停用时只回收这些进程。明确取消登录时尽力发送协议取消请求，然后关闭该登录连接，不无限等确认，不结束模型任务进程，也不删除已保存凭据。', '',
-            '原样八个新增用例及既有回归均通过。正常握手仍每连接一次；活动模型任务通过缩短缓存空闲阈值的测试。这不是一小时真实模型耐久测试，也未证明此前用户进程退出的最初原因。', '',
-            '相对 alpha.6 只修改一个生产源文件 src/native-account.ts。依赖、模型/审批策略、前端不变；不增加 Watchdog、心跳、用量轮询、模型任务硬超时或执行途中自动重放。保留 alpha.6 断流处理。', '',
-            '保留手动查询、单清除按钮、折叠每日用量与 DSH 原生控件。Token 是账号口径；历史周期参考 codex-reset.com 公告，仅供参考。清除只清本页显示。', '',
-            '安装快照不含测试、替身、源码、CI、截图、安装脚本或开发依赖。测试后端只在隔离开发环境运行，未使用真实账号或模型额度。', '',
-            '升级后完全退出并重新打开 DSH。原生审批交互仍有已知局限。详细审计：https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/ACCOUNT_LIFECYCLE_AUDIT.md', ''
-          ].join('\n'))
-          const all=[]
-          function walk(dir){for(const e of readdirSync(dir,{withFileTypes:true})){const f=join(dir,e.name);if(e.isDirectory())walk(f);else all.push(relative(root,f).replaceAll('\\','/'))}}
-          walk(root)
-          const allowed=new Set(['package.json','cordis.patch.yml','LICENSE','README.md','README.zh.md'])
-          for(const f of all)if(!allowed.has(f)&&!/^lib\/(?:index\.js|client\.js|(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.d\.ts)$/.test(f))throw Error('Unexpected installed file: '+f)
-          for(const f of ['lib/index.js','lib/client.js']){
-            const js=readFileSync(join(root,f),'utf8')
-            for(const token of ['mock-app-server.mjs','TEST_CODEX_SCENARIO','fixture-secret','vitest','#dsh-primitives','tests/official-primitives','account-lifecycle.mjs','AUDIT_RECEIVED:'])if(js.includes(token))throw Error('Test code leaked into '+f)
-          }
-          const client=readFileSync(join(root,'lib/client.js'),'utf8')
-          if(!client.includes('@deepseek-ai/dsh-client-ui-primitives'))throw Error('Client lost shared official-control dependency')
-          if(p.scripts||p.devDependencies)throw Error('Development lifecycle leaked into runtime')
-          console.log('SOURCE_FREE_TEST_FREE_RUNTIME files='+all.length)
-          appendFileSync(process.env.GITHUB_ENV,'RELEASE_TAG=v'+p.version+'\nDIST_STAGE='+root+'\n')
-          NODE
-          (cd "$STAGE" && pnpm pack --pack-destination "$GITHUB_WORKSPACE/dist")
-          test -s "dist/dsh-codex-native-$RELEASE_VERSION.tgz"
-      - name: Clean installation through official DSH profile
+          node scripts/prepare-release.mjs
+          (cd .tmp/release-runtime && pnpm pack --pack-destination "$GITHUB_WORKSPACE/dist")
+          mkdir -p .tmp/release-installed
+          tar -xzf "dist/dsh-codex-native-$RELEASE_VERSION.tgz" --strip-components=1 -C .tmp/release-installed
+          git -C .tmp/dsh-reference apply --check "$GITHUB_WORKSPACE/dist/dsh-context-usage-0.2.1-rc.2.patch"
+          git -C .tmp/dsh-reference apply "$GITHUB_WORKSPACE/dist/dsh-context-usage-0.2.1-rc.2.patch"
+      - name: Verify final cleaned TGZ with the published companion patch
         env:
-          DSH_HOME: ${{ runner.temp }}/release-dsh-smoke
+          DSH_RELEASE_ROOT: ${{ github.workspace }}/.tmp/release-installed
+          DSH_REFERENCE_ROOT: ${{ github.workspace }}/.tmp/dsh-reference
         shell: bash
         run: |
           set -euo pipefail
-          pnpm dlx @deepseek-ai/dsh@0.2.1-rc.2 plugin --profile web add "$GITHUB_WORKSPACE/dist/dsh-codex-native-$RELEASE_VERSION.tgz"
-          pnpm dlx @deepseek-ai/dsh@0.2.1-rc.2 --profile web --dump-config > "$RUNNER_TEMP/composed.txt"
-          grep -Fq codex-local "$RUNNER_TEMP/composed.txt"
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm exec vitest run --config vitest.release.config.ts --reporter=default --reporter=json --outputFile=.tmp/release-verification.json
+      - name: Select the exact host build toolchain
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.28.5
+          package_json_file: .tmp/dsh-reference/package.json
+      - name: Build the fixed official host with the shipped patch
+        working-directory: .tmp/dsh-reference
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+      - name: Install final TGZ and start the patched source host
+        env:
+          DSH_HOME: ${{ runner.temp }}/paired-host-profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e "$DSH_HOME"
+          (cd .tmp/dsh-reference && pnpm dsh plugin --profile web add "$GITHUB_WORKSPACE/dist/dsh-codex-native-$RELEASE_VERSION.tgz")
+          (cd .tmp/dsh-reference && pnpm dsh --profile web --dump-config) > "$RUNNER_TEMP/paired-config.txt"
+          grep -Fq codex-local "$RUNNER_TEMP/paired-config.txt"
+          node scripts/verify-paired-host.mjs
+          node scripts/prepare-release.mjs finalize
       - name: Publish immutable runtime-only tag
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then echo 'Tag already exists; refusing overwrite'; exit 1; fi
-          cd "$DIST_STAGE"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo 'Tag already exists; refusing overwrite'
+            exit 1
+          fi
+          cd .tmp/release-runtime
           git init -q -b release-snapshot
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -qm "release: verified runtime $RELEASE_TAG from $TESTED_SHA"
+          git commit -qm "release: verified paired-host runtime $RELEASE_TAG from $EXPECTED_SOURCE_SHA"
           git tag "$RELEASE_TAG"
           git remote add origin "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git"
           git push -q origin "refs/tags/$RELEASE_TAG"
-      - name: Verify exact GitHub installation without build exceptions
+      - name: Verify exact GitHub installation and runtime identity
         shell: bash
         run: |
           set -euo pipefail
@@ -151,44 +150,46 @@ jobs:
           printf 'packages:\n  - .\nautoInstallPeers: false\n' > pnpm-workspace.yaml
           pnpm add "github:$GITHUB_REPOSITORY#$RELEASE_TAG"
           P="$(realpath node_modules/dsh-codex-native)"
-          test -s "$P/lib/index.js"
-          test -s "$P/lib/client.js"
-          for NAME in tests src scripts .github; do test ! -e "$P/$NAME"; done
+          for NAME in tests src scripts .github patches; do test ! -e "$P/$NAME"; done
           P="$P" node --input-type=module <<'NODE'
-          import {readFileSync} from 'node:fs'
-          import {join} from 'node:path'
-          const p=JSON.parse(readFileSync(join(process.env.P,'package.json'),'utf8'))
-          if(p.scripts||p.devDependencies)throw Error('Unexpected install scripts or dev dependencies')
-          console.log('EXACT_GITHUB_INSTALL_PASSED')
+          import assert from 'node:assert/strict'
+          import { createHash } from 'node:crypto'
+          import { readFileSync } from 'node:fs'
+          import { join } from 'node:path'
+          const pkg = JSON.parse(readFileSync(join(process.env.P, 'package.json'), 'utf8'))
+          assert.equal(pkg.version, process.env.RELEASE_VERSION)
+          assert(!pkg.scripts && !pkg.devDependencies)
+          const manifest = JSON.parse(readFileSync(join(process.env.GITHUB_WORKSPACE, 'dist/release-manifest.json'), 'utf8'))
+          for (const [path, hash] of Object.entries(manifest.runtimeSha256)) {
+            assert.equal(createHash('sha256').update(readFileSync(join(process.env.P, path))).digest('hex'), hash)
+          }
+          console.log('EXACT_GITHUB_INSTALL_AND_RUNTIME_IDENTITY_PASSED')
           NODE
-      - name: Publish verified GitHub pre-release
+      - name: Publish paired-host GitHub pre-release
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          cat > "$RUNNER_TEMP/notes.md" <<'NOTES'
-          # Codex Native alpha.7 — reproduced account lifecycle fixes
-
-          DSH Desktop: Plugins → Add plugin:
-
-          ```text
-          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.7
-          ```
-
-          - Reproduced two account-side lifecycle defects before editing production code. Six failure scenarios failed on unchanged alpha.6 on both Windows and Linux; two positive controls passed.
-          - Track every owned account child before initialization, including status, quota and history queries, so disposal releases stalled requests and their child processes.
-          - Explicit login cancellation no longer waits indefinitely for an unresponsive peer's acknowledgement. It still sends best-effort protocol cancellation and closes only that login connection.
-          - The same eight new cases and the existing regression suite pass after the fix, using real official DSH subprocess machinery with isolated fixture peers. No real account or paid model call was used.
-          - Only one production source file changed from alpha.6. No dependency, model-task policy, approval policy, browser UI, watchdog, heartbeat, usage polling, task timeout or automatic in-flight replay changes.
-          - Keep alpha.6 protocol-closure fixes and alpha.5 manual history UI. Installer tag and TGZ exclude tests, fixtures, source, CI, screenshots, scripts and devDependencies.
-
-          The accelerated cache-expiry control is not a one-hour live-model soak. The initiating cause of the user's earlier process exit and complete Electron/native-approval coverage remain unproven. No claim of eliminating all risks is made.
-
-          Fully quit and reopen DSH after upgrading. No login-file or conversation deletion is required.
-
-          Before-fix reproduction: https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40047676806
-          Audit: https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/ACCOUNT_LIFECYCLE_AUDIT.md
-          NOTES
-          printf '\nAfter-fix CI: https://github.com/%s/actions/runs/%s\nTested source: %s\n' "$GITHUB_REPOSITORY" "$TESTED_RUN" "$TESTED_SHA" >> "$RUNNER_TEMP/notes.md"
-          gh release create "$RELEASE_TAG" "dist/dsh-codex-native-$RELEASE_VERSION.tgz" --repo "$GITHUB_REPOSITORY" --prerelease --title 'DSH Codex Native alpha.7 — account lifecycle fixes' --notes-file "$RUNNER_TEMP/notes.md"
+          printf '\nRelease verification: https://github.com/%s/actions/runs/%s\n' "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> .tmp/release-notes.md
+          gh release create "$RELEASE_TAG" \
+            "dist/dsh-codex-native-$RELEASE_VERSION.tgz" \
+            dist/dsh-context-usage-0.2.1-rc.2.patch \
+            dist/INSTALL_PATCHED_HOST.md \
+            dist/DSH-LICENSE.txt \
+            dist/release-manifest.json \
+            dist/SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" --prerelease \
+            --title 'DSH Codex Native alpha.8 — context accounting (paired host preview)' \
+            --notes-file .tmp/release-notes.md
+      - name: Preserve release verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alpha8-release-verification
+          path: |
+            dist/*
+            .tmp/release-verification.json
+            .tmp/paired-host-smoke.json
+            .tmp/paired-host-startup.log
+          if-no-files-found: ignore
