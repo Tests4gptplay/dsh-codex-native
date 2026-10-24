@@ -72,7 +72,7 @@ jobs:
             hostPatchSha256: digest('patches/dsh-context-usage-0.2.1-rc.2.patch'),
             artifact,
             artifactSha256: digest(`dist/${artifact}`),
-            runtimeSha256: Object.fromEntries(['lib/index.js', 'lib/client.js', 'cordis.patch.yml'].map(path => [path, digest(path)])),
+            runtimeSha256: Object.fromEntries(['lib/index.js', 'lib/client.js', 'cordis.patch.yml', 'assets/chatgpt-auth.png', 'assets/LOBE-ICONS-LICENSE.txt', 'locale/en.json', 'locale/zh.json'].map(path => [path, digest(path)])),
           }, null, 2) + '\n')
           NODE
       - name: Assemble and inspect clean candidate TGZ
@@ -97,10 +97,23 @@ jobs:
             return statSync(p).isDirectory() ? files(p) : [relative(dir,p).replaceAll('\\','/')]
           })
           const items = files(dir)
-          const allowed = new Set(['package.json','LICENSE','cordis.patch.yml','README.md','README.zh.md'])
+          const allowed = new Set(['package.json','LICENSE','cordis.patch.yml','README.md','README.zh.md','assets/chatgpt-auth.png','assets/LOBE-ICONS-LICENSE.txt','locale/en.json','locale/zh.json'])
           for (const p of items) assert(allowed.has(p)||/^lib\/(?:index\.js|client\.js|(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.d\.ts)$/.test(p),'Unexpected file: '+p)
           assert(!manifest.scripts && !manifest.devDependencies)
           assert.equal(manifest.version,'0.2.1-alpha.9')
+          assert.equal(manifest.icon,'assets/chatgpt-auth.png')
+          assert.equal(manifest.exports['./locale/*.json'],'./locale/*.json')
+          assert(manifest.files.includes('assets/chatgpt-auth.png') && manifest.files.includes('locale/*.json'))
+          const brandIcon = readFileSync(join(dir, manifest.icon))
+          assert(brandIcon.length > 8 && brandIcon.length <= 256*1024)
+          assert.equal(brandIcon.subarray(0,8).toString('hex'),'89504e470d0a1a0a')
+          const metaEn = JSON.parse(readFileSync(join(dir,'locale/en.json'),'utf8'))
+          const metaZh = JSON.parse(readFileSync(join(dir,'locale/zh.json'),'utf8'))
+          for (const meta of [metaEn,metaZh]) {
+            assert(meta.meta.title.includes('Codex Native'))
+            assert(meta.meta.description.includes('ChatGPT'))
+          }
+          assert(readFileSync(join(dir,'assets/LOBE-ICONS-LICENSE.txt'),'utf8').includes('Copyright (c) 2023 LobeHub'))
           const client = readFileSync(join(dir,'lib/client.js'),'utf8')
           const old = ['不会自动刷新','非仅本插件','不是历史重置流水','不拆分当天用量','No automatic refresh','not only this plugin','not a historical reset ledger','no separate API key is needed']
           const docs = ['README.md','README.zh.md'].map(name=>readFileSync(join(dir,name),'utf8'))
@@ -122,6 +135,14 @@ jobs:
           const pkg = JSON.parse(readFileSync('.tmp/candidate-unpacked/package.json','utf8'))
           assert.equal(pkg.version,'0.2.1-alpha.9')
           assert(!pkg.scripts && !pkg.devDependencies)
+          assert.equal(pkg.icon,'assets/chatgpt-auth.png')
+          assert.equal(pkg.exports['./locale/*.json'],'./locale/*.json')
+          const icon = readFileSync('.tmp/candidate-unpacked/'+pkg.icon)
+          assert.equal(icon.subarray(0,8).toString('hex'),'89504e470d0a1a0a')
+          for (const locale of ['en','zh']) {
+            const meta = JSON.parse(readFileSync('.tmp/candidate-unpacked/locale/'+locale+'.json','utf8'))
+            assert(meta.meta.title && meta.meta.description)
+          }
           assert.equal(pkg.description,'Codex app-server main models for DSH with ChatGPT sign-in, Token history, context management and native tools.')
           for (const locale of ['README.md','README.zh.md']) {
             assert.equal(readFileSync('.tmp/candidate-unpacked/'+locale,'utf8'),
@@ -147,6 +168,8 @@ jobs:
               byteMatchedToCandidate:true,
             })),
             curatedScreenshots:'three images in screenshots.json; anonymized user-approved Desktop screenshot first',
+            packagedIcon:{path:pkg.icon,sha256:createHash('sha256').update(readFileSync('.tmp/candidate-unpacked/'+pkg.icon)).digest('hex')},
+            localizedPluginMetadata:['locale/en.json','locale/zh.json'],
             runtimeSha256:manifest.runtimeSha256,
             sourceCommit:manifest.sourceCommit,
           },null,2)+'\n')

@@ -14,6 +14,6 @@
 github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9
 ```
 
-[Installation guide](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/INSTALL_PATCHED_HOST.md) · [Screenshots](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/screenshots.json) · [Source repository](https://github.com/Tests4gptplay/dsh-codex-native)
+[Installation guide](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/releases/alpha.9/INSTALL_PATCHED_HOST.md) · [Screenshots](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/screenshots.json) · [Source repository](https://github.com/Tests4gptplay/dsh-codex-native)
 
-Candidate verification results will be attached after the cross-platform package tests.
+Release verification: https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/__CI_RUN__ · Tested source: `__SOURCE_SHA__`.

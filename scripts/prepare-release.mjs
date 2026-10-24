@@ -11,7 +11,7 @@ const runId = process.env.TESTED_RUN
 const hostBase = '687f282e8625c6b8d11ff58211a90524be2e4317'
 const patchName = 'dsh-context-usage-0.2.1-rc.2.patch'
 const patchHash = 'dd8049f33fea9187cc025e792fc25feb68a8ad5ccb1044cc85e063429c2b717e'
-assert.equal(version, '0.2.1-alpha.8')
+assert.equal(version, '0.2.1-alpha.9')
 assert.match(source ?? '', /^[0-9a-f]{40}$/)
 assert.match(runId ?? '', /^\d+$/)
 const root = process.cwd()
@@ -81,15 +81,21 @@ execFileSync('tar', ['-xzf', candidate, '--strip-components=1', '-C', stage])
 const pkg = json(join(stage, 'package.json'))
 assert.equal(pkg.name, 'dsh-codex-native')
 assert.equal(pkg.version, version)
+assert.equal(pkg.icon, 'assets/chatgpt-auth.png')
+assert.equal(pkg.exports['./locale/*.json'], './locale/*.json')
+for (const language of ['en', 'zh']) {
+  const metadata = json(join(stage, 'locale', language + '.json'))
+  assert(metadata.meta.title && metadata.meta.description)
+}
 for (const field of ['scripts', 'devDependencies', 'packageManager', 'publishConfig']) delete pkg[field]
 writeJson(join(stage, 'package.json'), pkg)
 for (const name of ['README.md', 'README.zh.md']) {
-  writeFileSync(join(stage, name), render(readFileSync(join('docs/releases/alpha.8', name), 'utf8')))
+  writeFileSync(join(stage, name), render(readFileSync(join('docs/releases/alpha.9', name), 'utf8')))
 }
 for (const [name, hash] of Object.entries(evidence.runtimeSha256)) {
   assert.equal(digest(join(stage, name)), hash, 'Runtime changed while preparing release: ' + name)
 }
-const allowed = new Set(['package.json', 'cordis.patch.yml', 'LICENSE', 'README.md', 'README.zh.md'])
+const allowed = new Set(['package.json', 'cordis.patch.yml', 'LICENSE', 'README.md', 'README.zh.md', 'assets/chatgpt-auth.png', 'assets/LOBE-ICONS-LICENSE.txt', 'locale/en.json', 'locale/zh.json'])
 for (const path of files(stage)) {
   const name = relative(stage, path).replaceAll('\\', '/')
   assert(allowed.has(name) || /^lib\/(?:index\.js|client\.js|(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.d\.ts)$/.test(name), 'Unexpected runtime file: ' + name)
@@ -104,7 +110,7 @@ assert(readFileSync(join(stage, 'lib/client.js'), 'utf8').includes('@deepseek-ai
 copyFileSync(join('patches', patchName), join(dist, patchName))
 copyFileSync('.tmp/dsh-reference/LICENSE', join(dist, 'DSH-LICENSE.txt'))
 writeFileSync(join(dist, 'INSTALL_PATCHED_HOST.md'), render(readFileSync('docs/INSTALL_PATCHED_HOST.md', 'utf8')))
-writeFileSync('.tmp/release-notes.md', render(readFileSync('docs/releases/alpha.8/notes.md', 'utf8')))
+writeFileSync('.tmp/release-notes.md', render(readFileSync('docs/releases/alpha.9/notes.md', 'utf8')))
 
 const run = json(join(process.env.RUNNER_TEMP, 'run.json'))
 const list = json(join(process.env.RUNNER_TEMP, 'artifacts.json')).artifacts
