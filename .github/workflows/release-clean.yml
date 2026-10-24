@@ -8,7 +8,7 @@ name: Publish verified minimal Codex Native release
       tested_run_id:
         description: Successful Linux and Windows regression run
         required: true
-        default: '39996592077'
+        default: '40048042517'
 permissions:
   contents: write
   actions: read
@@ -20,8 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      TESTED_RUN: ${{ inputs.tested_run_id || '39996592077' }}
-      RELEASE_VERSION: '0.2.1-alpha.6'
+      TESTED_RUN: ${{ inputs.tested_run_id || '40048042517' }}
+      RELEASE_VERSION: '0.2.1-alpha.7'
     steps:
       - name: Require successful Ubuntu and Windows regression jobs from this repository
         env:
@@ -73,46 +73,32 @@ jobs:
           for(const field of ['scripts','devDependencies','packageManager','publishConfig'])delete p[field]
           writeFileSync(join(root,'package.json'),JSON.stringify(p,null,2)+'\n')
           const spec='github:Tests4gptplay/dsh-codex-native#v'+p.version
-          writeFileSync(join(root,'README.md'),`# DSH Codex Native ${p.version}
-
-          Install in DSH Plugins → Add plugin:
-
-          ${spec}
-
-          Official Codex app-server main-model adapter with native ChatGPT login and manual account usage history. Independent community integration; MIT attribution is retained in LICENSE.
-
-          ## alpha.6 protocol lifecycle fix
-
-          Closed pipes now settle blocked requests instead of waiting forever for drain. Transport errors retain local process exit/stderr evidence, with common credential shapes redacted; an exit first observed during cleanup is labelled accordingly. Already-closed cached threads are rebuilt from recorded history on the next request, including existing tool results, without adding automatic in-flight tool replay.
-
-          No heartbeat, reconnect poller, watchdog or new hard model-task timer is added. Existing DSH retry settings are unchanged. This repair does not prove why the user's original local process exited or that OpenAI's cloud was down.
-
-          The alpha.5 manual Query/Clear history UI and native DSH controls remain. Token history is account-wide; historical reset groups reference codex-reset.com and are approximate UTC-date groupings. Clear empties the view only. No account data is sent to that reference site.
-
-          Production tag contains compiled runtime, declarations, metadata, license and READMEs only. Tests, mock processes, source, CI, screenshots, install scripts and devDependencies are excluded. Ubuntu and Windows regression tests, including a real isolated child exit, passed; no real user account or live model quota was used.
-
-          Fully restart DSH after upgrading. Source, detailed boundaries and evidence: https://github.com/Tests4gptplay/dsh-codex-native
-          `.replace(/^          /gm,''))
-          writeFileSync(join(root,'README.zh.md'),`# DSH Codex Native ${p.version}
-
-          DSH 插件 → 添加插件：
-
-          ${spec}
-
-          通过 OpenAI 官方 Codex app-server 接入 DSH 主模型，提供 ChatGPT 原生登录和手动账号历史用量查询。本插件为独立社区项目，保留原 MIT 许可和署名。
-
-          ## alpha.6 协议断流修复
-
-          修复管道关闭后仍等 drain 导致请求挂起的问题；保留本地进程退出码与标准错误证据，并遮盖常见凭据内容。在清理阶段才观察到的退出明确标注，不冒充最初原因。已关闭的缓存连接在下一次请求时按已有历史重建，工具结果作为已有记录保留，不新增执行途中自动重放。
-
-          不增加心跳、轮询、Watchdog 或模型任务硬超时；原有 DSH 重试设置不变。用户最初为何退出仍需实际退出日志确认，不能据此认定 OpenAI 云端宕机。
-
-          保留 alpha.5 的手动查询、单清除按钮、折叠每日用量及 DSH 官方控件。Token 是账号口径；历史周期参考 codex-reset.com，按 UTC 日期归组，仅供参考。清除只清本页显示，第三方不接收账号或用量数据。
-
-          安装标签只包含编译运行文件、声明、配置、许可证和说明；不含测试、模拟后端、源码、CI、截图、安装脚本或开发依赖。Linux/Windows 回归及隔离真实子进程退出测试通过，未使用真实账号或模型额度。
-
-          升级后完全退出并重新打开 DSH。源码和详细证据：https://github.com/Tests4gptplay/dsh-codex-native
-          `.replace(/^          /gm,''))
+          writeFileSync(join(root,'README.md'),[
+            '# DSH Codex Native '+p.version, '',
+            'Install in DSH Plugins → Add plugin:', '', spec, '',
+            'Official Codex app-server main-model adapter with native ChatGPT login and manual account usage history. Independent community integration; original MIT attribution is retained in LICENSE.', '',
+            '## alpha.7 account lifecycle repair', '',
+            'Two defects were reproduced BEFORE changing runtime code, using real isolated children under the official DSH subprocess runtime on Windows and Linux. Disposing the account service left stalled initialize/status/quota/usage requests alive, and cancelling login waited for an unresponsive server acknowledgement.', '',
+            'The account service now owns each of its children before initialization and closes those owned children on disposal. Explicit login cancellation sends its protocol request best-effort and closes that login connection without waiting indefinitely for acknowledgement. It does not terminate model-task processes or delete saved credentials.', '',
+            'The same eight new checks and the existing regression suite passed after the fix. Normal initialization still occurs once per connection; an active model turn survived an accelerated idle-cache-expiry test. This is not a one-hour real-model soak or proof of the initiating cause of an earlier user-reported protocol exit.', '',
+            'Only src/native-account.ts changed in production source relative to alpha.6. No dependency, model policy, approval policy, frontend bundle, watchdog, heartbeat, usage poller, task timeout or in-flight replay change was introduced. Prior alpha.6 protocol-closure fixes are retained.', '',
+            'Manual Query/Clear history and native DSH controls remain. Token history is account-wide. Historical reset grouping references codex-reset.com public announcements and is approximate. Clear only empties the view.', '',
+            'The installation snapshot excludes tests, fixtures, source, CI, screenshots, installation scripts and devDependencies. Test fixture peers run only in the isolated development tests. No real account or paid model request was used for this audit.', '',
+            'Fully quit and reopen DSH after upgrading. Existing native interactive-approval limitations remain. Detailed audit and test evidence: https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/ACCOUNT_LIFECYCLE_AUDIT.md', ''
+          ].join('\n'))
+          writeFileSync(join(root,'README.zh.md'),[
+            '# DSH Codex Native '+p.version, '',
+            'DSH 插件 → 添加插件：', '', spec, '',
+            '通过 OpenAI 官方 Codex app-server 接入 DSH 主模型，提供 ChatGPT 原生登录和手动账号历史用量查询。独立社区项目，保留原 MIT 许可和署名。', '',
+            '## alpha.7 账号生命周期修复', '',
+            '先在 Windows/Linux 的官方 DSH 子进程运行时中复现，再修改代码：停用账号服务后，卡住的初始化、状态/额度/历史查询仍挂起；取消登录也可能卡在等待服务端确认。', '',
+            '现在从初始化之前开始记录本服务拥有的账号子进程，停用时只回收这些进程。明确取消登录时尽力发送协议取消请求，然后关闭该登录连接，不无限等确认，不结束模型任务进程，也不删除已保存凭据。', '',
+            '原样八个新增用例及既有回归均通过。正常握手仍每连接一次；活动模型任务通过缩短缓存空闲阈值的测试。这不是一小时真实模型耐久测试，也未证明此前用户进程退出的最初原因。', '',
+            '相对 alpha.6 只修改一个生产源文件 src/native-account.ts。依赖、模型/审批策略、前端不变；不增加 Watchdog、心跳、用量轮询、模型任务硬超时或执行途中自动重放。保留 alpha.6 断流处理。', '',
+            '保留手动查询、单清除按钮、折叠每日用量与 DSH 原生控件。Token 是账号口径；历史周期参考 codex-reset.com 公告，仅供参考。清除只清本页显示。', '',
+            '安装快照不含测试、替身、源码、CI、截图、安装脚本或开发依赖。测试后端只在隔离开发环境运行，未使用真实账号或模型额度。', '',
+            '升级后完全退出并重新打开 DSH。原生审批交互仍有已知局限。详细审计：https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/ACCOUNT_LIFECYCLE_AUDIT.md', ''
+          ].join('\n'))
           const all=[]
           function walk(dir){for(const e of readdirSync(dir,{withFileTypes:true})){const f=join(dir,e.name);if(e.isDirectory())walk(f);else all.push(relative(root,f).replaceAll('\\','/'))}}
           walk(root)
@@ -120,7 +106,7 @@ jobs:
           for(const f of all)if(!allowed.has(f)&&!/^lib\/(?:index\.js|client\.js|(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.d\.ts)$/.test(f))throw Error('Unexpected installed file: '+f)
           for(const f of ['lib/index.js','lib/client.js']){
             const js=readFileSync(join(root,f),'utf8')
-            for(const token of ['mock-app-server.mjs','TEST_CODEX_SCENARIO','fixture-secret','vitest','#dsh-primitives','tests/official-primitives'])if(js.includes(token))throw Error('Test code leaked into '+f)
+            for(const token of ['mock-app-server.mjs','TEST_CODEX_SCENARIO','fixture-secret','vitest','#dsh-primitives','tests/official-primitives','account-lifecycle.mjs','AUDIT_RECEIVED:'])if(js.includes(token))throw Error('Test code leaked into '+f)
           }
           const client=readFileSync(join(root,'lib/client.js'),'utf8')
           if(!client.includes('@deepseek-ai/dsh-client-ui-primitives'))throw Error('Client lost shared official-control dependency')
@@ -182,27 +168,27 @@ jobs:
         run: |
           set -euo pipefail
           cat > "$RUNNER_TEMP/notes.md" <<'NOTES'
-          # Codex Native alpha.6 — protocol stream lifecycle fix
+          # Codex Native alpha.7 — reproduced account lifecycle fixes
 
           DSH Desktop: Plugins → Add plugin:
 
           ```text
-          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.6
+          github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.7
           ```
 
-          - Fix requests hanging on backpressured writes after protocol EOF or pipe closure.
-          - Preserve process exit and stderr evidence instead of losing it behind the generic stream-closed error; mask common credential shapes and label cleanup-time exit observations.
-          - Rebuild an already-closed cached connection on the next request using recorded history and tool outputs. No new automatic replay of in-flight operations.
-          - Observe account-process startup failures even when stdout emits no event; cleanup cannot wait indefinitely on a second unbounded process promise.
-          - Preserve manual usage queries, native DSH controls, existing cancellation, model policy and host retry settings. No new watchdog, heartbeat, usage poller or hard model-task limit.
-          - Tested with isolated streams and a real fixture subprocess through the official DSH runtime on Linux and Windows. No real account or model quota was used.
-          - Installer tag and TGZ exclude tests, mocks, source, CI, screenshots, scripts and devDependencies; exact GitHub installation does not require allowBuilds exceptions.
+          - Reproduced two account-side lifecycle defects before editing production code. Six failure scenarios failed on unchanged alpha.6 on both Windows and Linux; two positive controls passed.
+          - Track every owned account child before initialization, including status, quota and history queries, so disposal releases stalled requests and their child processes.
+          - Explicit login cancellation no longer waits indefinitely for an unresponsive peer's acknowledgement. It still sends best-effort protocol cancellation and closes only that login connection.
+          - The same eight new cases and the existing regression suite pass after the fix, using real official DSH subprocess machinery with isolated fixture peers. No real account or paid model call was used.
+          - Only one production source file changed from alpha.6. No dependency, model-task policy, approval policy, browser UI, watchdog, heartbeat, usage polling, task timeout or automatic in-flight replay changes.
+          - Keep alpha.6 protocol-closure fixes and alpha.5 manual history UI. Installer tag and TGZ exclude tests, fixtures, source, CI, screenshots, scripts and devDependencies.
 
-          **Boundary:** the initiating cause of the user's original process exit is not yet proven. This fixes confirmed plugin-side failure handling, not every possible native Codex or cloud failure. Existing native interactive-approval limitations remain.
+          The accelerated cache-expiry control is not a one-hour live-model soak. The initiating cause of the user's earlier process exit and complete Electron/native-approval coverage remain unproven. No claim of eliminating all risks is made.
 
-          Upgrade, then fully quit and reopen DSH. If it recurs, the new error should retain more diagnostic evidence; remove personal paths before sharing it.
+          Fully quit and reopen DSH after upgrading. No login-file or conversation deletion is required.
 
-          Details: https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/PROTOCOL_STREAM_FIX.md
+          Before-fix reproduction: https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40047676806
+          Audit: https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/ACCOUNT_LIFECYCLE_AUDIT.md
           NOTES
-          printf '\nRegression CI: https://github.com/%s/actions/runs/%s\nSource commit: %s\n' "$GITHUB_REPOSITORY" "$TESTED_RUN" "$TESTED_SHA" >> "$RUNNER_TEMP/notes.md"
-          gh release create "$RELEASE_TAG" "dist/dsh-codex-native-$RELEASE_VERSION.tgz" --repo "$GITHUB_REPOSITORY" --prerelease --title 'DSH Codex Native alpha.6 — protocol stream lifecycle fix' --notes-file "$RUNNER_TEMP/notes.md"
+          printf '\nAfter-fix CI: https://github.com/%s/actions/runs/%s\nTested source: %s\n' "$GITHUB_REPOSITORY" "$TESTED_RUN" "$TESTED_SHA" >> "$RUNNER_TEMP/notes.md"
+          gh release create "$RELEASE_TAG" "dist/dsh-codex-native-$RELEASE_VERSION.tgz" --repo "$GITHUB_REPOSITORY" --prerelease --title 'DSH Codex Native alpha.7 — account lifecycle fixes' --notes-file "$RUNNER_TEMP/notes.md"
