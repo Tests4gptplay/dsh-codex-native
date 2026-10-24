@@ -1,79 +1,47 @@
 # DSH Codex Native
 
-**DeepSeek Harness main-model adapter using the official OpenAI Codex app-server** · Independent community project · MIT
+**An OpenAI Codex app-server main-model integration for DeepSeek Harness.** Use ChatGPT sign-in, DSH tools, native Codex model settings and an on-demand Token usage history panel.
 
-[简体中文](README.zh.md) · [Release status and evidence](docs/STATUS.md) · [Usage rules](docs/USAGE.md) · [Protocol repair](docs/PROTOCOL_STREAM_FIX.md) · [Account lifecycle audit](docs/ACCOUNT_LIFECYCLE_AUDIT.md)
+[简体中文](README.zh.md) · [Releases](https://github.com/Tests4gptplay/dsh-codex-native/releases) · [Installation guide](docs/INSTALL_PATCHED_HOST.md) · [Release verification](docs/STATUS.md)
 
-## alpha.8: paired-host preview
+## Latest release — v0.2.1-alpha.8
 
-[Context accounting and Codex pressure compaction](docs/CONTEXT_COMPACTION_AUDIT.md) are released in **v0.2.1-alpha.8**. This version requires the companion patch on exact official DSH rc.2 source `687f282e8625c6b8d11ff58211a90524be2e4317` to enable the context-pressure repair. Installing the plugin alone on an unchanged Desktop does not enable that repair.
+[Download alpha.8](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.8) · [Context accounting details](docs/CONTEXT_COMPACTION_AUDIT.md)
 
-The prerelease delivers a minimal plugin TGZ/tag, a separate host patch, checksums and [source-host installation instructions](docs/INSTALL_PATCHED_HOST.md). Codex owns routine pressure compaction; DSH still handles a real context-overflow error. The first-step skills-description warning is a separate catalog budget and may still appear.
+- **Context management:** Codex manages routine context compaction, with DSH's overflow recovery available for exceptional cases.
+- **Accurate usage accounting:** total token consumption is tracked independently from the latest active context-window sample; delayed reports are reconciled with completed responses.
+- **Connection stability:** retains the transport recovery and account lifecycle improvements from alpha.6 and alpha.7.
+- **Manual Token history:** query account usage, review dated totals and reference periods, and clear the displayed table.
+- **Main-model integration:** official Codex app-server, ChatGPT sign-in, DSH tools and model settings.
 
-[Download alpha.8](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.8) · [Verified publication and installation](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40078708238)
-
-For an unchanged official DSH rc.2 Desktop, the directly installable version below remains alpha.7. See [release status](docs/STATUS.md) for publication and verification results.
-
-## Direct installation on stock DSH: v0.2.1-alpha.7
-
-2026-10-24 JST: fixes two account-lifecycle defects reproduced on Windows and Linux before modifying runtime code; retains alpha.6 protocol repairs. Targets **DSH 0.2.1-rc.2**, official **Codex 0.154.0**. The original initiating process-exit cause remains unproven; the earlier stream-closed message alone does not establish an OpenAI cloud outage.
-
-### DSH Desktop installation
-
-Open **Plugins → Add plugin** and paste:
+### Installation
 
 ```text
-github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.7
+github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.8
 ```
 
-Enable the plugin and fully quit and reopen DSH. Use **Settings → Codex official login** with a ChatGPT account that has Codex access, and select `codex-local` as the main-model provider. An `openai-codex` provider is a different integration.
+The release provides the prebuilt plugin package and the companion DSH rc.2 host integration patch. [Build and installation steps](docs/INSTALL_PATCHED_HOST.md) cover the tested host configuration, including DSH `0.2.1-rc.2` and Codex `0.154.0`.
 
-No npm account, separate API key, local source checkout, TypeScript build or `allowBuilds` exception is required. Install the fixed tag, not `main` or a development branch. Existing sign-in files are not deleted by this repair.
+## Token usage panel
 
-```bash
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.7'
-```
+The history panel queries official Codex account data when **Query** is clicked. The header shows the returned daily-row total, while a separate value identifies the official lifetime total. The cycle grouping uses dated public reset announcements from [codex-reset.com](https://codex-reset.com/developers/) as reference information.
 
-The Web and Desktop profiles are separate. [Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.7) · [Prebuilt TGZ](https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.1-alpha.7/dsh-codex-native-0.2.1-alpha.7.tgz)
+**Clear** resets the displayed table; **Query** retrieves it again. The panel uses DSH interface primitives and respects the active theme.
 
-## alpha.7: reproduce first, then repair
+## Real Desktop screenshot
 
-Disposing the account service previously missed processes waiting for initialization or status/quota/usage replies. It now owns those account connections before initialization and releases them on disposal. Explicit login cancellation sends best-effort protocol cancellation and closes its login connection without waiting indefinitely for an unresponsive acknowledgement. Model-task processes and saved credentials are not affected.
+![Anonymized real DSH Desktop Token history panel](docs/screenshots/codex-usage-desktop-anonymized.png)
 
-The same eight added cases and existing regression suite passed on both platforms. Only `src/native-account.ts` changed in production source: no new dependency, watchdog, heartbeat, polling, model deadline, approval policy or frontend change. The existing six-second account teardown wait is unchanged; it applies only during cleanup. [Before/after evidence and limits](docs/ACCOUNT_LIFECYCLE_AUDIT.md).
+*User-confirmed alpha.5 Desktop history view, with a fictional account label substituted before publication.* [Screenshot provenance](docs/SCREENSHOTS.md) · [Light example](docs/screenshots/codex-usage-light.png) · [Dark example](docs/screenshots/codex-usage-dark.png)
 
-## Retained alpha.6 repair
+The market screenshot order is defined in [screenshots.json](screenshots.json).
 
-Closed protocol pipes now settle backpressured requests instead of leaving them waiting indefinitely. Errors preserve local exit code/signal and bounded stderr, with common credential shapes masked; exits first observed during cleanup are labelled rather than presented as the initiating cause. Account startup rejection is observed even without a stdout event.
+## Verification and engineering notes
 
-An already-closed cached thread is rebuilt on the next request from recorded history, including existing tool outputs. This does not add automatic replay of an in-flight turn or rerun an already-recorded tool itself. No heartbeat, watchdog, reconnect poller or new hard model-task limit is added. Existing host retries and model policies are unchanged.
+The alpha.8 candidate passed Windows **188/188** plugin tests and Ubuntu **187 passed / one platform skip**. The final packaged-runtime suite passed **28/28**, the patched host build passed **9/9**, and the installation and Web startup checks passed.
 
-## Usage history — manual, not a background meter
+[Candidate CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40078589328) · [Publication CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40078708238) · [Technical audit](docs/CONTEXT_COMPACTION_AUDIT.md) · [Account lifecycle repair](docs/ACCOUNT_LIFECYCLE_AUDIT.md) · [Transport repair](docs/PROTOCOL_STREAM_FIX.md)
 
-Only **Query** requests history. One toolbar contains **Clear**, **Query** and the listed total. Folded periods retain their totals; expanded periods show daily counts. The controls use host-owned DSH `Button`, `DisclosureRow` and `--dsw-*` variables. The browser bundle is unchanged from alpha.5.
+## License and attribution
 
-Tokens come from official `account/usage/read` and are account-wide, not plugin-only. Listed total sums returned daily rows; lifetime total is separately labelled. Missing values are not treated as zero.
-
-Official `account/rateLimits/read` supplies current windows and next reset timestamps, not a complete reset ledger. Historical grouping references **Data: codex-reset.com** public announcements by UTC date. It is reference-only, not proof of private account boundaries; no intraday fractions are invented. The public request receives no credentials, account identity, prompts or usage. Source failure does not stop model execution.
-
-Clear empties only this view. It does not delete official history, conversations or credentials, or redeem reset credits. Query restores the official data. These notes also appear below the table.
-
-## User-confirmed UI (alpha.5)
-
-The user confirmed manual history querying in their DSH Desktop and skin and approved this capture. It does not certify later transport/account repairs on their machine.
-
-![User-confirmed Desktop history with a fictional account label](docs/screenshots/codex-usage-desktop-anonymized.png)
-
-*Only the account row was replaced with `GPT-Codex@OpenAI.com`, a fictional placeholder, not an actual OpenAI account. Other pixels, dates and usage values are unchanged; this is not an AI-redrawn interface.*
-
-[Light sample](docs/screenshots/codex-usage-light.png) · [Dark sample](docs/screenshots/codex-usage-dark.png) · [Provenance](docs/SCREENSHOTS.md)
-
-## Verification and boundaries
-
-[Ubuntu/Windows regressions](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40048042517) and [release / exact Git installation](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40048610503) passed. The downloaded tested runtime matches the published tag's JS blobs. New fault cases use real children and the official DSH subprocess runtime, with only the Codex peer replaced by a controlled fixture. No user credentials or model quota were used. The accelerated cache-expiry control is not an hour-long live-model soak.
-
-The installer contains compiled runtime, declarations, patch, metadata, license and READMEs only: no source, tests, mock process, CI, screenshots, install scripts or devDependencies. Dependencies still use normal disk space. Existing native Codex approval/elicitation limitations remain. Full Electron/skin compatibility and the initiating user-machine failure are not proven by cloud tests. [Detailed evidence](docs/STATUS.md).
-
-## Attribution
-
-Adapted from MIT-licensed [wss534857356/dsh-plugin-codex](https://github.com/wss534857356/dsh-plugin-codex), import baseline `f1f61886f4defcf7294d63c3641fba01ee554e7b`. Original LICENSE retained. DSH is from DeepSeek and Codex is from OpenAI; this community plugin is not endorsed by either. Public reset data is credited to **codex-reset.com**.
+Community integration based on MIT-licensed [wss534857356/dsh-plugin-codex](https://github.com/wss534857356/dsh-plugin-codex), baseline `f1f61886f4defcf7294d63c3641fba01ee554e7b`. Original attribution is retained in [LICENSE](LICENSE). DeepSeek Harness is developed by DeepSeek; Codex is developed by OpenAI. Public reset-date data is credited to **codex-reset.com**.
