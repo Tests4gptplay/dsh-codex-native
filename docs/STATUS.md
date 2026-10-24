@@ -1,8 +1,12 @@
 # Release status
 
-## Unreleased development work
+## Alpha.8 release preparation
 
-Publication is paused. [Context accounting and Codex automatic compaction](CONTEXT_COMPACTION_AUDIT.md) are implemented and locally verified with a companion host patch; cross-platform results are recorded on the draft pull request. This does not update the published plugin or the user's installation.
+The user authorized release preparation on 2026-10-24. **v0.2.1-alpha.8 is a paired-host prerelease**, with a minimal plugin, a separate fixed-baseline DSH patch, checksums and [installation instructions](INSTALL_PATCHED_HOST.md). It is not an automatic upgrade of stock DSH Desktop. The ordinary Desktop installation below remains alpha.7 until the required host contract is available there.
+
+The final source repair at `0108d12eae09630e3e927ac4e16dd2fa11176d5e` passed [Windows/Ubuntu CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40075868770): Windows 188/188; Ubuntu 187 passed and one existing Windows-only skip. Both platforms applied the companion patch, typechecked, built and packed. The final focused regression set was 22 passed / 4 failed before and 26/26 after. [Full audit](CONTEXT_COMPACTION_AUDIT.md).
+
+Release delivery must additionally consume the versioned candidate artifact, verify the cleaned TGZ against the companion host, and record the immutable source, CI run and asset checksums. This section does not claim publication before those steps finish.
 
 ## Published release
 

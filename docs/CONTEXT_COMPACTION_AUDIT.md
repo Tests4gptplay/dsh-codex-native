@@ -1,6 +1,6 @@
 # Context accounting and Codex automatic compaction
 
-**Unreleased development repair; publication is paused.** The plugin and the companion DSH host patch must be used together. An unchanged stock host ignores the new contracts. The published version remains alpha.7.
+**Alpha.8 release candidate; paired host required.** The plugin and the companion DSH host patch must be used together. An unchanged stock host ignores the new contracts. See [installation and compatibility](INSTALL_PATCHED_HOST.md) and [release status](STATUS.md).
 
 ## Decision and compatibility
 
@@ -89,7 +89,7 @@ CI applies the paired patch only to the disposable official checkout. Vitest loa
 
 ### Final validation
 
-The final focused suite passed **26/26**, versus **22 passed / 4 failed** with the same final assertions before the metadata, host pressure guard and structured-error repairs. The final full plugin suite passed **187 tests**, with **one existing platform-specific skip**, across **24 test files**. Typecheck, strict test typechecking, build and pack passed. Official host gates also passed as detailed below. Cross-platform CI runs on the accompanying draft pull request; its Checks tab records the current Windows/Ubuntu result. No release or user-installation acceptance is implied.
+The final focused suite passed **26/26**, versus **22 passed / 4 failed** with the same final assertions before the metadata, host pressure guard and structured-error repairs. The final full plugin suite passed **187 tests**, with **one existing platform-specific skip**, across **24 test files**. Typecheck, strict test typechecking, build and pack passed. Official host gates also passed as detailed below. [Final source-repair CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40075868770) passed on `0108d12eae09630e3e927ac4e16dd2fa11176d5e`: Windows **188/188**, Ubuntu **187 passed / one existing Windows-only skip**. Both platforms applied the exact companion patch, typechecked, built and packed successfully. Release packaging and installation evidence are recorded separately in [release status](STATUS.md). This is not user-machine acceptance.
 
 ### Official host gates
 

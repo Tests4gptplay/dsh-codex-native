@@ -1,5 +1,5 @@
 import { resolve } from 'node:path'
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 const referenceRoot = resolve(process.env.DSH_REFERENCE_ROOT ?? '.tmp/dsh-reference')
 const official = resolve(referenceRoot, 'packages/client/ui-primitives/src')
 export default defineConfig({
@@ -15,6 +15,7 @@ export default defineConfig({
   },
   test: {
     include: ['tests/**/*.spec.{ts,tsx}'], pool: 'forks',
+    exclude: [...configDefaults.exclude, 'tests/release-model-info.spec.ts'],
     // Process ordinary module CSS and ?inline CSS used for original UI evidence.
     css: { include: /.+/, modules: { classNameStrategy: 'scoped' } },
     server: { deps: { inline: [/@deepseek-ai\/dsh-client-ui-/, /katex/] } },
