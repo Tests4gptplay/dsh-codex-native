@@ -122,6 +122,12 @@ jobs:
           const pkg = JSON.parse(readFileSync('.tmp/candidate-unpacked/package.json','utf8'))
           assert.equal(pkg.version,'0.2.1-alpha.9')
           assert(!pkg.scripts && !pkg.devDependencies)
+          assert.equal(pkg.description,'Codex app-server main models for DSH with ChatGPT sign-in, Token history, context management and native tools.')
+          for (const locale of ['README.md','README.zh.md']) {
+            assert.equal(readFileSync('.tmp/candidate-unpacked/'+locale,'utf8'),
+              readFileSync('docs/releases/alpha.9/'+locale,'utf8'),
+              'Installed '+locale+' differs from the candidate copy')
+          }
           const manifest = JSON.parse(readFileSync('dist/source-manifest.json','utf8'))
           const bundle = readFileSync('dist/dsh-codex-native-0.2.1-alpha.9.tgz')
           manifest.artifactSha256 = createHash('sha256').update(bundle).digest('hex')
@@ -130,6 +136,20 @@ jobs:
             assert.equal(createHash('sha256').update(data).digest('hex'),hash)
           }
           writeFileSync('dist/source-manifest.json',JSON.stringify(manifest,null,2)+'\n')
+          writeFileSync('dist/candidate-copy-audit.json',JSON.stringify({
+            version:pkg.version,
+            package:manifest.artifact,
+            packageSha256:manifest.artifactSha256,
+            description:pkg.description,
+            readmes:['README.md','README.zh.md'].map(name=>({
+              name,
+              sha256:createHash('sha256').update(readFileSync('.tmp/candidate-unpacked/'+name)).digest('hex'),
+              byteMatchedToCandidate:true,
+            })),
+            curatedScreenshots:'three images in screenshots.json; anonymized user-approved Desktop screenshot first',
+            runtimeSha256:manifest.runtimeSha256,
+            sourceCommit:manifest.sourceCommit,
+          },null,2)+'\n')
           console.log('CLEAN_TGZ_VERIFIED', {version:pkg.version,sha256:manifest.artifactSha256})
           NODE
       - name: Verify packed adapter against complete paired host modules
@@ -151,4 +171,5 @@ jobs:
             ${{ runner.temp }}/codex-reproduction/*.html
             dist/*.tgz
             dist/source-manifest.json
+            dist/candidate-copy-audit.json
           if-no-files-found: ignore
