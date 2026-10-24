@@ -1,0 +1,57 @@
+- insert:
+    - id: llm-codex-app-server
+      name: dsh-codex-native
+      config:
+        provider: codex-local
+        displayName: Codex (local login)
+        modelProvider: openai
+        models:
+          - id: gpt-6-astra
+            name: GPT-6-Astra
+            description: Our most capable model for complex, demanding work.
+            contextWindow: 272000
+            inputModalities: [text, image]
+            reasoningEfforts: [low, medium, high, xhigh, max, ultra]
+            defaultReasoningEffort: medium
+          - id: gpt-5.6-sol
+            name: GPT-5.6-Sol
+            description: Reliable agentic workhorse for everyday tasks.
+            contextWindow: 272000
+            inputModalities: [text, image]
+            reasoningEfforts: [low, medium, high, xhigh, max, ultra]
+            defaultReasoningEffort: low
+          - id: gpt-5.6-terra
+            name: GPT-5.6-Terra
+            description: Balanced agentic coding model for everyday work.
+            contextWindow: 272000
+            inputModalities: [text, image]
+            reasoningEfforts: [low, medium, high, xhigh, max, ultra]
+            defaultReasoningEffort: medium
+          - id: gpt-5.6-luna
+            name: GPT-5.6-Luna
+            description: Fast and affordable agentic coding model.
+            contextWindow: 272000
+            inputModalities: [text, image]
+            reasoningEfforts: [low, medium, high, xhigh, max]
+            defaultReasoningEffort: medium
+          - id: gpt-5.5
+            name: GPT-5.5
+            description: Proven previous-generation model for coding and general work.
+            contextWindow: 272000
+            inputModalities: [text, image]
+            reasoningEfforts: [low, medium, high, xhigh]
+            defaultReasoningEffort: medium
+          - id: gpt-5.3-codex-spark
+            name: GPT-5.3-Codex-Spark
+            description: Ultra-fast coding model.
+            contextWindow: 128000
+            inputModalities: [text]
+            reasoningEfforts: [low, medium, high, xhigh]
+            defaultReasoningEffort: high
+        disposeGraceMs: 3000
+        maxJsonRpcLineBytes: 8388608
+        maxRequestImageBytes: 20971520
+        maxStderrBytes: 65536
+        maxRetries: 1
+        maxCachedSessions: 8
+        sessionIdleTimeoutMs: 600000
