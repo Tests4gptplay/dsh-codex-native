@@ -17,6 +17,7 @@ import { NativeCodexAccount } from './native-account.ts'
 import { registerNativeCodexTransport } from './native-transport.ts'
 import { NativeCodexSkills } from './native-skills.ts'
 import { registerCodexSkillTools } from './skill-tools.ts'
+import { CodexUserQuestions } from './user-questions.ts'
 
 export { CodexAppServerAdapter } from './adapter.ts'
 export type { CodexAdapterOptions, CodexModel } from './adapter.ts'
@@ -309,6 +310,7 @@ export function apply(ctx: Context, config: Config): void {
     skillsMode: resolved.skillsMode,
     skillsMaxContextTokens: resolved.skillsMaxContextTokens,
     spawn: spec => ctx.subprocess.spawn(codexSpawnSpec(spec)),
+    questions: new CodexUserQuestions(ctx),
   })
   const reportCleanupError = (error: unknown): void => {
     ctx.logger.warn(`llm-codex-app-server: cached session cleanup failed: ${String(error)}`)

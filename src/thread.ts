@@ -8,6 +8,7 @@ import type {
 import { HARNESS_TOOL_NAMESPACE, SAFE_REASONING_EFFORT } from './identifiers.ts'
 import { JsonRpcConnection, jsonValue, object } from './wire.ts'
 import type { CodexAppServerEvent } from './wire.ts'
+import type { CodexQuestionHandler } from './user-questions.ts'
 
 const TIMEOUT_REASON = Symbol('codex-app-server-turn-timeout')
 
@@ -24,6 +25,8 @@ export interface ManagedCodexThreadOptions {
   readonly timeoutMs: number
   readonly connection: JsonRpcConnection
   readonly threadId: string
+  readonly sessionId?: string
+  readonly questions?: CodexQuestionHandler
   readonly startedEvent: Extract<CodexAppServerEvent, { kind: 'thread-started' }>
   readonly abort: (reason: unknown) => void
   readonly dispose: () => Promise<void>
@@ -100,6 +103,8 @@ function threadId(value: unknown, label: string): string {
 async function resolveServerRequest(
   connection: JsonRpcConnection,
   event: Extract<CodexAppServerEvent, { kind: 'server-request' }>,
+  options: ManagedCodexThreadOptions,
+  signal: AbortSignal,
 ): Promise<Extract<CodexAppServerEvent, { kind: 'server-request' }>> {
   switch (event.method) {
     case 'item/commandExecution/requestApproval':
@@ -110,9 +115,19 @@ async function resolveServerRequest(
     case 'execCommandApproval':
       await connection.respond(event.id, { decision: { denied: { rejection: 'Harness did not approve this Codex action.' } } })
       return { ...event, resolution: 'declined' }
-    case 'item/tool/requestUserInput':
-      await connection.respond(event.id, { answers: {} })
-      return { ...event, resolution: 'declined' }
+    case 'item/tool/requestUserInput': {
+      try {
+        if (options.questions === undefined) throw new Error('DSH user-question handler is unavailable')
+        const answer = await options.questions.ask(event.params, options.sessionId, signal)
+        signal.throwIfAborted()
+        await connection.respond(event.id, jsonValue(answer ?? { answers: {} }, 'user input response'))
+        return { ...event, resolution: answer === null ? 'declined' : 'answered' }
+      } catch (error) {
+        if (signal.aborted) throw signal.reason
+        await connection.respondError(event.id, -32_001, thrown(error).message)
+        return { ...event, resolution: 'rejected' }
+      }
+    }
     case 'mcpServer/elicitation/request':
       await connection.respond(event.id, { action: 'cancel', content: null, _meta: null })
       return { ...event, resolution: 'declined' }
@@ -189,8 +204,16 @@ export class ManagedCodexThread implements CodexAppServerThreadPort {
             yield event
             return
           }
-          yield await resolveServerRequest(this.options.connection, event)
+          yield await resolveServerRequest(this.options.connection, event, this.options,
+            request.signal === undefined ? this.options.connection.signal
+              : AbortSignal.any([this.options.connection.signal, request.signal]))
           continue
+        }
+        if (event.kind === 'notification' && event.method === 'item/completed') {
+          const item = object(event.params.item, 'completed item')
+          if (item.type === 'agentMessage' && Array.isArray(item.questions) && item.questions.length > 0) {
+            this.options.questions?.notify(item, this.options.sessionId, request.signal)
+          }
         }
         if (event.kind === 'notification' && event.method === 'turn/completed') {
           const completed = object(event.params.turn, 'turn/completed turn')

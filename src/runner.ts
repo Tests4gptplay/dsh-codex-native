@@ -10,6 +10,7 @@ import type {
   SubprocessSpawnSpec,
 } from '@deepseek-ai/dsh-subprocess'
 import { SAFE_MODEL_ID } from './identifiers.ts'
+import type { CodexQuestionHandler } from './user-questions.ts'
 import { connectCodexProcess } from './process-connection.ts'
 import {
   ManagedCodexThread,
@@ -32,6 +33,7 @@ const CONSUMER_REASON = Symbol('codex-app-server-consumer-stop')
 
 /** Complete input for one stateless App Server turn. */
 export interface CodexAppServerRequest {
+  readonly sessionId?: string
   readonly model: string
   readonly modelProvider: string
   readonly reasoningEffort?: string
@@ -47,6 +49,7 @@ export interface CodexAppServerRequest {
 
 /** Thread-level values fixed for one disposable App Server process. */
 export interface CodexAppServerThreadRequest {
+  readonly sessionId?: string
   readonly model: string
   readonly modelProvider: string
   readonly system: string
@@ -105,6 +108,7 @@ export interface CodexAppServerRunnerOptions {
   readonly spawn: (spec: SubprocessSpawnSpec) => SubprocessHandle
   readonly skillsMode?: 'dsh' | 'native'
   readonly skillsMaxContextTokens?: number
+  readonly questions?: CodexQuestionHandler
 }
 
 /** Testable streaming process contract used by the adapter. */
@@ -354,6 +358,8 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
         timeoutMs: this.options.timeoutMs,
         connection: activeConnection,
         threadId: id,
+        ...(request.sessionId === undefined ? {} : { sessionId: request.sessionId }),
+        ...(this.options.questions === undefined ? {} : { questions: this.options.questions }),
         abort: (reason: unknown): void => {
           if (!lifetime.signal.aborted) lifetime.abort(reason)
         },

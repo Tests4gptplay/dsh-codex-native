@@ -140,6 +140,11 @@ export class JsonRpcConnection {
     input.once('error', this.onError)
   }
 
+  /** Cancels pending native interactions when the protocol connection closes. */
+  get signal(): AbortSignal {
+    return this.stopSignal.signal
+  }
+
   /** Observed pipe state only; no heartbeat, polling, or model request. */
   get closed(): boolean {
     return this.stopped || this.output.readableEnded || this.output.destroyed

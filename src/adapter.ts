@@ -209,6 +209,7 @@ export class CodexAppServerAdapter extends LlmAdapter {
         sessionId: String(options.sessionId),
         epoch: this.cacheEpoch(options, dynamicTools, imageGenerationEnabled),
         thread: {
+          sessionId: String(options.sessionId),
           model: options.model,
           modelProvider: this.options.modelProvider,
           system: options.system ?? '',

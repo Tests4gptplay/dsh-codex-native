@@ -605,6 +605,77 @@ describe('Codex App Server runner', () => {
     expect(setup.child.terminate).toHaveBeenCalledOnce()
   })
 
+
+  it('waits for a native question answer and returns it over the same RPC', async () => {
+    const ready = Promise.withResolvers<AbortSignal>()
+    const choice = Promise.withResolvers<import('../src/wire.ts').JsonObject | null>()
+    const questions = {
+      ask: vi.fn((_params, sessionId, signal) => {
+        expect(sessionId).toBe('session-1')
+        ready.resolve(signal)
+        return choice.promise
+      }),
+      notify: vi.fn(),
+    }
+    let response: unknown
+    const setup = runner((message, send, raw) => {
+      standardScript(write => write({
+        id: 'question-1', method: 'item/tool/requestUserInput',
+        params: { threadId: 'thread-1', turnId: 'turn-1', itemId: 'q1', isBlocking: true,
+          questions: [{ id: 'scope', header: 'Scope', question: 'Choose?', options: [{ label: 'Keep', description: 'Keep running' }] }] },
+      }))(message, send, raw)
+      if (message.id === 'question-1') {
+        response = message.result
+        send({ method: 'turn/completed', params: { threadId: 'thread-1', turn: { id: 'turn-1', status: 'completed', error: null } } })
+      }
+    }, { timeoutMs: 0, questions })
+    const pending = collect(setup.runner, request({ sessionId: 'session-1' }))
+    await ready.promise
+    expect(response).toBeUndefined()
+    choice.resolve({ answers: { scope: { answers: ['Keep'] } } })
+    const events = await pending
+    expect(response).toEqual({ answers: { scope: { answers: ['Keep'] } } })
+    expect(events).toContainEqual(expect.objectContaining({ method: 'item/tool/requestUserInput', resolution: 'answered' }))
+  })
+
+  it('publishes native async questions without waiting or inventing an RPC reply', async () => {
+    const questions = { ask: vi.fn(), notify: vi.fn() }
+    const item = { id: 'async-q', type: 'agentMessage', delivery: 'async', text: 'Choose?',
+      questions: [{ title: 'Choose?', options: ['Keep', 'Clear'] }] }
+    const setup = runner(standardScript(send => {
+      send({ method: 'item/completed', params: { threadId: 'thread-1', turnId: 'turn-1', item } })
+      send({ method: 'turn/completed', params: { threadId: 'thread-1', turn: { id: 'turn-1', status: 'completed', error: null } } })
+    }), { questions })
+    await collect(setup.runner, request({ sessionId: 'session-1' }))
+    expect(questions.notify).toHaveBeenCalledWith(item, 'session-1', undefined)
+    expect(questions.ask).not.toHaveBeenCalled()
+  })
+
+  it('cancels an open native question when the user stops or the pipe closes', async () => {
+    for (const end of ['stop', 'pipe'] as const) {
+      const ready = Promise.withResolvers<AbortSignal>()
+      const stop = new AbortController()
+      const questions = {
+        ask: vi.fn((_params, _sessionId, signal) => {
+          ready.resolve(signal)
+          return new Promise<never>((_resolve, reject) => signal.addEventListener('abort', () => reject(signal.reason), { once: true }))
+        }), notify: vi.fn(),
+      }
+      const setup = runner(standardScript(send => send({
+        id: 'question-1', method: 'item/tool/requestUserInput',
+        params: { threadId: 'thread-1', turnId: 'turn-1', itemId: 'q1', questions: [] },
+      })), { timeoutMs: 0, questions })
+      const pending = collect(setup.runner, request({ signal: stop.signal }))
+      const rejected = expect(pending).rejects.toMatchObject({ code: end === 'stop' ? 'ABORTED' : 'TRANSPORT' })
+      const signal = await ready.promise
+      if (end === 'stop') stop.abort(new Error('stop'))
+      else setup.child.stdout!.destroy()
+      await rejected
+      expect(signal.aborted).toBe(true)
+      expect(setup.child.terminate).toHaveBeenCalledOnce()
+    }
+  })
+
   it('reports and declines a Codex-native approval without failing the turn', async () => {
     const setup = runner((message, send, sendRaw) => {
       standardScript((write) => {
