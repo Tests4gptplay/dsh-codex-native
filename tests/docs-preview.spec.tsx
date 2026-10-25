@@ -30,7 +30,7 @@ describe('actual native-control preview (sample data only)', () => {
   it('renders one toolbar, real official controls, and source notes', () => {
     const view = markup()
     expect(view).toContain('account/usage/read')
-    expect(view).toContain('Periods are reference only')
+    expect(view).toContain('Reference periods follow public reset announcements')
     expect(view).toContain('codex-reset.com')
     expect(view.match(/data-usage-clear/g)).toHaveLength(1)
     expect(view).toContain('outline')
