@@ -109,7 +109,7 @@ for (const name of ['lib/index.js', 'lib/client.js']) {
 assert(readFileSync(join(stage, 'lib/client.js'), 'utf8').includes('@deepseek-ai/dsh-client-ui-primitives'))
 copyFileSync(join('patches', patchName), join(dist, patchName))
 copyFileSync('.tmp/dsh-reference/LICENSE', join(dist, 'DSH-LICENSE.txt'))
-writeFileSync(join(dist, 'INSTALL_PATCHED_HOST.md'), render(readFileSync('docs/INSTALL_PATCHED_HOST.md', 'utf8')))
+writeFileSync(join(dist, 'INSTALL_PATCHED_HOST.md'), render(readFileSync('docs/releases/alpha.9/INSTALL_PATCHED_HOST.md', 'utf8')))
 writeFileSync('.tmp/release-notes.md', render(readFileSync('docs/releases/alpha.9/notes.md', 'utf8')))
 
 const run = json(join(process.env.RUNNER_TEMP, 'run.json'))

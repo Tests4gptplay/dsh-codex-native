@@ -26,13 +26,13 @@ The development CI assembles a cleaned TGZ for `0.2.1-alpha.9`, unpacks it and c
 - compiled `lib/client.js` with updated Chinese and English Token UI text;
 - exclusion of superseded wording in compiled UI and packaged READMEs;
 - runtime JS and plugin configuration hashes against the compiled CI artifact;
-- 30 allowed runtime files, excluding source, test fixtures, CI scripts and development dependencies;
+- 34 allowed runtime files, excluding source, test fixtures, CI scripts and development dependencies;
 - unchanged plugin and DSH-host behavioral regression tests.
 
 CI uploads `candidate-copy-audit.json` with the actual candidate TGZ and SHA256. The ChatGPT authentication-channel icon is at [docs/icons/chatgpt-auth.png](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/icons/chatgpt-auth.png) for the market card; the packaged README references the real Token-history screenshot separately.
 
 ## Review links
 
-[Draft PR #2](https://github.com/Tests4gptplay/dsh-codex-native/pull/2) · [Screenshots](../../screenshots.json) · [ChatGPT sign-in icon](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/icons/chatgpt-auth.png)
+[Merged PR #2](https://github.com/Tests4gptplay/dsh-codex-native/pull/2) · [Screenshots](../../screenshots.json) · [ChatGPT sign-in icon](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/icons/chatgpt-auth.png)
 
-Release and upstream marketplace PR remain separate from this development candidate.
+GitHub alpha.9 Release is published; the upstream plugin-market submission remains prepared in the owner's fork.

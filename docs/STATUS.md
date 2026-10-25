@@ -1,7 +1,42 @@
 # DSH Codex Native — releases and validation
 
-## Current release — v0.2.1-alpha.8
+## Current release — v0.2.1-alpha.9
 
+Published **2026-10-25 09:52:55 JST**.
+
+[Release and assets](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9) · [Installation](INSTALL_PATCHED_HOST.md) · [Technical audit](CONTEXT_COMPACTION_AUDIT.md)
+
+This release includes refined bilingual login and Token-history UI, installed-plugin Chinese and English metadata, a bundled ChatGPT authentication-channel icon, and the previously tested connection, Token accounting and Codex context-management improvements.
+
+## Alpha.9 verification
+
+| Check | Verified result |
+|---|---|
+| Windows plugin tests | **191/191** |
+| Ubuntu plugin tests | **190 passed, 1 platform skip** |
+| Final packaged-runtime and model-info tests | **28/28** |
+| Full patched DSH source build | Passed |
+| Fresh-profile installation and module resolution | Passed |
+| Authenticated Web startup | HTTP **303 → 200** |
+| Fixed Git tag installation and runtime hashes | Passed |
+| Distribution files | **34** |
+| Market screenshots | Three PNGs, anonymized real Desktop first |
+
+[Candidate CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40124345944) · [Publication CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40148183107)
+
+## Alpha.9 release identity
+
+| Item | Identity |
+|---|---|
+| Tested source | `ce85bb24750915cb9623a2e60967538058f17e5b` |
+| Runtime tag commit | `f207a1f82ea43a5987aa3244dd590f12b4da56bc` |
+| Release package | `dsh-codex-native-0.2.1-alpha.9.tgz` — 65,650 bytes |
+| Release package SHA256 | `2ec0360587e55350aed1c897d632014680eec00a71f8f612230c742832201395` |
+| Companion DSH patch SHA256 | `dd8049f33fea9187cc025e792fc25feb68a8ad5ccb1044cc85e063429c2b717e` |
+
+Distribution includes compiled runtime, bilingual manager metadata, ChatGPT channel icon and MIT attribution for icon artwork. Release attachments also include the DSH rc.2 host patch, setup guide, asset manifest and checksums.
+
+## Previous release — v0.2.1-alpha.8
 Published **2026-10-24 17:40:42 JST**.
 
 [Release and assets](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.8) · [Installation](INSTALL_PATCHED_HOST.md) · [Technical audit](CONTEXT_COMPACTION_AUDIT.md)
