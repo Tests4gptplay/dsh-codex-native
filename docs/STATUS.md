@@ -1,6 +1,15 @@
 # DSH Codex Native — releases and validation
 
-## Current release — v0.2.1-alpha.9-http.4
+## Current release — v0.2.1-alpha.9-http.6
+
+[Release and assets](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.6) · [Native installation](INSTALL.md)
+
+- Codex blocking and asynchronous questions use DSH's native selectable UI and notifications.
+- Asynchronous answers automatically return to the active task and appear as readable user messages.
+- Windows validation on 2026-10-26: 33 focused question, runner, and package-metadata tests and the build passed. Both compiled runtime bundles match the accepted installed version byte-for-byte. The installed update was confirmed in the live DSH conversation: select, submit, receive a user-message receipt, and continue the task with no extra send step.
+- Existing HTTP transport, skills, settings, Token history, and MCP failure presentation are preserved.
+
+## Previous release — v0.2.1-alpha.9-http.4
 
 [Release and assets](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.4) · [Native installation](INSTALL.md)
 

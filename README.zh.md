@@ -4,10 +4,12 @@
 
 [English](README.md) · [版本发布](https://github.com/Tests4gptplay/dsh-codex-native/releases) · [安装指南](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/INSTALL.md) · [发布验证](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/STATUS.md)
 
-## 最新版本 — v0.2.1-alpha.9-http.4
+## 最新版本 — v0.2.1-alpha.9-http.6
 
-[版本与下载](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.4) · [上下文计量技术记录](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/CONTEXT_COMPACTION_AUDIT.md)
+[版本与下载](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.6) · [上下文计量技术记录](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/CONTEXT_COMPACTION_AUDIT.md)
 
+- **原生问答与通知：** Codex 中途提问接入 DSH 原生选项卡片和通知，支持点选及自由输入。
+- **自动回传与聊天回执：** 提交后自动送回当前任务，并在聊天中显示为用户消息，一次提交即可继续，无需再点发送箭头。
 - **宿主版本兼容：** 插件使用 DSH 宿主提供的依赖，不通过版本范围提前拦截加载。
 - **直接 HTTP 连接：** OpenAI 路由使用认证 HTTP 传输，沿用已有 ChatGPT 登录，减少 WebSocket 断流后的重连等待。
 - **按需技能发现：** DSH 统一搜索本地与远程连接器技能，选中后再读取；启动提示只保留简短入口，技能预算为 10,000 tokens。
@@ -23,20 +25,20 @@
 ### 安装
 
 ```text
-github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.4
+github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.6
 ```
 
 Desktop 打开 **插件 → 添加插件**，粘贴上面的固定版本来源并启用。Web 版执行：
 
 ```sh
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.4'
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.6'
 ```
 
 固定版本包含预构建运行文件；升级沿用原有配置与登录。[安装指南](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/INSTALL.md)包含登录步骤和备用 TGZ 安装方式。
 
 ## 按需技能发现
 
-`0.2.1-alpha.9-http.4` 由 DSH 提供 `codex_skill_search` 和 `codex_skill_read`：模型先搜索相关摘要，再读取所需技能正文。本地技能与已安装的远程连接器技能统一检索，同一插件的重复项优先使用连接器；独立编写的本地技能保留。入口对 DSH 的 HTTP 与本地模型均可用。
+`0.2.1-alpha.9-http.6` 由 DSH 提供 `codex_skill_search` 和 `codex_skill_read`：模型先搜索相关摘要，再读取所需技能正文。本地技能与已安装的远程连接器技能统一检索，同一插件的重复项优先使用连接器；独立编写的本地技能保留。入口对 DSH 的 HTTP 与本地模型均可用。
 
 默认 `skillsMode: dsh` 将 Codex 的自动技能目录注入交给这两个入口，`skillsMaxContextTokens: 10000` 使用原生支持的最大预算。发现结果按工作目录缓存，技能或插件变化后用 `refresh: true` 更新；`skillsMode: native` 可选用原生目录。设置只作用于本插件启动的进程，沿用现有登录、连接器和原生工具。
 
@@ -55,6 +57,8 @@ dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha
 市场截图顺序由 [screenshots.json](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/screenshots.json) 控制。
 
 ## 测试与工程记录
+
+http.6 问答更新通过 **33 项专项测试**和构建；原生点选、自动回传和聊天回执已在 DSH 实际会话中确认。前后端编译文件与已验收的本机运行版本逐字节一致。
 
 http.4 兼容性修复在 Windows 通过 **209/209** 项测试；Ubuntu **208 项通过、1 项平台跳过**；两个平台的最终安装包专项测试均 **28/28** 通过。[兼容性修复 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40190137989)。
 
