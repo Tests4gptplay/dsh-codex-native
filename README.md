@@ -2,11 +2,15 @@
 
 **An OpenAI Codex app-server main-model integration for DeepSeek Harness.** Use ChatGPT sign-in, DSH tools, native Codex model settings and an on-demand Token usage history panel.
 
-[简体中文](README.zh.md) · [Releases](https://github.com/Tests4gptplay/dsh-codex-native/releases) · [Installation guide](docs/INSTALL_PATCHED_HOST.md) · [Release verification](docs/STATUS.md)
+[简体中文](README.zh.md) · [Releases](https://github.com/Tests4gptplay/dsh-codex-native/releases) · [Installation guide](docs/INSTALL.md) · [Release verification](docs/STATUS.md)
 
-## Latest release — v0.2.1-alpha.9
+## Latest release — v0.2.1-alpha.9-http.3
 
-[Download alpha.9](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9) · [Context accounting details](docs/CONTEXT_COMPACTION_AUDIT.md)
+[Release and downloads](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.3) · [Context accounting details](docs/CONTEXT_COMPACTION_AUDIT.md)
+
+- **Direct HTTP connection:** the OpenAI route uses authenticated HTTP with existing ChatGPT sign-in, reducing reconnect waits after WebSocket interruptions.
+- **On-demand skill discovery:** DSH searches local and remote connector skills and reads selected instructions. Startup carries a compact discovery hint, with a 10,000-token skill budget.
+- **Session warning deduplication:** identical configuration, deprecation, and ordinary warnings appear once per session; changed notices and errors remain visible.
 
 - **Context management:** Codex manages routine context compaction, with DSH's overflow recovery available for exceptional cases.
 - **Accurate usage accounting:** total token consumption is tracked independently from the latest active context-window sample; delayed reports are reconciled with completed responses.
@@ -18,10 +22,22 @@
 ### Installation
 
 ```text
-github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9
+github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.3
 ```
 
-The release provides the prebuilt plugin package and the companion DSH rc.2 host integration patch. [Build and installation steps](docs/INSTALL_PATCHED_HOST.md) cover the tested host configuration, including DSH `0.2.1-rc.2` and Codex `0.154.0`.
+In Desktop, open **Plugins → Add plugin**, paste the fixed-version source above, and enable it. For Web:
+
+```sh
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.3'
+```
+
+The fixed tag includes prebuilt runtime files. Upgrades retain existing configuration and sign-in. The [installation guide](docs/INSTALL.md) covers login and the alternative TGZ package.
+
+## On-demand skill discovery
+
+Version `0.2.1-alpha.9-http.3` provides `codex_skill_search` and `codex_skill_read` through DSH: models search summaries, then read the skills they need. The catalog covers local files and installed remote connector skills, preferring connectors for duplicate entries from the same plugin while retaining independently authored local skills. Both HTTP and local DSH models can use these tools.
+
+The default `skillsMode: dsh` replaces Codex's automatic skill catalog injection with these discovery tools. `skillsMaxContextTokens: 10000` selects the maximum native budget. Metadata is cached by working directory; use `refresh: true` after changing skills or plugins. `skillsMode: native` selects the native catalog. These settings apply to plugin-owned processes and retain existing authentication, connectors, and native tools.
 
 ## Token usage panel
 

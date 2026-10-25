@@ -150,10 +150,14 @@ async function collectTurn(
 }
 
 describe('Codex App Server runner', () => {
-  it('does not override Codex feature policy, account config, or normal compaction', () => {
+  it('selects HTTP while preserving Codex feature policy, login and compaction', () => {
     expect(existsSync(codexCliEntry())).toBe(true)
     const argv = codexAppServerArgv()
-    expect(argv).toEqual([process.execPath, codexCliEntry(), 'app-server', '--stdio'])
+    expect(argv).toEqual([
+      process.execPath, codexCliEntry(), 'app-server', '--stdio',
+      '-c', 'model_providers.dsh-openai-http={name="OpenAI",requires_openai_auth=true,supports_websockets=false}',
+      '-c', 'skills.max_context_tokens=10000',
+    ])
     expect(argv).not.toContain('--strict-config')
     expect(argv).not.toContain('--disable')
     expect(argv).not.toContain('--enable')
@@ -163,8 +167,24 @@ describe('Codex App Server runner', () => {
     expect(search).not.toContain('--disable')
     expect(codexAppServerArgv('disabled', false)).toEqual([
       process.execPath, codexCliEntry(), 'app-server', '--stdio',
+      '-c', 'model_providers.dsh-openai-http={name="OpenAI",requires_openai_auth=true,supports_websockets=false}',
+      '-c', 'skills.max_context_tokens=10000',
       '-c', 'web_search="disabled"', '--disable', 'image_generation',
     ])
+  })
+
+  it('uses DSH skill discovery without changing other native capabilities', async () => {
+    const setup = runner(standardScript(send => send({ method: 'turn/completed', params: {
+      threadId: 'thread-1', turn: { id: 'turn-1', status: 'completed', error: null },
+    } })), { skillsMode: 'dsh', skillsMaxContextTokens: 10000 })
+    await collect(setup.runner, request())
+    expect(setup.spec().argv).toContain('skills.max_context_tokens=10000')
+    expect(setup.spec().argv).toContain('skills.include_instructions=false')
+    expect(setup.spec().argv).toContain('features.skip_host_skill_discovery=true')
+    expect(setup.spec().argv).not.toContain('--disable')
+    expect(setup.spec().argv.join(' ')).not.toMatch(/orchestrator|CODEX_HOME|plugins.*false/)
+    expect(codexAppServerArgv(undefined, true, 'openai', 'native', 7000)).toContain('skills.max_context_tokens=7000')
+    expect(codexAppServerArgv(undefined, true, 'openai', 'native')).not.toContain('skills.include_instructions=false')
   })
 
   it('starts an ephemeral thread, injects history, streams events, and reaches quiescence', async () => {
@@ -220,6 +240,35 @@ describe('Codex App Server runner', () => {
     expect(existsSync(setup.spec().cwd)).toBe(false)
     expect(setup.child.terminate).toHaveBeenCalledOnce()
     expect(setup.child.waitForExit).toHaveBeenCalledOnce()
+  })
+
+  it('uses authenticated HTTP for OpenAI without changing another provider', async () => {
+    for (const provider of ['openai', 'custom-provider']) {
+      const messages: JsonObject[] = []
+      const setup = runner((message, send, sendRaw) => {
+        messages.push(message)
+        standardScript((write) => {
+          write({ method: 'turn/completed', params: {
+            threadId: 'thread-1',
+            turn: { id: 'turn-1', status: 'completed', error: null },
+          } })
+        })(message, send, sendRaw)
+      })
+      await collect(setup.runner, request({ modelProvider: provider }))
+      const params = object(messages.find(message => message.method === 'thread/start')?.params)
+      if (provider === 'openai') {
+        expect(setup.spec().argv).toContain(
+          'model_providers.dsh-openai-http={name="OpenAI",requires_openai_auth=true,supports_websockets=false}',
+        )
+        expect(params.modelProvider).toBe('dsh-openai-http')
+      } else {
+        expect(setup.spec().argv.some(argument => argument.includes('dsh-openai-http'))).toBe(false)
+        expect(params.modelProvider).toBe(provider)
+      }
+      expect(params).not.toHaveProperty('sandbox')
+      expect(params).not.toHaveProperty('approvalPolicy')
+      expect(setup.spec().env).toEqual({ CODEX_HOME: 'configured-home' })
+    }
   })
 
   it('starts a live-search process only for an explicit search request', async () => {

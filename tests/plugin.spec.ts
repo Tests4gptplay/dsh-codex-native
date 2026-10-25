@@ -19,6 +19,7 @@ async function context(): Promise<Context> {
   await ctx.plugin(LocalSubprocessRuntime)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
+  ctx.provide('workingDirectory', { ensure: async () => process.cwd() } as never)
   return ctx
 }
 
@@ -79,6 +80,24 @@ describe('plugin composition', () => {
       context: { contextWindow: 128_000 },
       reasoning: { defaultEffort: 'high' },
     })
+  })
+
+  it('offers compact skill tools to all DSH models and removes them on unload', async () => {
+    const ctx = await context()
+    const spawn = vi.spyOn(ctx.subprocess, 'spawn')
+    const fiber = await ctx.plugin(CodexAppServer, {})
+    expect(spawn).not.toHaveBeenCalled()
+    expect(ctx.tools.get('codex_skill_search')).toBeDefined()
+    expect(ctx.tools.get('codex_skill_read')).toBeDefined()
+    const prompt = await ctx.systemPrompt.assemble()
+    const section = prompt.sections.find(section => section.name === 'dsh-codex-skill-discovery')
+    expect(section?.text).toContain('codex_skill_search')
+    expect(section?.text).not.toContain('nte-mod-authoring')
+    expect(section!.text.length).toBeLessThan(700)
+    expect(CodexAppServer.Config({}).skillsMaxContextTokens).toBe(10000)
+    await fiber.dispose()
+    expect(ctx.tools.get('codex_skill_search')).toBeUndefined()
+    expect((await ctx.systemPrompt.assemble()).sections.some(section => section.name === 'dsh-codex-skill-discovery')).toBe(false)
   })
 
   it('defaults custom routes to text-only and rejects duplicate modalities', async () => {

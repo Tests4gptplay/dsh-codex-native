@@ -117,6 +117,7 @@ describe('real locally authenticated Codex bridge', () => {
     await ctx.plugin(LocalSubprocessRuntime)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
+    ctx.provide('workingDirectory', { ensure: async () => process.cwd() } as never)
     const readImage = vi.fn(async (ref: typeof IMAGE_REF) => ({ ref, data: IMAGE_DATA }))
     ctx.provide('attachments', {
       imageLimits: {

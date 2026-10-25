@@ -1,6 +1,17 @@
 # DSH Codex Native — releases and validation
 
-## Current release — v0.2.1-alpha.9
+## Current release — v0.2.1-alpha.9-http.3
+
+[Release and assets](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.3) · [Native installation](INSTALL.md)
+
+- Authenticated HTTP transport for the OpenAI route, using existing ChatGPT sign-in.
+- Session-scoped warning deduplication, restored from recorded message history.
+- DSH-wide on-demand local and remote connector skill search/read, with connector preference for duplicate plugin skills.
+- Process-local maximum skill budget of 10,000 tokens and compact startup discovery instructions.
+
+Windows validation on 2026-10-25: **44 focused tests passed**, plugin build and type declarations passed, and the update was installed through DSH's plugin manager. Live discovery found 21 enabled local skills and 41 connector skills; NTE and Google Drive skill reads succeeded. The native request capture removed an 18,292-character automatic skill section. The client UI bundle retained identical bytes.
+
+## Previous release — v0.2.1-alpha.9
 
 Published **2026-10-25 09:52:55 JST**.
 

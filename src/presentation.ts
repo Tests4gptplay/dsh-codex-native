@@ -32,7 +32,10 @@ export function actionText(value: unknown): string | undefined {
 }
 
 /** Map wire blocks to the native DSH vocabulary, with consecutive indices and unchanged finish/replay/tool payloads. */
-export async function* presentForDsh(source: AsyncIterable<StreamChunk>): AsyncIterable<StreamChunk> {
+export async function* presentForDsh(
+  source: AsyncIterable<StreamChunk>,
+  shownWarnings: Set<string> = new Set(),
+): AsyncIterable<StreamChunk> {
   const indices = new Map<number, number>()
   const privateBlocks = new Set<number>()
   const shown = new Set<string>()
@@ -48,7 +51,11 @@ export async function* presentForDsh(source: AsyncIterable<StreamChunk>): AsyncI
       const action = chunk.block as unknown as Record<string, unknown>
       const key = `${String(action.actionId)}:${String(action.actionType)}:${String(action.phase)}`
       if (text !== undefined && !shown.has(key)) {
+        const warning = action.category === 'diagnostic'
+          && ['warning', 'configWarning', 'deprecationNotice'].includes(String(action.actionType))
+        if (warning && shownWarnings.has(text)) continue
         shown.add(key)
+        if (warning) shownWarnings.add(text)
         const index = nextIndex++
         yield { type: 'block-start', index, blockType: 'text' }
         yield { type: 'text-delta', index, text }

@@ -103,6 +103,8 @@ export interface CodexAppServerRunnerOptions {
   readonly maxStderrBytes: number
   readonly env: Readonly<Record<string, string>>
   readonly spawn: (spec: SubprocessSpawnSpec) => SubprocessHandle
+  readonly skillsMode?: 'dsh' | 'native'
+  readonly skillsMaxContextTokens?: number
 }
 
 /** Testable streaming process contract used by the adapter. */
@@ -117,18 +119,31 @@ export function codexCliEntry(): string {
   return join(dirname(require.resolve('@openai/codex/package.json')), 'bin', 'codex.js')
 }
 
-/** Let the official Codex configuration select its own features and permissions.
- * Only explicitly requested per-operation capabilities override the user policy.
- */
+// A process-local provider keeps ChatGPT authentication and the Responses protocol,
+// while using HTTP directly on connections that close WebSocket streams early.
+const OPENAI_HTTP_PROVIDER = 'dsh-openai-http'
+const OPENAI_HTTP_CONFIG =
+  'model_providers.dsh-openai-http={name="OpenAI",requires_openai_auth=true,supports_websockets=false}'
+
+/** Keep native features and permissions; select HTTP for the OpenAI transport. */
 export function codexAppServerArgv(
   webSearch?: CodexWebSearchMode,
   imageGenerationEnabled = true,
+  modelProvider = 'openai',
+  skillsMode: 'dsh' | 'native' = 'native',
+  skillsMaxContextTokens = 10_000,
 ): string[] {
   return [
     process.execPath,
     codexCliEntry(),
     'app-server',
     '--stdio',
+    ...(modelProvider === 'openai' ? ['-c', OPENAI_HTTP_CONFIG] : []),
+    '-c', `skills.max_context_tokens=${skillsMaxContextTokens}`,
+    ...(skillsMode === 'dsh' ? [
+      '-c', 'skills.include_instructions=false',
+      '-c', 'features.skip_host_skill_discovery=true',
+    ] : []),
     ...(webSearch === undefined ? [] : ['-c', `web_search="${webSearch}"`]),
     ...(imageGenerationEnabled ? [] : ['--disable', 'image_generation']),
   ]
@@ -271,7 +286,8 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
     try {
       if (request.signal?.aborted) throw request.signal.reason
       child = this.options.spawn({
-        argv: codexAppServerArgv(request.webSearch, request.imageGenerationEnabled),
+        argv: codexAppServerArgv(request.webSearch, request.imageGenerationEnabled, request.modelProvider,
+          this.options.skillsMode, this.options.skillsMaxContextTokens),
         cwd: workdir,
         stdio: {
           stdin: 'pipe',
@@ -304,7 +320,7 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
       await activeConnection.notify('initialized', {})
       const started = object(await activeConnection.request('thread/start', {
         model: request.model,
-        modelProvider: request.modelProvider,
+        modelProvider: request.modelProvider === 'openai' ? OPENAI_HTTP_PROVIDER : request.modelProvider,
         cwd: workdir,
         baseInstructions: request.system,
         developerInstructions: '',

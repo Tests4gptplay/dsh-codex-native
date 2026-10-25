@@ -15,6 +15,8 @@ import { SAFE_MODEL_ID, SAFE_REASONING_EFFORT } from './identifiers.ts'
 import { CodexAppServerRunner } from './runner.ts'
 import { NativeCodexAccount } from './native-account.ts'
 import { registerNativeCodexTransport } from './native-transport.ts'
+import { NativeCodexSkills } from './native-skills.ts'
+import { registerCodexSkillTools } from './skill-tools.ts'
 
 export { CodexAppServerAdapter } from './adapter.ts'
 export type { CodexAdapterOptions, CodexModel } from './adapter.ts'
@@ -49,11 +51,13 @@ export type {
 } from './runner.ts'
 
 export const name = 'dsh-codex-native'
-export const inject = ['llm', 'subprocess', 'tools']
+export const inject = ['llm', 'subprocess', 'tools', 'systemPrompt', 'workingDirectory']
 
 /** Plugin configuration for one static provider route. */
 export interface Config {
   imageGenerationEnabled?: boolean
+  skillsMode?: 'dsh' | 'native'
+  skillsMaxContextTokens?: number
   provider?: string
   displayName?: string
   modelProvider?: string
@@ -163,6 +167,8 @@ export const Config: z<Config> = z.object({
   maxCachedSessions: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(8),
   sessionIdleTimeoutMs: z.number().step(1).min(1).max(2_147_483_647).default(600_000),
   imageGenerationEnabled: z.boolean().default(true),
+  skillsMode: z.union(['dsh', 'native']).default('dsh'),
+  skillsMaxContextTokens: z.number().step(1).min(1).max(10_000).default(10_000),
   env: z.dict(z.string()).default({}),
 })
 
@@ -180,6 +186,8 @@ interface ResolvedConfig {
   readonly maxCachedSessions: number
   readonly sessionIdleTimeoutMs: number
   readonly imageGenerationEnabled: boolean
+  readonly skillsMode: 'dsh' | 'native'
+  readonly skillsMaxContextTokens: number
   readonly env: Readonly<Record<string, string>>
 }
 
@@ -198,6 +206,12 @@ function resolveConfig(config: Config): ResolvedConfig {
   const maxCachedSessions = config.maxCachedSessions ?? 8
   const sessionIdleTimeoutMs = config.sessionIdleTimeoutMs ?? 600_000
   const imageGenerationEnabled = config.imageGenerationEnabled ?? true
+  const skillsMode = config.skillsMode ?? 'dsh'
+  const skillsMaxContextTokens = config.skillsMaxContextTokens ?? 10_000
+  if (skillsMode !== 'dsh' && skillsMode !== 'native') throw new Error('skillsMode must be dsh or native')
+  if (!Number.isSafeInteger(skillsMaxContextTokens) || skillsMaxContextTokens < 1 || skillsMaxContextTokens > 10_000) {
+    throw new Error('skillsMaxContextTokens must be between 1 and 10000')
+  }
   const env = config.env ?? {}
   if (!SAFE_ROUTE.test(provider)) throw new Error('llm-codex-app-server: provider is not a safe route id')
   if (displayName.trim().length === 0) throw new Error('llm-codex-app-server: displayName must not be empty')
@@ -277,6 +291,8 @@ function resolveConfig(config: Config): ResolvedConfig {
     maxCachedSessions,
     sessionIdleTimeoutMs,
     imageGenerationEnabled,
+    skillsMode,
+    skillsMaxContextTokens,
     env,
   }
 }
@@ -290,6 +306,8 @@ export function apply(ctx: Context, config: Config): void {
     maxJsonRpcLineBytes: resolved.maxJsonRpcLineBytes,
     maxStderrBytes: resolved.maxStderrBytes,
     env: resolved.env,
+    skillsMode: resolved.skillsMode,
+    skillsMaxContextTokens: resolved.skillsMaxContextTokens,
     spawn: spec => ctx.subprocess.spawn(codexSpawnSpec(spec)),
   })
   const reportCleanupError = (error: unknown): void => {
@@ -313,6 +331,16 @@ export function apply(ctx: Context, config: Config): void {
   ctx.on('session/disposed', (session) => {
     void adapter.disposeSession(String(session.id)).catch(reportCleanupError)
   })
+  if (resolved.skillsMode === 'dsh') {
+    const skills = new NativeCodexSkills({
+      spawn: spec => ctx.subprocess.spawn(codexSpawnSpec(spec)),
+      env: resolved.env, maxJsonRpcLineBytes: resolved.maxJsonRpcLineBytes,
+      maxStderrBytes: resolved.maxStderrBytes, disposeGraceMs: resolved.disposeGraceMs,
+      maxContextTokens: resolved.skillsMaxContextTokens,
+    })
+    registerCodexSkillTools(ctx, skills)
+    ctx.effect(() => () => skills.dispose(), 'dsh-codex-native: close skill discovery processes')
+  }
   const account = new NativeCodexAccount(spec => ctx.subprocess.spawn(codexSpawnSpec(spec)))
   ctx.inject(['connection'], (scoped) => {
     scoped.effect(
