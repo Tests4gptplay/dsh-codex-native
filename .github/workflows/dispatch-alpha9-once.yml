@@ -1,0 +1,28 @@
+name: Trigger verified alpha.9 release once
+'on':
+  push:
+    branches: [main]
+    paths: ['.github/workflows/dispatch-alpha9-once.yml']
+permissions:
+  actions: write
+  contents: read
+jobs:
+  dispatch:
+    if: github.repository == 'Tests4gptplay/dsh-codex-native'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger release using tested alpha.9 source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v0.2.1-alpha.9" >/dev/null 2>&1; then
+            echo 'Release tag already exists; inspect the existing release before dispatch.'
+            exit 1
+          fi
+          gh workflow run release-clean.yml --repo "$GITHUB_REPOSITORY" --ref main \
+            -f tested_run_id=40124345944 \
+            -f tested_source_sha=ce85bb24750915cb9623a2e60967538058f17e5b
+          echo 'DISPATCH_ALPHA9_RELEASE_SUCCESS'
