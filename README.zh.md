@@ -2,12 +2,13 @@
 
 **将 OpenAI 官方 Codex app-server 接入 DeepSeek Harness 的主模型插件。** 支持 ChatGPT 账号登录、DSH 工具、Codex 原生模型设置，以及手动查询 Token 历史用量。
 
-[English](README.md) · [版本发布](https://github.com/Tests4gptplay/dsh-codex-native/releases) · [安装指南](docs/INSTALL.md) · [发布验证](docs/STATUS.md)
+[English](README.md) · [版本发布](https://github.com/Tests4gptplay/dsh-codex-native/releases) · [安装指南](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/INSTALL.md) · [发布验证](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/STATUS.md)
 
-## 最新版本 — v0.2.1-alpha.9-http.3
+## 最新版本 — v0.2.1-alpha.9-http.4
 
-[版本与下载](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.3) · [上下文计量技术记录](docs/CONTEXT_COMPACTION_AUDIT.md)
+[版本与下载](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.4) · [上下文计量技术记录](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/CONTEXT_COMPACTION_AUDIT.md)
 
+- **宿主版本兼容：** 插件使用 DSH 宿主提供的依赖，不通过版本范围提前拦截加载。
 - **直接 HTTP 连接：** OpenAI 路由使用认证 HTTP 传输，沿用已有 ChatGPT 登录，减少 WebSocket 断流后的重连等待。
 - **按需技能发现：** DSH 统一搜索本地与远程连接器技能，选中后再读取；启动提示只保留简短入口，技能预算为 10,000 tokens。
 - **会话提示去重：** 相同配置、弃用与普通警告在同一会话中显示一次；变化后的提示和错误继续显示。
@@ -22,20 +23,20 @@
 ### 安装
 
 ```text
-github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.3
+github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.4
 ```
 
 Desktop 打开 **插件 → 添加插件**，粘贴上面的固定版本来源并启用。Web 版执行：
 
 ```sh
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.3'
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.4'
 ```
 
-固定版本包含预构建运行文件；升级沿用原有配置与登录。[安装指南](docs/INSTALL.md)包含登录步骤和备用 TGZ 安装方式。
+固定版本包含预构建运行文件；升级沿用原有配置与登录。[安装指南](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/INSTALL.md)包含登录步骤和备用 TGZ 安装方式。
 
 ## 按需技能发现
 
-`0.2.1-alpha.9-http.3` 由 DSH 提供 `codex_skill_search` 和 `codex_skill_read`：模型先搜索相关摘要，再读取所需技能正文。本地技能与已安装的远程连接器技能统一检索，同一插件的重复项优先使用连接器；独立编写的本地技能保留。入口对 DSH 的 HTTP 与本地模型均可用。
+`0.2.1-alpha.9-http.4` 由 DSH 提供 `codex_skill_search` 和 `codex_skill_read`：模型先搜索相关摘要，再读取所需技能正文。本地技能与已安装的远程连接器技能统一检索，同一插件的重复项优先使用连接器；独立编写的本地技能保留。入口对 DSH 的 HTTP 与本地模型均可用。
 
 默认 `skillsMode: dsh` 将 Codex 的自动技能目录注入交给这两个入口，`skillsMaxContextTokens: 10000` 使用原生支持的最大预算。发现结果按工作目录缓存，技能或插件变化后用 `refresh: true` 更新；`skillsMode: native` 可选用原生目录。设置只作用于本插件启动的进程，沿用现有登录、连接器和原生工具。
 
@@ -47,17 +48,19 @@ dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha
 
 ## 用户实测 Desktop 截图
 
-![脱敏后的 DSH Desktop Token 历史用量实测界面](docs/screenshots/codex-usage-desktop-anonymized.png)
+![脱敏后的 DSH Desktop Token 历史用量实测界面](https://raw.githubusercontent.com/Tests4gptplay/dsh-codex-native/main/docs/screenshots/codex-usage-desktop-anonymized.png)
 
-*用户在 alpha.5 实机确认过历史用量查询功能，发布前将账号一行替换为虚构展示名称。* [截图来源](docs/SCREENSHOTS.md) · [浅色示例](docs/screenshots/codex-usage-light.png) · [深色示例](docs/screenshots/codex-usage-dark.png)
+*用户在 alpha.5 实机确认过历史用量查询功能，发布前将账号一行替换为虚构展示名称。* [截图来源](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/SCREENSHOTS.md) · [浅色示例](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/screenshots/codex-usage-light.png) · [深色示例](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/screenshots/codex-usage-dark.png)
 
-市场截图顺序由 [screenshots.json](screenshots.json) 控制。
+市场截图顺序由 [screenshots.json](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/screenshots.json) 控制。
 
 ## 测试与工程记录
 
+http.4 兼容性修复在 Windows 通过 **209/209** 项测试；Ubuntu **208 项通过、1 项平台跳过**；两个平台的最终安装包专项测试均 **28/28** 通过。[兼容性修复 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40190137989)。
+
 alpha.9 候选版本在 Windows 通过 **191/191** 项测试；Ubuntu **190 项通过、1 项平台跳过**。最终安装包专项检查 **28/28**，配套宿主构建、独立安装、Web 启动及 Git 固定标签安装均通过。
 
-[候选版 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40124345944) · [发布 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40148183107) · [压缩与计量审计](docs/CONTEXT_COMPACTION_AUDIT.md) · [账号生命周期修复](docs/ACCOUNT_LIFECYCLE_AUDIT.md) · [协议修复](docs/PROTOCOL_STREAM_FIX.md)
+[候选版 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40124345944) · [发布 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40148183107) · [压缩与计量审计](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/CONTEXT_COMPACTION_AUDIT.md) · [账号生命周期修复](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/ACCOUNT_LIFECYCLE_AUDIT.md) · [协议修复](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/PROTOCOL_STREAM_FIX.md)
 
 ## 许可与来源
 

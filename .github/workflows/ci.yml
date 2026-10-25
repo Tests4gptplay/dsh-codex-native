@@ -90,7 +90,7 @@ jobs:
           const manifest = JSON.parse(readFileSync(join(dir,'package.json'),'utf8'))
           for (const field of ['scripts','devDependencies','packageManager','publishConfig']) delete manifest[field]
           writeFileSync(join(dir,'package.json'),JSON.stringify(manifest,null,2)+'\n')
-          for (const locale of ['README.md','README.zh.md']) copyFileSync(join('docs/releases/alpha.9',locale),join(dir,locale))
+          for (const locale of ['README.md','README.zh.md']) copyFileSync(locale,join(dir,locale))
           const files = folder => readdirSync(folder).flatMap(name => {
             const p = join(folder,name)
             return statSync(p).isDirectory() ? files(p) : [relative(dir,p).replaceAll('\\','/')]
@@ -146,7 +146,7 @@ jobs:
           assert.equal(pkg.description,'Codex app-server main models for DSH with ChatGPT sign-in, Token history, context management and native tools.')
           for (const locale of ['README.md','README.zh.md']) {
             assert.equal(readFileSync('.tmp/candidate-unpacked/'+locale,'utf8'),
-              readFileSync('docs/releases/alpha.9/'+locale,'utf8'),
+              readFileSync(locale,'utf8'),
               'Installed '+locale+' differs from the candidate copy')
           }
           const manifest = JSON.parse(readFileSync('dist/source-manifest.json','utf8'))

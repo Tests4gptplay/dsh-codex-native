@@ -1,6 +1,15 @@
 # DSH Codex Native — releases and validation
 
-## Current release — v0.2.1-alpha.9-http.3
+## Current release — v0.2.1-alpha.9-http.4
+
+[Release and assets](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.4) · [Native installation](INSTALL.md)
+
+- DSH host-provided peer dependency ranges are unrestricted (`*`); runtime API errors remain visible.
+- Authenticated HTTP, Codex sign-in, context management, skill discovery, and Token history preserved.
+- Verified on Windows: 209/209 tests; Ubuntu: 208 passed, 1 skipped; final packaged-runtime tests: 28/28 on both systems.
+- [Windows and Ubuntu candidate CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40190137989).
+
+## Previous release — v0.2.1-alpha.9-http.3
 
 [Release and assets](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.3) · [Native installation](INSTALL.md)
 
