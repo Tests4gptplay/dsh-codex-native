@@ -1,9 +1,0 @@
-node_modules/
-lib/
-dist/
-coverage/
-.tmp/
-.diagnostic-state/
-*.tgz
-*.log
-.DS_Store

@@ -2,11 +2,11 @@
 
 **An OpenAI Codex app-server main-model integration for DeepSeek Harness.** Use ChatGPT sign-in, DSH tools, native Codex model settings and an on-demand Token usage history panel.
 
-[简体中文](README.zh.md) · [Releases](https://github.com/Tests4gptplay/dsh-codex-native/releases) · [Installation guide](docs/INSTALL.md) · [Release verification](docs/STATUS.md)
+[简体中文](README.zh.md) · [Releases](https://github.com/Tests4gptplay/dsh-codex-native/releases) · [Installation guide](https://github.com/Tests4gptplay/dsh-codex-native/blob/9981ec9d5c15b23bdc7e1b2ba2272286730a56e9/docs/INSTALL.md) · [Release verification](https://github.com/Tests4gptplay/dsh-codex-native/blob/9981ec9d5c15b23bdc7e1b2ba2272286730a56e9/docs/STATUS.md)
 
 ## Latest release — v0.2.1-alpha.9-http.3
 
-[Release and downloads](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.3) · [Context accounting details](docs/CONTEXT_COMPACTION_AUDIT.md)
+[Release and downloads](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.3) · [Context accounting details](https://github.com/Tests4gptplay/dsh-codex-native/blob/9981ec9d5c15b23bdc7e1b2ba2272286730a56e9/docs/CONTEXT_COMPACTION_AUDIT.md)
 
 - **Direct HTTP connection:** the OpenAI route uses authenticated HTTP with existing ChatGPT sign-in, reducing reconnect waits after WebSocket interruptions.
 - **On-demand skill discovery:** DSH searches local and remote connector skills and reads selected instructions. Startup carries a compact discovery hint, with a 10,000-token skill budget.
@@ -31,7 +31,7 @@ In Desktop, open **Plugins → Add plugin**, paste the fixed-version source abov
 dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.3'
 ```
 
-The fixed tag includes prebuilt runtime files. Upgrades retain existing configuration and sign-in. The [installation guide](docs/INSTALL.md) covers login and the alternative TGZ package.
+The fixed tag includes prebuilt runtime files. Upgrades retain existing configuration and sign-in. The [installation guide](https://github.com/Tests4gptplay/dsh-codex-native/blob/9981ec9d5c15b23bdc7e1b2ba2272286730a56e9/docs/INSTALL.md) covers login and the alternative TGZ package.
 
 ## On-demand skill discovery
 
@@ -47,17 +47,17 @@ The history panel queries official Codex account data when **Query** is clicked.
 
 ## Real Desktop screenshot
 
-![Anonymized real DSH Desktop Token history panel](docs/screenshots/codex-usage-desktop-anonymized.png)
+![Anonymized real DSH Desktop Token history panel](https://raw.githubusercontent.com/Tests4gptplay/dsh-codex-native/9981ec9d5c15b23bdc7e1b2ba2272286730a56e9/docs/screenshots/codex-usage-desktop-anonymized.png)
 
-*User-confirmed alpha.5 Desktop history view, with a fictional account label substituted before publication.* [Screenshot provenance](docs/SCREENSHOTS.md) · [Light example](docs/screenshots/codex-usage-light.png) · [Dark example](docs/screenshots/codex-usage-dark.png)
+*User-confirmed alpha.5 Desktop history view, with a fictional account label substituted before publication.* [Screenshot provenance](https://github.com/Tests4gptplay/dsh-codex-native/blob/9981ec9d5c15b23bdc7e1b2ba2272286730a56e9/docs/SCREENSHOTS.md) · [Light example](https://github.com/Tests4gptplay/dsh-codex-native/blob/9981ec9d5c15b23bdc7e1b2ba2272286730a56e9/docs/screenshots/codex-usage-light.png) · [Dark example](https://github.com/Tests4gptplay/dsh-codex-native/blob/9981ec9d5c15b23bdc7e1b2ba2272286730a56e9/docs/screenshots/codex-usage-dark.png)
 
-The market screenshot order is defined in [screenshots.json](screenshots.json).
+The market screenshot order is defined in [screenshots.json](https://github.com/Tests4gptplay/dsh-codex-native/blob/9981ec9d5c15b23bdc7e1b2ba2272286730a56e9/screenshots.json).
 
 ## Verification and engineering notes
 
 The alpha.9 candidate passed Windows **191/191** plugin tests and Ubuntu **190 passed / one platform skip**. The final packaged-runtime suite passed **28/28**; the patched DSH host build, fresh installation, authenticated Web startup, and fixed-tag installation passed.
 
-[Candidate CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40124345944) · [Publication CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40148183107) · [Technical audit](docs/CONTEXT_COMPACTION_AUDIT.md) · [Account lifecycle repair](docs/ACCOUNT_LIFECYCLE_AUDIT.md) · [Transport repair](docs/PROTOCOL_STREAM_FIX.md)
+[Candidate CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40124345944) · [Publication CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40148183107) · [Technical audit](https://github.com/Tests4gptplay/dsh-codex-native/blob/9981ec9d5c15b23bdc7e1b2ba2272286730a56e9/docs/CONTEXT_COMPACTION_AUDIT.md) · [Account lifecycle repair](https://github.com/Tests4gptplay/dsh-codex-native/blob/9981ec9d5c15b23bdc7e1b2ba2272286730a56e9/docs/ACCOUNT_LIFECYCLE_AUDIT.md) · [Transport repair](https://github.com/Tests4gptplay/dsh-codex-native/blob/9981ec9d5c15b23bdc7e1b2ba2272286730a56e9/docs/PROTOCOL_STREAM_FIX.md)
 
 ## License and attribution
 
