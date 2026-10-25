@@ -1,23 +1,86 @@
 {
-  "name": "dsh-codex-native", "version": "0.2.1-alpha.9-http.4",
+  "name": "dsh-codex-native",
+  "version": "0.2.1-alpha.9-http.4",
   "description": "Codex app-server main models for DSH with ChatGPT sign-in, Token history, context management and native tools.",
-  "type": "module", "icon": "assets/chatgpt-auth.png", "repository": { "type": "git", "url": "git+https://github.com/Tests4gptplay/dsh-codex-native.git" },
-  "homepage": "https://github.com/Tests4gptplay/dsh-codex-native#readme", "bugs": { "url": "https://github.com/Tests4gptplay/dsh-codex-native/issues" },
-  "main": "lib/index.js", "types": "lib/index.d.ts",
-  "exports": { ".": { "types": "./lib/index.d.ts", "default": "./lib/index.js" }, "./client": { "types": "./lib/client/index.d.ts", "default": "./lib/client.js" }, "./locale/*.json": "./locale/*.json", "./package.json": "./package.json" },
-  "files": ["lib/index.js", "lib/client.js", "lib/**/*.d.ts", "cordis.patch.yml", "README.md", "README.zh.md", "LICENSE", "locale/*.json", "assets/chatgpt-auth.png", "assets/LOBE-ICONS-LICENSE.txt"],
-  "scripts": { "build": "tsdown && tsc --project tsconfig.build.json --emitDeclarationOnly", "clean": "rimraf lib dist coverage", "test": "vitest run", "test:e2e": "vitest run --config vitest.e2e.config.ts", "typecheck": "tsc --noEmit", "test:ci": "vitest run --exclude '**/real-codex.e2e.ts'" },
-  "dsh": { "bundle": { "patch": "./cordis.patch.yml" }, "client": { "inject": ["@deepseek-ai/dsh-client-connection", "@deepseek-ai/dsh-client-locale", "@deepseek-ai/dsh-client-ui-settings"], "platform": "web" } },
-  "keywords": ["deepseek-harness", "codex", "llm", "plugin"], "license": "MIT",
-  "publishConfig": { "access": "public", "provenance": true, "registry": "https://registry.npmjs.org/" }, "packageManager": "pnpm@11.7.0", "engines": { "node": "^22.19.0 || >=24.0.0" },
-  "peerDependencies": {
-    "@deepseek-ai/cordis": "*", "@deepseek-ai/dsh-attachment": "*", "@deepseek-ai/dsh-client-locale": "*",
-    "@deepseek-ai/dsh-client-ui-renderer": "*", "@deepseek-ai/dsh-client-ui-settings": "*", "@deepseek-ai/dsh-client-ui-slots": "*", "@deepseek-ai/dsh-client-ui-primitives": "*",
-    "@deepseek-ai/dsh-llm": "*", "@deepseek-ai/dsh-system-prompt": "*", "@deepseek-ai/dsh-working-directory": "*", "@deepseek-ai/dsh-session": "*", "@deepseek-ai/dsh-settings": "*", "@deepseek-ai/dsh-subprocess": "*", "@deepseek-ai/dsh-tools": "*", "react": "*", "@deepseek-ai/dsh-client-connection": "*"
+  "type": "module",
+  "icon": "assets/chatgpt-auth.png",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tests4gptplay/dsh-codex-native.git"
   },
-  "dependencies": { "@deepseek-ai/schemastery": "^3.18.2", "@openai/codex": "0.154.0" },
-  "devDependencies": {
-    "@deepseek-ai/dsh-working-directory": "0.2.1-rc.2", "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.2", "@deepseek-ai/dsh-util-crypto": "0.2.1-rc.2",
-    "@deepseek-ai/cordis": "4.0.4", "@deepseek-ai/dsh-attachment": "0.2.1-rc.2", "@deepseek-ai/dsh-brand": "0.2.1-rc.2", "@deepseek-ai/dsh-client-locale": "0.2.1-rc.2", "@deepseek-ai/dsh-client-ui-renderer": "0.2.1-rc.2", "@deepseek-ai/dsh-client-ui-settings": "0.2.1-rc.2", "@deepseek-ai/dsh-client-ui-slots": "0.2.1-rc.2", "@deepseek-ai/dsh-client-ui-primitives": "0.2.1-rc.2", "@deepseek-ai/dsh-util-workspace-path": "0.2.1-rc.2", "@deepseek-ai/dsh-invariants": "0.2.0-rc.2", "@deepseek-ai/dsh-llm": "0.2.1-rc.2", "@deepseek-ai/dsh-token-meter": "0.2.1-rc.2", "@deepseek-ai/dsh-compaction-basic": "0.2.1-rc.2", "@deepseek-ai/dsh-compaction": "0.2.1-rc.2", "@deepseek-ai/dsh-util-values": "0.2.1-rc.2", "zod": "4.4.3", "@deepseek-ai/dsh-session-projection": "0.2.1-rc.2", "@deepseek-ai/dsh-scope": "0.2.1-rc.2", "@deepseek-ai/dsh-session": "0.2.1-rc.2", "@deepseek-ai/dsh-settings": "0.2.1-rc.2", "@deepseek-ai/dsh-subprocess": "0.2.1-rc.2", "@deepseek-ai/dsh-subprocess-local": "0.2.1-rc.2", "@deepseek-ai/dsh-system-prompt": "0.2.1-rc.2", "@deepseek-ai/dsh-timeout": "0.2.1-rc.2", "@deepseek-ai/dsh-tools": "0.2.1-rc.2", "@types/node": "^24.10.0", "@types/react": "~18.3.1", "@types/react-dom": "~18.3.0", "react": "^18.3.1", "react-dom": "^18.3.1", "rimraf": "^6.1.0", "tsdown": "0.22.2", "typescript": "^5.9.3", "vitest": "^4.0.18", "jsdom": "26.1.0", "clsx": "2.1.1", "@deepseek-ai/dsh-client-connection": "0.2.1-rc.2", "@deepseek-ai/dsh-http-proxy": "0.2.1-rc.2", "@deepseek-ai/dsh-sandbox": "0.2.1-rc.2", "@deepseek-ai/dsh-sandbox-policy": "0.2.1-rc.2", "@deepseek-ai/dsh-user-approval": "0.2.1-rc.2"
+  "homepage": "https://github.com/Tests4gptplay/dsh-codex-native#readme",
+  "bugs": {
+    "url": "https://github.com/Tests4gptplay/dsh-codex-native/issues"
+  },
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./locale/*.json": "./locale/*.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/**/*.d.ts",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md",
+    "LICENSE",
+    "locale/*.json",
+    "assets/chatgpt-auth.png",
+    "assets/LOBE-ICONS-LICENSE.txt"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ],
+      "platform": "web"
+    }
+  },
+  "keywords": [
+    "deepseek-harness",
+    "codex",
+    "llm",
+    "plugin"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-attachment": "*",
+    "@deepseek-ai/dsh-client-locale": "*",
+    "@deepseek-ai/dsh-client-ui-renderer": "*",
+    "@deepseek-ai/dsh-client-ui-settings": "*",
+    "@deepseek-ai/dsh-client-ui-slots": "*",
+    "@deepseek-ai/dsh-client-ui-primitives": "*",
+    "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/dsh-system-prompt": "*",
+    "@deepseek-ai/dsh-working-directory": "*",
+    "@deepseek-ai/dsh-session": "*",
+    "@deepseek-ai/dsh-settings": "*",
+    "@deepseek-ai/dsh-subprocess": "*",
+    "@deepseek-ai/dsh-tools": "*",
+    "react": "*",
+    "@deepseek-ai/dsh-client-connection": "*"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.2",
+    "@openai/codex": "0.154.0"
   }
 }
