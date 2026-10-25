@@ -22,4 +22,11 @@ describe('installed plugin metadata', () => {
       expect(meta.description).toContain('Codex')
     }
   })
+  it('accepts host-provided peer versions without an artificial compatibility gate', () => {
+    const hostPeers = Object.entries(pkg.peerDependencies ?? {})
+    expect(hostPeers.length).toBeGreaterThan(0)
+    for (const [name, version] of hostPeers) {
+      expect(version, `${name} should accept the host-provided version`).toBe('*')
+    }
+  })
 })
