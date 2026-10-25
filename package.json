@@ -1,5 +1,5 @@
 {
-  "name": "dsh-codex-native", "version": "0.2.1-alpha.9-http.3",
+  "name": "dsh-codex-native", "version": "0.2.1-alpha.9-http.4",
   "description": "Codex app-server main models for DSH with ChatGPT sign-in, Token history, context management and native tools.",
   "type": "module", "icon": "assets/chatgpt-auth.png", "repository": { "type": "git", "url": "git+https://github.com/Tests4gptplay/dsh-codex-native.git" },
   "homepage": "https://github.com/Tests4gptplay/dsh-codex-native#readme", "bugs": { "url": "https://github.com/Tests4gptplay/dsh-codex-native/issues" },
