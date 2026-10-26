@@ -6,6 +6,7 @@ import type { SubprocessHandle, SubprocessSpawnSpec } from '@deepseek-ai/dsh-sub
 import { codexAppServerArgv } from './runner.ts'
 import { connectCodexProcess, diagnosticText } from './process-connection.ts'
 import { object, type JsonValue } from './wire.ts'
+import { COMPUTER_USE_GUIDE } from './computer-use-recovery.ts'
 
 type Request = (method: string, params: Record<string, JsonValue>) => Promise<unknown>
 export type SkillSource = 'local' | 'connector'
@@ -227,6 +228,8 @@ export class NativeCodexSkills {
       if (typeof value !== 'string') throw new Error('The connector did not return this skill. Refresh codex_skill_search.')
       contents = value
     }
+    // Load troubleshooting only when the selected skill is Computer Use, never in the catalog.
+    if (skill.skillName === 'computer-use') contents += '\n\n' + COMPUTER_USE_GUIDE
     const lines = contents.split(/\r?\n/u)
     return {
       id: skill.id, name: skill.name, source: skill.source, path: skill.path,

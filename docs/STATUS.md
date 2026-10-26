@@ -1,6 +1,15 @@
 # DSH Codex Native — releases and validation
 
-## Current release — v0.2.1-alpha.9-http.6
+## Current release — v0.2.1-alpha.9-http.7
+
+[Release and assets](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.7) · [Native installation](INSTALL.md)
+
+- Embedded Windows Computer Use guide, runtime discovery, Win10 screenshot repair, targeted helper release and rollback.
+- Full recovery guidance loads on demand with the Computer Use skill body or the guide action.
+- Build and 16 focused tests passed, including real Windows file replacement and rollback.
+- Windows 10 build 19045 live verification on 2026-10-27: the installed release action stopped the selected helper; the supported Computer Use API reconnected and captured the DSH window in approximately 0.4 seconds. No mouse, keyboard or window-activation action was used.
+
+## Previous release — v0.2.1-alpha.9-http.6
 
 [Release and assets](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.6) · [Native installation](INSTALL.md)
 

@@ -4,9 +4,15 @@
 
 [English](README.md) · [版本发布](https://github.com/Tests4gptplay/dsh-codex-native/releases) · [安装指南](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/INSTALL.md) · [发布验证](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/STATUS.md)
 
-## 最新版本 — v0.2.1-alpha.9-http.6
+## 最新版本 — v0.2.1-alpha.9-http.7
 
-[版本与下载](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.6) · [上下文计量技术记录](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/CONTEXT_COMPACTION_AUDIT.md)
+内置 `codex_computer_use_recovery`：`guide` 读取使用指引，`status` 定位实际运行时，`repair` 应用已验证的 Windows 10 截图补丁，`release` 定向结束占用截图助手，`rollback` 恢复原件。修补数据、恢复代码及指引全部随插件打包，不依赖外置 BAT、PS1 或 Python。
+
+完整排障说明只在读取 Computer Use 技能或调用 `guide` 时返回，不加入日常系统提示。说明区分原生 FrameArrived 超时、文件占用、连接超时、失效句柄及 Esc 停止，并给出对应处理。修补只接受已知 @oai/sky 0.7.13 二进制；修改会使原签名失效，需用户同意。解除占用需获准中断目标截图助手，不结束 DSH、Codex 或父进程。
+
+## 包含功能
+
+[版本与下载](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.7) · [上下文计量技术记录](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/CONTEXT_COMPACTION_AUDIT.md)
 
 - **原生问答与通知：** Codex 中途提问接入 DSH 原生选项卡片和通知，支持点选及自由输入。
 - **自动回传与聊天回执：** 提交后自动送回当前任务，并在聊天中显示为用户消息，一次提交即可继续，无需再点发送箭头。
@@ -25,20 +31,20 @@
 ### 安装
 
 ```text
-github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.6
+github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.7
 ```
 
 Desktop 打开 **插件 → 添加插件**，粘贴上面的固定版本来源并启用。Web 版执行：
 
 ```sh
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.6'
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.7'
 ```
 
 固定版本包含预构建运行文件；升级沿用原有配置与登录。[安装指南](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/INSTALL.md)包含登录步骤和备用 TGZ 安装方式。
 
 ## 按需技能发现
 
-`0.2.1-alpha.9-http.6` 由 DSH 提供 `codex_skill_search` 和 `codex_skill_read`：模型先搜索相关摘要，再读取所需技能正文。本地技能与已安装的远程连接器技能统一检索，同一插件的重复项优先使用连接器；独立编写的本地技能保留。入口对 DSH 的 HTTP 与本地模型均可用。
+`0.2.1-alpha.9-http.7` 由 DSH 提供 `codex_skill_search` 和 `codex_skill_read`：模型先搜索相关摘要，再读取所需技能正文。本地技能与已安装的远程连接器技能统一检索，同一插件的重复项优先使用连接器；独立编写的本地技能保留。入口对 DSH 的 HTTP 与本地模型均可用。
 
 默认 `skillsMode: dsh` 将 Codex 的自动技能目录注入交给这两个入口，`skillsMaxContextTokens: 10000` 使用原生支持的最大预算。发现结果按工作目录缓存，技能或插件变化后用 `refresh: true` 更新；`skillsMode: native` 可选用原生目录。设置只作用于本插件启动的进程，沿用现有登录、连接器和原生工具。
 
@@ -58,6 +64,8 @@ dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha
 
 ## 测试与工程记录
 
+http.7 更新通过构建及 **16 项专项测试**，包含实际文件替换与回滚。Windows 10 build 19045 实机完成了内置工具解除截图助手占用、重新连接、截取 DSH 窗口的完整流程，截图约 **0.4 秒**返回。
+
 http.6 问答更新通过 **33 项专项测试**和构建；原生点选、自动回传和聊天回执已在 DSH 实际会话中确认。前后端编译文件与已验收的本机运行版本逐字节一致。
 
 http.4 兼容性修复在 Windows 通过 **209/209** 项测试；Ubuntu **208 项通过、1 项平台跳过**；两个平台的最终安装包专项测试均 **28/28** 通过。[兼容性修复 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40190137989)。
@@ -67,5 +75,7 @@ alpha.9 候选版本在 Windows 通过 **191/191** 项测试；Ubuntu **190 项�
 [候选版 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40124345944) · [发布 CI](https://github.com/Tests4gptplay/dsh-codex-native/actions/runs/40148183107) · [压缩与计量审计](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/CONTEXT_COMPACTION_AUDIT.md) · [账号生命周期修复](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/ACCOUNT_LIFECYCLE_AUDIT.md) · [协议修复](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/PROTOCOL_STREAM_FIX.md)
 
 ## 许可与来源
+
+Windows 10 MTA 调度补丁参考 [chen0416ccc-cpu/codex-windows-fast-patch-skill](https://github.com/chen0416ccc-cpu/codex-windows-fast-patch-skill/blob/main/scripts/patch-computer-use-helper-win10.ps1)，内置配置将参考区域适配至本次实测的 @oai/sky 0.7.13 二进制。
 
 基于 MIT 项目 [wss534857356/dsh-plugin-codex](https://github.com/wss534857356/dsh-plugin-codex)，导入基线 `f1f61886f4defcf7294d63c3641fba01ee554e7b`，原始署名保留于 [LICENSE](LICENSE)。DeepSeek Harness 来自 DeepSeek，Codex 来自 OpenAI。公共重置公告数据来源为 **codex-reset.com**。ChatGPT 图标素材采用 [Lobe Icons](https://github.com/lobehub/lobe-icons) 的 MIT 授权资源，许可文件已包含在安装包 `assets/LOBE-ICONS-LICENSE.txt` 中。

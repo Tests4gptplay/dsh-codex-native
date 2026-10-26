@@ -18,6 +18,7 @@ import { registerNativeCodexTransport } from './native-transport.ts'
 import { NativeCodexSkills } from './native-skills.ts'
 import { registerCodexSkillTools } from './skill-tools.ts'
 import { CodexUserQuestions } from './user-questions.ts'
+import { registerComputerUseRecovery } from './computer-use-recovery.ts'
 
 export { CodexAppServerAdapter } from './adapter.ts'
 export type { CodexAdapterOptions, CodexModel } from './adapter.ts'
@@ -301,6 +302,7 @@ function resolveConfig(config: Config): ResolvedConfig {
 /** Register the configured Codex App Server route on `ctx.llm`. */
 export function apply(ctx: Context, config: Config): void {
   const resolved = resolveConfig(config)
+  registerComputerUseRecovery(ctx)
   const runner = new CodexAppServerRunner({
     timeoutMs: resolved.timeoutMs,
     disposeGraceMs: resolved.disposeGraceMs,

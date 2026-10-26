@@ -133,6 +133,27 @@ describe('DSH Codex skill discovery', () => {
     await expect(service.catalog(directory, signal)).rejects.toThrow('disposed')
   })
 
+  it('loads recovery guidance only with the computer-use skill body', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'dsh-cu-skill-'))
+    const path = join(directory, 'SKILL.md')
+    await writeFile(path, '# Computer Use\nUse the documented API.')
+    const data = fixtures(path)
+    data.local.data[0]!.skills[0]!.name = 'computer-use:computer-use'
+    const original = requestFixture(path)
+    const request = vi.fn(async (method: string, params: Record<string, JsonValue>) =>
+      method === 'skills/list' ? data.local : original(method, params))
+    const service = manager(processFixture(request))
+    try {
+      const signal = new AbortController().signal
+      const catalog = await service.catalog(directory, signal)
+      expect(JSON.stringify(searchNativeSkills(catalog, 'computer-use'))).not.toContain('FrameArrived')
+      const skill = catalog.skills.find(s => s.skillName === 'computer-use')!
+      const read = await service.read(directory, skill.id, signal)
+      expect(read.contents).toContain('FrameArrived')
+      expect(read.contents).toContain('codex_computer_use_recovery')
+    } finally { await service.dispose(); await rm(directory, { recursive: true, force: true }) }
+  })
+
   it('stops its active discovery process when the caller cancels', async () => {
     const process = processFixture(requestFixture(), true)
     const service = manager(process)
