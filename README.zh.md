@@ -4,6 +4,8 @@
 
 [English](README.md) · [版本发布](https://github.com/Tests4gptplay/dsh-codex-native/releases) · [安装指南](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/INSTALL.md) · [发布验证](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/STATUS.md)
 
+**Support / 赞助：** [Ko-fi](https://ko-fi.com/kou392350) · [Patreon](https://www.patreon.com/cw/Kou848) · [爱发电 / Afdian](https://afdian.com/a/kkt_ifd1) · [支付宝 / Alipay](SPONSOR.md)
+
 ## 最新版本 — v0.2.1-alpha.9-http.7
 
 内置 `codex_computer_use_recovery`：`guide` 读取使用指引，`status` 定位实际运行时，`repair` 应用已验证的 Windows 10 截图补丁，`release` 定向结束占用截图助手，`rollback` 恢复原件。修补数据、恢复代码及指引全部随插件打包，不依赖外置 BAT、PS1 或 Python。
