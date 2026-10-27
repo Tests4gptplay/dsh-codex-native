@@ -4,6 +4,8 @@
 
 [简体中文](README.zh.md) · [Releases](https://github.com/Tests4gptplay/dsh-codex-native/releases) · [Installation guide](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/INSTALL.md) · [Release verification](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/STATUS.md)
 
+**Support / 赞助：** [Ko-fi](https://ko-fi.com/kou392350) · [Patreon](https://www.patreon.com/cw/Kou848) · [爱发电 / Afdian](https://afdian.com/a/kkt_ifd1) · [支付宝 / Alipay](SPONSOR.md)
+
 ## Latest release — v0.2.1-alpha.9-http.7
 
 Embedded `codex_computer_use_recovery` provides `guide`, `status`, `repair`, `release`, and `rollback`. Patch bytes, exact-path process recovery and troubleshooting instructions ship in the plugin; no external BAT, PS1 or Python dependency is required.
