@@ -1,6 +1,13 @@
 # DSH Codex Native — releases and validation
 
-## Current release — v0.2.1-alpha.9-http.7
+## Current release — v0.2.1-alpha.9-http.8
+
+[Release and assets](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.8) · [Native installation](INSTALL.md)
+
+- Adds GPT-6.1 Sol model selection with officially supported reasoning-effort options and the default medium effort.
+- Preserves the existing App Server runtime dependency, account sign-in, HTTP transport and DSH host compatibility settings.
+
+## Previous release — v0.2.1-alpha.9-http.7
 
 [Release and assets](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.7) · [Native installation](INSTALL.md)
 
