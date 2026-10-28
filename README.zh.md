@@ -6,7 +6,9 @@
 
 **Support / 赞助：** [GitHub Sponsors](https://github.com/sponsors/Tests4gptplay) · [Ko-fi](https://ko-fi.com/kou392350) · [Patreon](https://www.patreon.com/cw/Kou848) · [爱发电 / Afdian](https://afdian.com/a/kkt_ifd1) · [支付宝 / Alipay](SPONSOR.md)
 
-## 最新版本 — v0.2.1-alpha.9-http.7
+## 最新版本 — v0.2.1-alpha.9-http.8
+
+模型选择器新增 **GPT-6.1 Sol**，支持 low、medium、high、xhigh、max 推理档位，默认 medium；原有 Codex 后端、账号登录及配置保持不变。
 
 内置 `codex_computer_use_recovery`：`guide` 读取使用指引，`status` 定位实际运行时，`repair` 应用已验证的 Windows 10 截图补丁，`release` 定向结束占用截图助手，`rollback` 恢复原件。修补数据、恢复代码及指引全部随插件打包，不依赖外置 BAT、PS1 或 Python。
 
@@ -14,7 +16,7 @@
 
 ## 包含功能
 
-[版本与下载](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.7) · [上下文计量技术记录](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/CONTEXT_COMPACTION_AUDIT.md)
+[版本与下载](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.8) · [上下文计量技术记录](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/CONTEXT_COMPACTION_AUDIT.md)
 
 - **原生问答与通知：** Codex 中途提问接入 DSH 原生选项卡片和通知，支持点选及自由输入。
 - **自动回传与聊天回执：** 提交后自动送回当前任务，并在聊天中显示为用户消息，一次提交即可继续，无需再点发送箭头。
@@ -33,20 +35,20 @@
 ### 安装
 
 ```text
-github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.7
+github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.8
 ```
 
 Desktop 打开 **插件 → 添加插件**，粘贴上面的固定版本来源并启用。Web 版执行：
 
 ```sh
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.7'
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.8'
 ```
 
 固定版本包含预构建运行文件；升级沿用原有配置与登录。[安装指南](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/INSTALL.md)包含登录步骤和备用 TGZ 安装方式。
 
 ## 按需技能发现
 
-`0.2.1-alpha.9-http.7` 由 DSH 提供 `codex_skill_search` 和 `codex_skill_read`：模型先搜索相关摘要，再读取所需技能正文。本地技能与已安装的远程连接器技能统一检索，同一插件的重复项优先使用连接器；独立编写的本地技能保留。入口对 DSH 的 HTTP 与本地模型均可用。
+`0.2.1-alpha.9-http.8` 由 DSH 提供 `codex_skill_search` 和 `codex_skill_read`：模型先搜索相关摘要，再读取所需技能正文。本地技能与已安装的远程连接器技能统一检索，同一插件的重复项优先使用连接器；独立编写的本地技能保留。入口对 DSH 的 HTTP 与本地模型均可用。
 
 默认 `skillsMode: dsh` 将 Codex 的自动技能目录注入交给这两个入口，`skillsMaxContextTokens: 10000` 使用原生支持的最大预算。发现结果按工作目录缓存，技能或插件变化后用 `refresh: true` 更新；`skillsMode: native` 可选用原生目录。设置只作用于本插件启动的进程，沿用现有登录、连接器和原生工具。
 
