@@ -1,4 +1,4 @@
-name: Publish Codex model catalog http.8
+name: Publish Codex model catalog http.9
 'on':
   workflow_run:
     workflows: ['DSH Codex native build']
@@ -12,7 +12,7 @@ jobs:
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main' &&
-      github.event.workflow_run.head_commit.message == 'release: live Codex model discovery http.8'
+      github.event.workflow_run.head_commit.message == 'release: stage verified live Codex catalog http.9'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -34,7 +34,7 @@ jobs:
           SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          VERSION=0.2.1-alpha.9-http.8
+          VERSION=0.2.1-alpha.9-http.9
           TAG="v$VERSION"
           test "$(node -p 'require("./package.json").version')" = "$VERSION"
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
@@ -62,7 +62,7 @@ jobs:
           const pkg = JSON.parse(readFileSync('.tmp/candidate/package.json','utf8'))
           const manifest = JSON.parse(readFileSync('dist/source-manifest.json','utf8'))
           const audit = JSON.parse(readFileSync('dist/candidate-copy-audit.json','utf8'))
-          assert.equal(pkg.version,'0.2.1-alpha.9-http.8')
+          assert.equal(pkg.version,'0.2.1-alpha.9-http.9')
           assert.equal(manifest.sourceCommit,process.env.SOURCE_SHA)
           assert.equal(manifest.version,pkg.version)
           assert.equal(manifest.artifactSha256,sha('dist/'+manifest.artifact))
@@ -95,9 +95,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          TAG=v0.2.1-alpha.9-http.8
+          TAG=v0.2.1-alpha.9-http.9
           gh release create "$TAG" \
-            dist/dsh-codex-native-0.2.1-alpha.9-http.8.tgz \
+            dist/dsh-codex-native-0.2.1-alpha.9-http.9.tgz \
             dist/source-manifest.json \
             dist/candidate-copy-audit.json \
             dist/SHA256SUMS \
