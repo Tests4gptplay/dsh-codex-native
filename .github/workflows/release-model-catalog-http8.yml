@@ -69,8 +69,8 @@ jobs:
           assert.equal(audit.packageSha256,manifest.artifactSha256)
           assert.equal(pkg.dependencies['@openai/codex'],'0.154.0')
           assert(!pkg.scripts && !pkg.devDependencies)
-          assert.match(readFileSync('.tmp/candidate/lib/index.js','utf8'),/gpt-6\\.1-sol/)
-          assert.match(readFileSync('.tmp/candidate/cordis.patch.yml','utf8'),/gpt-6\\.1-sol/)
+          assert.match(readFileSync('.tmp/candidate/lib/index.js','utf8'),/gpt-6\.1-sol/)
+          assert.match(readFileSync('.tmp/candidate/cordis.patch.yml','utf8'),/gpt-6\.1-sol/)
           for (const path of ['README.md','README.zh.md']) {
             assert.equal(readFileSync('.tmp/candidate/'+path,'utf8'),readFileSync(path,'utf8'))
           }
