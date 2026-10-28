@@ -4,6 +4,7 @@ import { MessageId, ReasoningEffortId, ToolCallId, offloadedImageText } from '@d
 import type { GenerateOptions, Message, StreamChunk } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { CodexAppServerAdapter } from '../src/adapter.ts'
+import type { CodexModel } from '../src/adapter.ts'
 import type { CodexImageStorePort } from '../src/images.ts'
 import {
   CODEX_MODEL_CAPACITY_CODE,
@@ -114,6 +115,7 @@ function instance(
   resolveAttachments: () => CodexImageStorePort | undefined = () => undefined,
   maxRequestImageBytes = 20 * 1024 * 1024,
   resolveImageGenerationEnabled: () => boolean = () => true,
+  loadModels?: () => Promise<readonly CodexModel[]>,
 ): CodexAppServerAdapter {
   return new CodexAppServerAdapter({
     provider: 'codex-local',
@@ -134,6 +136,7 @@ function instance(
     onCleanupError: vi.fn(),
     resolveAttachments,
     resolveImageGenerationEnabled,
+    loadModels,
     runner,
   })
 }
@@ -234,6 +237,33 @@ describe('CodexAppServerAdapter', () => {
     expect(await instance.resolveModel('codex-local', 'uncatalogued')).toMatchObject({
       inputModalities: ['text'],
     })
+  })
+
+  it('refreshes the native catalog on every DSH selector request', async () => {
+    const server: CodexAppServerRunnerPort = {
+      open: vi.fn(async () => { throw new Error('model discovery should not start a thread') }),
+      stream: vi.fn(() => (async function * () {})()),
+    }
+    const first: CodexModel = {
+      id: 'gpt-6-astra', name: 'Astra', inputModalities: ['text', 'image'],
+      reasoningEfforts: ['medium'], defaultReasoningEffort: 'medium',
+    }
+    const latest: CodexModel = {
+      id: 'gpt-6.1-sol', name: 'GPT-6.1 Sol', inputModalities: ['text', 'image'],
+      reasoningEfforts: ['low', 'high'], defaultReasoningEffort: 'low',
+    }
+    const loadModels = vi.fn()
+      .mockResolvedValueOnce([first])
+      .mockResolvedValueOnce([first, latest])
+    const live = instance(server, () => undefined, 20 * 1024 * 1024, () => true, loadModels)
+    expect((await live.listModels('codex-local')).map(model => model.id)).toEqual(['gpt-6-astra'])
+    expect((await live.listModels('codex-local')).map(model => model.id)).toEqual(['gpt-6-astra', 'gpt-6.1-sol'])
+    expect(await live.resolveModel('codex-local', 'gpt-6.1-sol')).toMatchObject({
+      name: 'GPT-6.1 Sol', inputModalities: ['text', 'image'],
+      reasoning: { defaultEffort: 'low', efforts: [{ id: 'low' }, { id: 'high' }] },
+    })
+    expect(loadModels).toHaveBeenCalledTimes(2)
+    await live.dispose()
   })
 
   it('streams provider disclosure, reasoning, text, usage, and replay state', async () => {
