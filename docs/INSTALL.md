@@ -7,13 +7,13 @@ Open **Plugins → Add plugin**, paste the fixed-version source below, and enabl
 打开 **插件 → 添加插件**，粘贴以下固定版本来源并启用：
 
 ```text
-github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.7
+github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.8
 ```
 
 ## Web
 
 ```sh
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.7'
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.8'
 ```
 
 ## Sign in and select a model / 登录与选择模型
@@ -44,9 +44,9 @@ The default `skillsMode: dsh` provides `codex_skill_search` and `codex_skill_rea
 
 ## Alternative package / 备用安装包
 
-Download the TGZ from the [Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.7), then enter its absolute path in **Add plugin**. `SHA256SUMS` records the package checksum.
+Download the TGZ from the [Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.8), then enter its absolute path in **Add plugin**. `SHA256SUMS` records the package checksum.
 
-也可以从 [Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.7) 下载 TGZ，在 **添加插件** 中输入其绝对路径。文件校验和见 `SHA256SUMS`。
+也可以从 [Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.8) 下载 TGZ，在 **添加插件** 中输入其绝对路径。文件校验和见 `SHA256SUMS`。
 
 Earlier alpha.9 source-host integration notes remain in the [engineering installation guide](INSTALL_PATCHED_HOST.md).
 
