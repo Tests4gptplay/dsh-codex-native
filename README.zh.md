@@ -4,8 +4,6 @@
 
 [English](README.md) · [版本发布](https://github.com/Tests4gptplay/dsh-codex-native/releases) · [安装指南](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/INSTALL.md) · [发布验证](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/STATUS.md)
 
-**Support / 赞助：** [GitHub Sponsors](https://github.com/sponsors/Tests4gptplay) · [Ko-fi](https://ko-fi.com/kou392350) · [Patreon](https://www.patreon.com/cw/Kou848) · [爱发电 / Afdian](https://afdian.com/a/kkt_ifd1) · [支付宝 / Alipay](SPONSOR.md)
-
 ## 最新版本 — v0.2.1-alpha.9-http.10
 
 启动新的 Codex 进程时检查官方 npm `@openai/codex@latest`，按需下载并复用对应平台的运行时。已运行的任务继续使用原进程；后续新进程使用更新版本。网络更新失败时保留可用运行时并记录原因。更新按实际使用触发，没有后台轮询。
@@ -85,3 +83,7 @@ alpha.9 候选版本在 Windows 通过 **191/191** 项测试；Ubuntu **190 项�
 Windows 10 MTA 调度补丁参考 [chen0416ccc-cpu/codex-windows-fast-patch-skill](https://github.com/chen0416ccc-cpu/codex-windows-fast-patch-skill/blob/main/scripts/patch-computer-use-helper-win10.ps1)，内置配置将参考区域适配至本次实测的 @oai/sky 0.7.13 二进制。
 
 基于 MIT 项目 [wss534857356/dsh-plugin-codex](https://github.com/wss534857356/dsh-plugin-codex)，导入基线 `f1f61886f4defcf7294d63c3641fba01ee554e7b`，原始署名保留于 [LICENSE](LICENSE)。DeepSeek Harness 来自 DeepSeek，Codex 来自 OpenAI。公共重置公告数据来源为 **codex-reset.com**。ChatGPT 图标素材采用 [Lobe Icons](https://github.com/lobehub/lobe-icons) 的 MIT 授权资源，许可文件已包含在安装包 `assets/LOBE-ICONS-LICENSE.txt` 中。
+
+## 支持项目 / Support
+
+[GitHub Sponsors](https://github.com/sponsors/Tests4gptplay) · [Ko-fi](https://ko-fi.com/kou392350) · [Patreon](https://www.patreon.com/cw/Kou848) · [爱发电 / Afdian](https://afdian.com/a/kkt_ifd1) · [支付宝 / Alipay](SPONSOR.md)
