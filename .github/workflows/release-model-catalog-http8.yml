@@ -12,7 +12,7 @@ jobs:
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main' &&
-      github.event.workflow_run.head_commit.message == 'ci: prepare GPT-6.1 Sol http.8 release'
+      github.event.workflow_run.head_commit.message == 'release: live Codex model discovery http.8'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -69,7 +69,7 @@ jobs:
           assert.equal(audit.packageSha256,manifest.artifactSha256)
           assert.equal(pkg.dependencies['@openai/codex'],'0.154.0')
           assert(!pkg.scripts && !pkg.devDependencies)
-          assert.match(readFileSync('.tmp/candidate/lib/index.js','utf8'),/gpt-6\.1-sol/)
+          assert.match(readFileSync('.tmp/candidate/lib/index.js','utf8'),/model\\/list/)
           assert.match(readFileSync('.tmp/candidate/cordis.patch.yml','utf8'),/gpt-6\.1-sol/)
           for (const path of ['README.md','README.zh.md']) {
             assert.equal(readFileSync('.tmp/candidate/'+path,'utf8'),readFileSync(path,'utf8'))
@@ -103,4 +103,4 @@ jobs:
             --verify-tag \
             --latest \
             --title "$TAG" \
-            --notes "Adds GPT-6.1 Sol to DSH Codex Native model selection, with officially supported low/medium/high/xhigh/max reasoning efforts (default: medium). Preserves existing account sign-in, HTTP transport, settings and the bundled Codex 0.154.0 runtime."
+            --notes "DSH Codex Native now refreshes its model picker from the signed-in Codex App Server model/list on request, including pagination, reasoning choices and input modalities. Existing sign-in, HTTP transport, saved settings and the bundled Codex 0.154.0 runtime are preserved."
