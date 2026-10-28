@@ -5,11 +5,13 @@ import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as CodexAppServer from '../src/index.ts'
+import { NativeCodexAccount } from '../src/native-account.ts'
 
 const contexts: Context[] = []
 
 afterEach(async () => {
   await Promise.all(contexts.splice(0).map(ctx => ctx.fiber.dispose()))
+  vi.restoreAllMocks()
 })
 
 async function context(): Promise<Context> {
@@ -26,6 +28,15 @@ async function context(): Promise<Context> {
 describe('plugin composition', () => {
   it('materializes the default model catalog through Cordis config parsing', async () => {
     const ctx = await context()
+    // Model-picker metadata comes from a native app-server RPC, not a live login in CI.
+    vi.spyOn(NativeCodexAccount.prototype, 'models').mockResolvedValue(
+      CodexAppServer.Config({}).models!.map(model => ({
+        ...model,
+        name: model.name ?? model.id,
+        inputModalities: model.inputModalities ?? ['text'],
+        reasoningEfforts: model.reasoningEfforts ?? [],
+      })),
+    )
     await ctx.plugin(CodexAppServer, {})
 
     expect(ctx.llm.listProviders()).toContainEqual({
