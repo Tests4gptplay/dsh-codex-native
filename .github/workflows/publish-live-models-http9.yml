@@ -1,0 +1,115 @@
+name: Publish verified Codex live model catalog http.9
+'on':
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-live-models-http9.yml']
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    if: github.event.head_commit.message == 'ci: publish live Codex model catalog http.9'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 38bd3878d69dd9bc3b1cb0c43adbd16a7332e730
+          persist-credentials: false
+      - name: Verify the exact successful two-platform candidate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/40617694393" > "$RUNNER_TEMP/run.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/40617694393/jobs?filter=latest&per_page=100" > "$RUNNER_TEMP/jobs.json"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict'
+          import { readFileSync } from 'node:fs'
+          const run=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/run.json','utf8'))
+          const jobs=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/jobs.json','utf8')).jobs
+          assert.equal(run.head_sha,'38bd3878d69dd9bc3b1cb0c43adbd16a7332e730')
+          assert.equal(run.path,'.github/workflows/ci.yml')
+          assert.equal(run.status,'completed')
+          assert.equal(run.conclusion,'success')
+          for(const name of ['build (ubuntu-latest)','build (windows-latest)'])
+            assert(jobs.some(job=>job.name===name && job.conclusion==='success'),'Missing passing job: '+name)
+          console.log('LIVE_MODEL_CATALOG_CI_VERIFIED',run.id)
+          NODE
+      - uses: actions/download-artifact@v4
+        with:
+          name: codex-reproduction-ubuntu-latest
+          repository: ${{ github.repository }}
+          run-id: 40617694393
+          github-token: ${{ github.token }}
+          path: .tmp/ci-artifact
+      - name: Verify clean TGZ and source provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG=v0.2.1-alpha.9-http.9
+          test "$(node -p 'require("./package.json").version')" = "0.2.1-alpha.9-http.9"
+          mkdir -p dist .tmp/release-runtime
+          BUNDLE="$(find .tmp/ci-artifact -type f -name dsh-codex-native-0.2.1-alpha.9-http.9.tgz -print -quit)"
+          test -n "$BUNDLE"
+          cp "$BUNDLE" dist/
+          for f in source-manifest.json candidate-copy-audit.json; do
+            SOURCE="$(find .tmp/ci-artifact -type f -name "$f" -print -quit)"
+            test -n "$SOURCE"
+            cp "$SOURCE" "dist/$f"
+          done
+          tar -xzf "dist/dsh-codex-native-0.2.1-alpha.9-http.9.tgz" --strip-components=1 -C .tmp/release-runtime
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict'
+          import { readFileSync,existsSync } from 'node:fs'
+          import { createHash } from 'node:crypto'
+          const read=(p)=>readFileSync(p)
+          const sha=(p)=>createHash('sha256').update(read(p)).digest('hex')
+          const dir='.tmp/release-runtime/'
+          const pkg=JSON.parse(read(dir+'package.json'))
+          const manifest=JSON.parse(read('dist/source-manifest.json'))
+          const audit=JSON.parse(read('dist/candidate-copy-audit.json'))
+          assert.equal(pkg.version,'0.2.1-alpha.9-http.9')
+          assert.equal(pkg.dependencies['@openai/codex'],'0.154.0')
+          assert.equal(manifest.sourceCommit,'38bd3878d69dd9bc3b1cb0c43adbd16a7332e730')
+          assert.equal(manifest.version,pkg.version)
+          assert.equal(manifest.artifactSha256,sha('dist/'+manifest.artifact))
+          assert.equal(audit.packageSha256,manifest.artifactSha256)
+          assert(!pkg.scripts && !pkg.devDependencies)
+          for(const entry of ['tests','src','scripts','.github','patches']) assert(!existsSync(dir+entry), 'Developer files inside runtime: '+entry)
+          assert.match(read(dir+'lib/index.js').toString(),/model\/list/)
+          for(const p of ['README.md','README.zh.md','cordis.patch.yml'])
+            assert.equal(sha(dir+p),sha(p),'Installed '+p+' differs from reviewed source')
+          for(const [p,h] of Object.entries(manifest.runtimeSha256))
+            assert.equal(sha(dir+p),h,'Runtime hash mismatch: '+p)
+          console.log('LIVE_MODEL_CATALOG_RUNTIME_VERIFIED',manifest.artifactSha256)
+          NODE
+          (cd dist && sha256sum *.tgz source-manifest.json candidate-copy-audit.json > SHA256SUMS)
+      - name: Push immutable installable runtime tag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=v0.2.1-alpha.9-http.9
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "Refusing to overwrite existing tag $TAG" >&2
+            exit 1
+          fi
+          cd .tmp/release-runtime
+          git init -q -b release-snapshot
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -qm "release: verified live model catalog runtime $TAG"
+          git tag -a "$TAG" -m "Native App Server model-list integration"
+          git remote add origin "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git"
+          git push -q origin "refs/tags/$TAG"
+      - name: Publish GitHub Release and checksums
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create v0.2.1-alpha.9-http.9             dist/dsh-codex-native-0.2.1-alpha.9-http.9.tgz             dist/source-manifest.json dist/candidate-copy-audit.json dist/SHA256SUMS             --repo "$GITHUB_REPOSITORY" --verify-tag --latest             --title "DSH Codex Native v0.2.1-alpha.9-http.9"             --notes "DSH model selection now refreshes from the official Codex App Server model/list RPC when the selector requests the catalog, including new model IDs, names, input modalities and reasoning efforts. Includes the existing ChatGPT login, HTTP transport, runtime and settings. Verified by Windows and Ubuntu CI run 40617694393."
