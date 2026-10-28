@@ -1,0 +1,73 @@
+export declare const profile: {
+    readonly skyVersion: "0.7.13";
+    readonly originalSha256: "11825cb78575d9099aed8f13d16f78b03c20a1a0ebc809cf78b406fb2f25f5f8";
+    readonly referenceSource: "https://github.com/chen0416ccc-cpu/codex-windows-fast-patch-skill/blob/main/scripts/patch-computer-use-helper-win10.ps1";
+    readonly referenceRegionsSha256: "8f39d9ca2c0070e95e5abda73a54881dbd6afaf0b49dc29ffc954741fec68476";
+    readonly adaptation: "All 11 code/layout regions matched the 0.7.12 reference; adapted only the PE checksum and certificate-overlay original bytes. Verified callback, IAT targets, ASLR relocation, section boundary and unwind layout on this original.";
+    readonly regions: readonly [{
+        readonly name: "pe-section-count";
+        readonly offset: 134;
+        readonly original: "0a00";
+        readonly patched: "0b00";
+    }, {
+        readonly name: "pe-size-of-code";
+        readonly offset: 156;
+        readonly original: "00681200";
+        readonly patched: "006a1200";
+    }, {
+        readonly name: "pe-size-of-image";
+        readonly offset: 208;
+        readonly original: "00e01700";
+        readonly patched: "00f01700";
+    }, {
+        readonly name: "pe-checksum";
+        readonly offset: 216;
+        readonly original: "6db81700";
+        readonly patched: "00000000";
+    }, {
+        readonly name: "pe-certificate-directory";
+        readonly offset: 296;
+        readonly original: "006e1700303d0000";
+        readonly patched: "0000000000000000";
+    }, {
+        readonly name: "mta-section-header";
+        readonly offset: 792;
+        readonly original: "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
+        readonly patched: "2e63757731300000d000000000e0170000020000006e170000000000000000000000000020000060";
+    }, {
+        readonly name: "mta-wrapper-and-unwind";
+        readonly offset: 1535488;
+        readonly original: "303d00000002020030823d2006092a864886f70d010702a0823d1130823d0d020101310f300d06096086480165030402010500305c060a2b060104018237020104a04e304c3017060a2b06010401823702010f3009030100a004a20280003031300d0609608648016503040201050004205c4dbcefe61f84cfcbe518fc1844c1034d478badeeaeec9cdd8f9db17a00dd3ba0822200308205cc308203b4a00302010202105498d2d1d45b1995481379c811c08799300d06092a864886f70d01010c05003077310b3009060355040613025553311e301c060355040a13154d6963726f736f667420436f72706f726174696f6e314830460603550403133f4d6963726f736f6674204964656e7469747920566572696669636174696f6e20526f6f7420436572746966696361746520417574686f726974792032303230301e170d3230303431363138333631365a170d3435303431363138343434305a3077310b3009060355040613025553311e301c060355040a13154d6963726f736f667420436f72706f726174696f6e314830460603550403133f4d6963726f736f6674204964656e7469747920566572696669636174696f6e20526f6f7420436572746966696361746520417574686f72697479203230323030820222300d06092a864886f70d01010105000382020f003082020a0282020100b3912a07830667fd9e9d";
+        readonly patched: "534883ec304889cb488b5108f00fba6a1008723a488b01ff500831c931d24c8d055b0000004989d948c74424200000000048c744242800000000ff15d88fffff4885c074114889c1ff158a8fffff31c04883c4305bc3488b4308c64011004889d9488b01ff5010b8054000804883c4305bc3cccccccccccccccccccccccccccc534883ec204889cbb901000000ff159d8effff4889d9e8ee43ecffff15978effff4889d9488b01ff501031c04883c4205bc3cccccccccccccccccccccccccccc0105020005520130010502000532013000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+    }, {
+        readonly name: "frame-arrived-busy-return";
+        readonly offset: 268478;
+        readonly original: "0f855b310000";
+        readonly patched: "0f853d310000";
+    }, {
+        readonly name: "frame-arrived-once-flag";
+        readonly offset: 268495;
+        readonly original: "740d";
+        readonly patched: "eb0d";
+    }, {
+        readonly name: "frame-arrived-vtable";
+        readonly offset: 1231048;
+        readonly original: "8924044001000000";
+        readonly patched: "00e0174001000000";
+    }, {
+        readonly name: "pe-exception-directory-size";
+        readonly offset: 292;
+        readonly original: "d8840000";
+        readonly patched: "f0840000";
+    }, {
+        readonly name: "pdata-virtual-size";
+        readonly offset: 520;
+        readonly original: "d8840000";
+        readonly patched: "f0840000";
+    }, {
+        readonly name: "mta-runtime-functions";
+        readonly offset: 1406168;
+        readonly original: "000000000000000000000000000000000000000000000000";
+        readonly patched: "00e0170072e01700c0e0170080e01700b2e01700c8e01700";
+    }];
+};

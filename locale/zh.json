@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Codex Native",
+    "description": "通过 ChatGPT 登录接入 Codex 主模型，支持 DSH 工具、原生模型设置与手动 Token 历史统计。"
+  }
+}
