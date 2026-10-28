@@ -96,6 +96,15 @@ const DEFAULT_MODELS = [
     defaultReasoningEffort: 'medium',
   },
   {
+    id: 'gpt-6.1-sol',
+    name: 'GPT-6.1-Sol',
+    description: 'Near-Astra performance for complex work at a lower cost.',
+    contextWindow: 1_050_000,
+    inputModalities: ['text', 'image'],
+    reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'],
+    defaultReasoningEffort: 'medium',
+  },
+  {
     id: 'gpt-5.6-sol',
     name: 'GPT-5.6-Sol',
     description: 'Reliable agentic workhorse for everyday tasks.',
