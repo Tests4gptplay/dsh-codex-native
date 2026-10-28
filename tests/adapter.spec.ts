@@ -115,7 +115,7 @@ function instance(
   resolveAttachments: () => CodexImageStorePort | undefined = () => undefined,
   maxRequestImageBytes = 20 * 1024 * 1024,
   resolveImageGenerationEnabled: () => boolean = () => true,
-  loadModels?: () => Promise<readonly CodexModel[]>,
+  fetchModels?: () => Promise<readonly CodexModel[]>,
 ): CodexAppServerAdapter {
   return new CodexAppServerAdapter({
     provider: 'codex-local',
@@ -136,7 +136,7 @@ function instance(
     onCleanupError: vi.fn(),
     resolveAttachments,
     resolveImageGenerationEnabled,
-    loadModels,
+    ...(fetchModels === undefined ? {} : { fetchModels }),
     runner,
   })
 }
@@ -239,31 +239,47 @@ describe('CodexAppServerAdapter', () => {
     })
   })
 
-  it('refreshes the native catalog on every DSH selector request', async () => {
-    const server: CodexAppServerRunnerPort = {
-      open: vi.fn(async () => { throw new Error('model discovery should not start a thread') }),
-      stream: vi.fn(() => (async function * () {})()),
+  it('refreshes models from App Server on every picker query and resolves newly discovered metadata', async () => {
+    let current: CodexModel[] = [{
+      id: 'gpt-6-astra', name: 'GPT-6 Astra', inputModalities: ['text'],
+      reasoningEfforts: ['high'], defaultReasoningEffort: 'high',
+    }]
+    const fetchModels = vi.fn(async () => current)
+    const runner: CodexAppServerRunnerPort = {
+      open: vi.fn(async () => { throw new Error('unexpected native turn') }),
+      async *stream() { throw new Error('unexpected native turn') },
     }
-    const first: CodexModel = {
-      id: 'gpt-6-astra', name: 'Astra', inputModalities: ['text', 'image'],
-      reasoningEfforts: ['medium'], defaultReasoningEffort: 'medium',
-    }
-    const latest: CodexModel = {
-      id: 'gpt-6.1-sol', name: 'GPT-6.1 Sol', inputModalities: ['text', 'image'],
-      reasoningEfforts: ['low', 'high'], defaultReasoningEffort: 'low',
-    }
-    const loadModels = vi.fn()
-      .mockResolvedValueOnce([first])
-      .mockResolvedValueOnce([first, latest])
-    const live = instance(server, () => undefined, 20 * 1024 * 1024, () => true, loadModels)
+    const live = instance(runner, () => undefined, 20 * 1024 * 1024, () => true, fetchModels)
     expect((await live.listModels('codex-local')).map(model => model.id)).toEqual(['gpt-6-astra'])
-    expect((await live.listModels('codex-local')).map(model => model.id)).toEqual(['gpt-6-astra', 'gpt-6.1-sol'])
+    current = [{
+      id: 'gpt-6.1-sol', name: 'GPT-6.1 Sol',
+      inputModalities: ['text', 'image'], reasoningEfforts: ['low', 'high'],
+      defaultReasoningEffort: 'low',
+    }]
+    expect((await live.listModels('codex-local')).map(model => model.id)).toEqual(['gpt-6.1-sol'])
     expect(await live.resolveModel('codex-local', 'gpt-6.1-sol')).toMatchObject({
-      name: 'GPT-6.1 Sol', inputModalities: ['text', 'image'],
+      name: 'GPT-6.1 Sol',
+      inputModalities: ['text', 'image'],
       reasoning: { defaultEffort: 'low', efforts: [{ id: 'low' }, { id: 'high' }] },
     })
-    expect(loadModels).toHaveBeenCalledTimes(2)
-    await live.dispose()
+    expect(fetchModels).toHaveBeenCalledTimes(2)
+  })
+
+  it('continues displaying the last live catalog after a temporary discovery error', async () => {
+    const fetchModels = vi.fn()
+      .mockResolvedValueOnce([{
+        id: 'gpt-6.1-sol', name: 'GPT-6.1 Sol',
+        inputModalities: ['text', 'image'], reasoningEfforts: ['high'],
+      }])
+      .mockRejectedValueOnce(new Error('network temporarily unavailable'))
+    const runner: CodexAppServerRunnerPort = {
+      open: vi.fn(async () => { throw new Error('unexpected native turn') }),
+      async *stream() { throw new Error('unexpected native turn') },
+    }
+    const live = instance(runner, () => undefined, 20 * 1024 * 1024, () => true, fetchModels)
+    const first = await live.listModels('codex-local')
+    expect(await live.listModels('codex-local')).toEqual(first)
+    expect(fetchModels).toHaveBeenCalledTimes(2)
   })
 
   it('streams provider disclosure, reasoning, text, usage, and replay state', async () => {
