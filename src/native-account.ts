@@ -4,9 +4,9 @@ import type { SubprocessHandle, SubprocessSpawnSpec } from '@deepseek-ai/dsh-sub
 import { codexCliEntry } from './runner.ts'
 import { JsonRpcConnection, object } from './wire.ts'
 import { connectCodexProcess } from './process-connection.ts'
-import type { CodexModel } from './adapter.ts'
 import { queryUsage } from './usage-query.ts'
 import type { UsageSnapshot } from './usage.ts'
+import type { CodexModel } from './adapter.ts'
 
 type LoginMode = 'browser' | 'device'
 export type LoginPhase = 'pending' | 'authenticated' | 'failed' | 'cancelled'
@@ -93,57 +93,44 @@ export class NativeCodexAccount {
       ...(typeof account.planType === 'string' ? { planType: account.planType } : {}),
     }
   }
-  async quota(): Promise<unknown> {
-    const data = object(await this.withConnection(rpc => rpc.request('account/rateLimits/read', {})), 'account/rateLimits/read')
-    return data.rateLimits ?? null
-  }
-  /** Read the current official picker catalog when DSH asks for its model list. */
-  async models(): Promise<readonly CodexModel[]> {
+  /** Refresh the models available to the signed-in account when DSH requests its picker catalog. */
+  async models(): Promise<CodexModel[]> {
     return this.withConnection(async rpc => {
       const models: CodexModel[] = []
-      const cursors = new Set<string>()
-      let cursor: string | undefined
-      for (;;) {
-        const page = object(await rpc.request('model/list', {
-          includeHidden: false,
-          ...(cursor === undefined ? {} : { cursor }),
-        }), 'model/list')
-        if (!Array.isArray(page.data)) throw new Error('Codex model/list returned invalid data')
+      let cursor: string | null = null
+      do {
+        const page = object(await rpc.request('model/list', { cursor, limit: 100, includeHidden: false }), 'model/list')
+        if (!Array.isArray(page.data)) throw new Error('Codex model/list returned no model array')
         for (const entry of page.data) {
           const model = object(entry, 'model/list model')
-          if (model.hidden === true) continue
-          const id = typeof model.model === 'string' ? model.model : model.id
-          if (typeof id !== 'string' || id.length === 0) throw new Error('Codex model/list returned invalid model id')
-          const inputModalities: Array<'text' | 'image'> = model.inputModalities === undefined
-            ? ['text', 'image']
-            : Array.isArray(model.inputModalities)
-              ? model.inputModalities.filter((value): value is 'text' | 'image' => value === 'text' || value === 'image')
-              : []
-          if (inputModalities.length === 0) continue
-          const reasoningEfforts = Array.isArray(model.supportedReasoningEfforts)
-            ? model.supportedReasoningEfforts.map(value => object(value, 'model/list reasoning effort').reasoningEffort)
-              .filter((value): value is string => typeof value === 'string' && value.length > 0)
+          if (typeof model.id !== 'string' || !model.id) continue
+          const modalities: Array<'text' | 'image'> = Array.isArray(model.inputModalities)
+            ? model.inputModalities.filter((value): value is 'text' | 'image' => value === 'text' || value === 'image')
+            : ['text', 'image']
+          if (modalities.length === 0) continue
+          const efforts: string[] = Array.isArray(model.supportedReasoningEfforts)
+            ? model.supportedReasoningEfforts.map(value => object(value, 'model reasoning').reasoningEffort)
+              .filter((value): value is string => typeof value === 'string')
             : []
           models.push({
-            id,
-            name: typeof model.displayName === 'string' ? model.displayName : id,
+            id: model.id,
+            name: typeof model.displayName === 'string' ? model.displayName : model.id,
             ...(typeof model.description === 'string' ? { description: model.description } : {}),
-            inputModalities,
-            reasoningEfforts,
+            inputModalities: modalities,
+            reasoningEfforts: efforts,
             ...(typeof model.defaultReasoningEffort === 'string'
-              && reasoningEfforts.includes(model.defaultReasoningEffort)
+              && efforts.includes(model.defaultReasoningEffort)
               ? { defaultReasoningEffort: model.defaultReasoningEffort } : {}),
           })
         }
-        if (page.nextCursor == null) break
-        if (typeof page.nextCursor !== 'string' || !page.nextCursor || cursors.has(page.nextCursor)) {
-          throw new Error('Codex model/list returned an invalid pagination cursor')
-        }
-        cursor = page.nextCursor
-        cursors.add(cursor)
-      }
+        cursor = typeof page.nextCursor === 'string' && page.nextCursor ? page.nextCursor : null
+      } while (cursor !== null)
       return models
     })
+  }
+  async quota(): Promise<unknown> {
+    const data = object(await this.withConnection(rpc => rpc.request('account/rateLimits/read', {})), 'account/rateLimits/read')
+    return data.rateLimits ?? null
   }
   /** Manual, read-only account-wide history. No token accumulation hook or background loop. */
   async usage(): Promise<UsageSnapshot> {
