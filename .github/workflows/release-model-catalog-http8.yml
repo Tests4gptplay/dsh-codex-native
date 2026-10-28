@@ -1,0 +1,106 @@
+name: Publish Codex model catalog http.8
+'on':
+  workflow_run:
+    workflows: ['DSH Codex native build']
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  release:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_commit.message == 'ci: prepare GPT-6.1 Sol http.8 release'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact tested main commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+      - name: Download Ubuntu candidate from successful two-platform CI
+        uses: actions/download-artifact@v4
+        with:
+          name: codex-reproduction-ubuntu-latest
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: .tmp/ci-download
+      - name: Verify candidate and create immutable packaged-runtime tag
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          VERSION=0.2.1-alpha.9-http.8
+          TAG="v$VERSION"
+          test "$(node -p 'require("./package.json").version')" = "$VERSION"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          git fetch origin main --quiet
+          test "$(git rev-parse origin/main)" = "$SOURCE_SHA"
+          if git ls-remote --tags origin "refs/tags/$TAG" | grep -q .; then
+            echo "Refusing to overwrite an existing tag: $TAG" >&2
+            exit 1
+          fi
+          mkdir -p dist .tmp/candidate
+          BUNDLE="$(find .tmp/ci-download -type f -name "dsh-codex-native-$VERSION.tgz" -print -quit)"
+          test -n "$BUNDLE"
+          cp "$BUNDLE" "dist/dsh-codex-native-$VERSION.tgz"
+          for file in source-manifest.json candidate-copy-audit.json; do
+            SOURCE="$(find .tmp/ci-download -type f -name "$file" -print -quit)"
+            test -n "$SOURCE"
+            cp "$SOURCE" "dist/$file"
+          done
+          tar -xzf "dist/dsh-codex-native-$VERSION.tgz" --strip-components=1 -C .tmp/candidate
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict'
+          import { readFileSync } from 'node:fs'
+          import { createHash } from 'node:crypto'
+          const sha = path => createHash('sha256').update(readFileSync(path)).digest('hex')
+          const pkg = JSON.parse(readFileSync('.tmp/candidate/package.json','utf8'))
+          const manifest = JSON.parse(readFileSync('dist/source-manifest.json','utf8'))
+          const audit = JSON.parse(readFileSync('dist/candidate-copy-audit.json','utf8'))
+          assert.equal(pkg.version,'0.2.1-alpha.9-http.8')
+          assert.equal(manifest.sourceCommit,process.env.SOURCE_SHA)
+          assert.equal(manifest.version,pkg.version)
+          assert.equal(manifest.artifactSha256,sha('dist/'+manifest.artifact))
+          assert.equal(audit.packageSha256,manifest.artifactSha256)
+          assert.equal(pkg.dependencies['@openai/codex'],'0.154.0')
+          assert(!pkg.scripts && !pkg.devDependencies)
+          assert.match(readFileSync('.tmp/candidate/lib/index.js','utf8'),/gpt-6\\.1-sol/)
+          assert.match(readFileSync('.tmp/candidate/cordis.patch.yml','utf8'),/gpt-6\\.1-sol/)
+          for (const path of ['README.md','README.zh.md']) {
+            assert.equal(readFileSync('.tmp/candidate/'+path,'utf8'),readFileSync(path,'utf8'))
+          }
+          for (const [path,hash] of Object.entries(manifest.runtimeSha256)) {
+            assert.equal(sha('.tmp/candidate/'+path),hash,'Runtime differs: '+path)
+          }
+          console.log('HTTP8_PACKAGED_RUNTIME_VERIFIED',manifest.artifactSha256)
+          NODE
+          cp -R .tmp/candidate/lib ./lib
+          git add -f lib
+          test -n "$(git diff --cached --name-only)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "build: packaged runtime for $TAG"
+          git tag -a "$TAG" -m "GPT-6.1 Sol model catalog"
+          git push origin "refs/tags/$TAG"
+          (cd dist && sha256sum *.tgz source-manifest.json candidate-copy-audit.json > SHA256SUMS)
+      - name: Publish regular GitHub Release with clean TGZ
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG=v0.2.1-alpha.9-http.8
+          gh release create "$TAG" \
+            dist/dsh-codex-native-0.2.1-alpha.9-http.8.tgz \
+            dist/source-manifest.json \
+            dist/candidate-copy-audit.json \
+            dist/SHA256SUMS \
+            --verify-tag \
+            --latest \
+            --title "$TAG" \
+            --notes "Adds GPT-6.1 Sol to DSH Codex Native model selection, with officially supported low/medium/high/xhigh/max reasoning efforts (default: medium). Preserves existing account sign-in, HTTP transport, settings and the bundled Codex 0.154.0 runtime."
