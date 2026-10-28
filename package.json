@@ -1,6 +1,6 @@
 {
   "name": "dsh-codex-native",
-  "version": "0.2.1-alpha.9-http.7",
+  "version": "0.2.1-alpha.9-http.8",
   "description": "Codex app-server main models for DSH with ChatGPT sign-in, Token history, context management and native tools.",
   "type": "module",
   "icon": "assets/chatgpt-auth.png",
