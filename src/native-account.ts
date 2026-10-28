@@ -6,6 +6,7 @@ import { JsonRpcConnection, object } from './wire.ts'
 import { connectCodexProcess } from './process-connection.ts'
 import { queryUsage } from './usage-query.ts'
 import type { UsageSnapshot } from './usage.ts'
+import type { CodexModel } from './adapter.ts'
 
 type LoginMode = 'browser' | 'device'
 export type LoginPhase = 'pending' | 'authenticated' | 'failed' | 'cancelled'
@@ -91,6 +92,41 @@ export class NativeCodexAccount {
       ...(typeof account.email === 'string' ? { email: account.email } : {}),
       ...(typeof account.planType === 'string' ? { planType: account.planType } : {}),
     }
+  }
+  /** Refresh the models available to the signed-in account when DSH requests its picker catalog. */
+  async models(): Promise<CodexModel[]> {
+    return this.withConnection(async rpc => {
+      const models: CodexModel[] = []
+      let cursor: string | null = null
+      do {
+        const page = object(await rpc.request('model/list', { cursor, limit: 100, includeHidden: false }), 'model/list')
+        if (!Array.isArray(page.data)) throw new Error('Codex model/list returned no model array')
+        for (const entry of page.data) {
+          const model = object(entry, 'model/list model')
+          if (typeof model.id !== 'string' || !model.id) continue
+          const modalities: Array<'text' | 'image'> = Array.isArray(model.inputModalities)
+            ? model.inputModalities.filter((value): value is 'text' | 'image' => value === 'text' || value === 'image')
+            : ['text', 'image']
+          if (modalities.length === 0) continue
+          const efforts: string[] = Array.isArray(model.supportedReasoningEfforts)
+            ? model.supportedReasoningEfforts.map(value => object(value, 'model reasoning').reasoningEffort)
+              .filter((value): value is string => typeof value === 'string')
+            : []
+          models.push({
+            id: model.id,
+            name: typeof model.displayName === 'string' ? model.displayName : model.id,
+            ...(typeof model.description === 'string' ? { description: model.description } : {}),
+            inputModalities: modalities,
+            reasoningEfforts: efforts,
+            ...(typeof model.defaultReasoningEffort === 'string'
+              && efforts.includes(model.defaultReasoningEffort)
+              ? { defaultReasoningEffort: model.defaultReasoningEffort } : {}),
+          })
+        }
+        cursor = typeof page.nextCursor === 'string' && page.nextCursor ? page.nextCursor : null
+      } while (cursor !== null)
+      return models
+    })
   }
   async quota(): Promise<unknown> {
     const data = object(await this.withConnection(rpc => rpc.request('account/rateLimits/read', {})), 'account/rateLimits/read')
