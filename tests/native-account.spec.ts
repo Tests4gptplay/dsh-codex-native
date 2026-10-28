@@ -4,7 +4,7 @@ import type { SubprocessHandle } from '@deepseek-ai/dsh-subprocess'
 import { NativeCodexAccount } from '../src/native-account.ts'
 
 type JsonObject = Record<string, unknown>
-function mockOfficialCodex() {
+function mockOfficialCodex(nextModel = 'gpt-6.1-sol') {
   const invocations: string[] = []
   const input = new PassThrough()
   const output = new PassThrough()
@@ -34,6 +34,30 @@ function mockOfficialCodex() {
         case 'account/rateLimits/read':
           result = { rateLimits: { primary: { usedPercent: 40 } } }
           break
+        case 'model/list': {
+          const cursor = (request.params as JsonObject).cursor
+          result = cursor === 'next'
+            ? {
+                data: [{
+                  id: nextModel, model: nextModel, displayName: 'Live model',
+                  description: 'From Codex', inputModalities: ['text', 'image'],
+                  supportedReasoningEfforts: [
+                    { reasoningEffort: 'low', description: 'Fast' },
+                    { reasoningEffort: 'max', description: 'Deep' },
+                  ],
+                  defaultReasoningEffort: 'low', hidden: false,
+                }],
+                nextCursor: null,
+              }
+            : {
+                data: [{
+                  id: 'gpt-6-astra', model: 'gpt-6-astra', displayName: 'GPT-6 Astra',
+                  supportedReasoningEfforts: [], defaultReasoningEffort: 'medium', hidden: false,
+                }],
+                nextCursor: 'next',
+              }
+          break
+        }
         case 'account/login/start':
           result = (request.params as JsonObject).type === 'chatgptDeviceCode'
             ? { loginId: 'native-device', verificationUrl: 'https://auth.openai.com/codex/device', userCode: 'ABCD-1234' }
@@ -67,6 +91,27 @@ describe('official Codex app-server account lifecycle', () => {
     expect(await manager.quota()).toEqual({ primary: { usedPercent: 40 } })
     expect(clients.flatMap(client => client.invocations)).toContain('account/read')
     expect(clients.flatMap(client => client.invocations)).toContain('account/rateLimits/read')
+    expect(clients.every(client => client.terminated.mock.calls.length === 1)).toBe(true)
+    await manager.dispose()
+  })
+  it('reads every model/list page again for each selector refresh', async () => {
+    const clients: ReturnType<typeof mockOfficialCodex>[] = []
+    const manager = new NativeCodexAccount(() => {
+      const client = mockOfficialCodex(clients.length === 0 ? 'gpt-5.6-sol' : 'gpt-6.1-sol')
+      clients.push(client)
+      return client.handle
+    })
+    const before = await manager.models()
+    const after = await manager.models()
+    expect(before.map(model => model.id)).toEqual(['gpt-6-astra', 'gpt-5.6-sol'])
+    expect(after.map(model => model.id)).toEqual(['gpt-6-astra', 'gpt-6.1-sol'])
+    expect(after[0]?.inputModalities).toEqual(['text', 'image'])
+    expect(after[1]).toMatchObject({
+      name: 'Live model',
+      reasoningEfforts: ['low', 'max'],
+      defaultReasoningEffort: 'low',
+    })
+    expect(clients.every(client => client.invocations.filter(method => method === 'model/list').length === 2)).toBe(true)
     expect(clients.every(client => client.terminated.mock.calls.length === 1)).toBe(true)
     await manager.dispose()
   })
