@@ -25,7 +25,8 @@ import type {
 
 export type { CodexAppServerEvent, JsonValue } from './wire.ts'
 
-export const CODEX_APP_SERVER_VERSION = '0.154.0'
+/** Release channel; the executable version is selected when the process opens. */
+export const CODEX_APP_SERVER_VERSION = 'latest'
 
 const WORKDIR_PREFIX = 'dsh-codex-app-server-'
 const TIMEOUT_REASON = Symbol('codex-app-server-timeout')
@@ -105,7 +106,7 @@ export interface CodexAppServerRunnerOptions {
   readonly maxJsonRpcLineBytes: number
   readonly maxStderrBytes: number
   readonly env: Readonly<Record<string, string>>
-  readonly spawn: (spec: SubprocessSpawnSpec) => SubprocessHandle
+  readonly spawn: (spec: SubprocessSpawnSpec) => SubprocessHandle | Promise<SubprocessHandle>
   readonly skillsMode?: 'dsh' | 'native'
   readonly skillsMaxContextTokens?: number
   readonly questions?: CodexQuestionHandler
@@ -117,7 +118,7 @@ export interface CodexAppServerRunnerPort {
   stream(request: CodexAppServerRequest): AsyncIterable<CodexAppServerEvent>
 }
 
-/** Resolve the pinned official CLI's JavaScript entry without a shell lookup. */
+/** Resolve the installed official CLI's JavaScript entry without a shell lookup. */
 export function codexCliEntry(): string {
   const require = createRequire(import.meta.url)
   return join(dirname(require.resolve('@openai/codex/package.json')), 'bin', 'codex.js')
@@ -289,7 +290,7 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
     request.signal?.addEventListener('abort', onAbort, { once: true })
     try {
       if (request.signal?.aborted) throw request.signal.reason
-      child = this.options.spawn({
+      child = await this.options.spawn({
         argv: codexAppServerArgv(request.webSearch, request.imageGenerationEnabled, request.modelProvider,
           this.options.skillsMode, this.options.skillsMaxContextTokens),
         cwd: workdir,

@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { NativeCodexAccount } from '../src/native-account.ts'
 import { Context } from '@deepseek-ai/cordis'
 import LlmRuntime from '@deepseek-ai/dsh-llm'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
@@ -8,8 +9,16 @@ import * as CodexAppServer from '../src/index.ts'
 
 const contexts: Context[] = []
 
+// Composition tests use an account response; runtime downloads are exercised separately.
+beforeEach(() => {
+  vi.spyOn(NativeCodexAccount.prototype, 'models').mockResolvedValue([
+    { id: 'official-new-model', name: 'Official new model', inputModalities: ['text', 'image'], reasoningEfforts: ['medium'] },
+  ])
+})
+
 afterEach(async () => {
   await Promise.all(contexts.splice(0).map(ctx => ctx.fiber.dispose()))
+  vi.restoreAllMocks()
 })
 
 async function context(): Promise<Context> {

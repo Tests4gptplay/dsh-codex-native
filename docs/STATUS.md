@@ -1,6 +1,16 @@
 # DSH Codex Native — releases and validation
 
-## Current release — v0.2.1-alpha.9-http.9
+## Current release — v0.2.1-alpha.9-http.10
+
+[Release and assets](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.10) · [Native installation](INSTALL.md)
+
+- New processes resolve the official `@openai/codex@latest` runtime; downloaded platform binaries are reused.
+- Concurrent process starts share an update. Running processes retain their executable; failed refreshes retain an available runtime and report the error.
+- Official `model/list` discovery supplies model IDs, names, input capabilities and reasoning efforts.
+- Windows verification on 2026-10-28: build and 21 focused tests passed. The updater launched `codex-cli 0.165.0`; the official catalog returned GPT-6.1-Sol and GPT-6.1-Terra.
+- Existing Computer Use recovery, native questions and HTTP transport are retained.
+
+## Previous release — v0.2.1-alpha.9-http.9
 
 [Release and assets](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.9) · [Native installation](INSTALL.md)
 

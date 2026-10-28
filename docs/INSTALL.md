@@ -7,13 +7,13 @@ Open **Plugins → Add plugin**, paste the fixed-version source below, and enabl
 打开 **插件 → 添加插件**，粘贴以下固定版本来源并启用：
 
 ```text
-github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.9
+github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.10
 ```
 
 ## Web
 
 ```sh
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.9'
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.10'
 ```
 
 ## Sign in and select a model / 登录与选择模型
@@ -22,9 +22,9 @@ In **Settings → Codex official login**, sign in with your ChatGPT account. Sel
 
 在 **设置 → Codex 官方登录** 中登录 ChatGPT 账号，再选择 **Codex (local login)** 提供方和所需模型。DSH 请求模型列表时会从官方 App Server 读取最新目录；已有安装沿用保存的登录与配置。
 
-The plugin uses DSH-provided host modules with unrestricted DSH peer version ranges and includes official Codex `0.154.0` as a dependency. The Git tag contains prebuilt plugin runtime files; DSH installs its dependencies through the native plugin installer.
+The plugin uses DSH-provided host modules with unrestricted DSH peer version ranges and includes official Codex `latest` as a dependency. The Git tag contains prebuilt plugin runtime files; DSH installs its dependencies through the native plugin installer.
 
-插件使用 DSH 宿主提供的模块，DSH 的 peer 依赖版本范围不设限制，另依赖官方 Codex `0.154.0`。固定 Git 标签已包含预构建的插件运行文件，依赖由 DSH 原生安装流程准备。
+插件使用 DSH 宿主提供的模块，DSH 的 peer 依赖版本范围不设限制，另依赖官方 Codex `latest`。固定 Git 标签已包含预构建的插件运行文件，依赖由 DSH 原生安装流程准备。
 
 ## Questions during a task / 任务中的提问
 
@@ -44,9 +44,9 @@ The default `skillsMode: dsh` provides `codex_skill_search` and `codex_skill_rea
 
 ## Alternative package / 备用安装包
 
-Download the TGZ from the [Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.9), then enter its absolute path in **Add plugin**. `SHA256SUMS` records the package checksum.
+Download the TGZ from the [Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.10), then enter its absolute path in **Add plugin**. `SHA256SUMS` records the package checksum.
 
-也可以从 [Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.9) 下载 TGZ，在 **添加插件** 中输入其绝对路径。文件校验和见 `SHA256SUMS`。
+也可以从 [Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.10) 下载 TGZ，在 **添加插件** 中输入其绝对路径。文件校验和见 `SHA256SUMS`。
 
 Earlier alpha.9 source-host integration notes remain in the [engineering installation guide](INSTALL_PATCHED_HOST.md).
 

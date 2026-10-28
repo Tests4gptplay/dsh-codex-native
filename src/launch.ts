@@ -4,7 +4,7 @@ import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import type { SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
 
-/** Layout is the official @openai/codex 0.154.0 wrapper's platform-package layout. */
+/** Official Codex wrapper platform-package layout. */
 export function windowsCodexBinary(packageJson: string, arch: string): string {
   const target = arch === 'x64' ? 'x86_64-pc-windows-msvc'
     : arch === 'arm64' ? 'aarch64-pc-windows-msvc' : undefined

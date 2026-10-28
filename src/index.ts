@@ -9,7 +9,8 @@ import type {} from '@deepseek-ai/dsh-tools'
 import type { ModelModality } from '@deepseek-ai/dsh-llm'
 import z from '@deepseek-ai/schemastery'
 import { DshCodexAdapter } from './dsh-adapter.ts'
-import { codexSpawnSpec } from './launch.ts'
+import { LatestCodexRuntime } from './latest-runtime.ts'
+import type { SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
 import type { CodexModel } from './adapter.ts'
 import { SAFE_MODEL_ID, SAFE_REASONING_EFFORT } from './identifiers.ts'
 import { CodexAppServerRunner } from './runner.ts'
@@ -312,6 +313,8 @@ function resolveConfig(config: Config): ResolvedConfig {
 export function apply(ctx: Context, config: Config): void {
   const resolved = resolveConfig(config)
   registerComputerUseRecovery(ctx)
+  const runtime = new LatestCodexRuntime(message => ctx.logger.warn(message))
+  const spawn = async (spec: SubprocessSpawnSpec) => ctx.subprocess.spawn(await runtime.spawnSpec(spec))
   const runner = new CodexAppServerRunner({
     timeoutMs: resolved.timeoutMs,
     disposeGraceMs: resolved.disposeGraceMs,
@@ -320,13 +323,13 @@ export function apply(ctx: Context, config: Config): void {
     env: resolved.env,
     skillsMode: resolved.skillsMode,
     skillsMaxContextTokens: resolved.skillsMaxContextTokens,
-    spawn: spec => ctx.subprocess.spawn(codexSpawnSpec(spec)),
+    spawn: spawn,
     questions: new CodexUserQuestions(ctx),
   })
   const reportCleanupError = (error: unknown): void => {
     ctx.logger.warn(`llm-codex-app-server: cached session cleanup failed: ${String(error)}`)
   }
-  const account = new NativeCodexAccount(spec => ctx.subprocess.spawn(codexSpawnSpec(spec)))
+  const account = new NativeCodexAccount(spawn)
   const adapter = new DshCodexAdapter({
     provider: resolved.provider,
     displayName: resolved.displayName,
@@ -349,7 +352,7 @@ export function apply(ctx: Context, config: Config): void {
   })
   if (resolved.skillsMode === 'dsh') {
     const skills = new NativeCodexSkills({
-      spawn: spec => ctx.subprocess.spawn(codexSpawnSpec(spec)),
+      spawn: spawn,
       env: resolved.env, maxJsonRpcLineBytes: resolved.maxJsonRpcLineBytes,
       maxStderrBytes: resolved.maxStderrBytes, disposeGraceMs: resolved.disposeGraceMs,
       maxContextTokens: resolved.skillsMaxContextTokens,

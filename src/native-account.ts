@@ -25,7 +25,7 @@ interface RunningCodex {
   close(): Promise<void>
   failure(error: unknown): Error
 }
-type Spawn = (spec: SubprocessSpawnSpec) => SubprocessHandle
+type Spawn = (spec: SubprocessSpawnSpec) => SubprocessHandle | Promise<SubprocessHandle>
 
 export class NativeCodexAccount {
   private active: RunningCodex | undefined
@@ -36,12 +36,13 @@ export class NativeCodexAccount {
 
   private async open(): Promise<RunningCodex> {
     if (this.disposed) throw new Error('Native Codex account service is disposed')
-    const child = this.spawn({
+    const child = await this.spawn({
       argv: [process.execPath, codexCliEntry(), 'app-server', '--stdio'],
       cwd: homedir(),
       stdio: { stdin: 'pipe', stdout: 'pipe', stderr: { maxBytes: 64 * 1024 } },
       env: {}, graceMs: 3_000,
     })
+    if (this.disposed) { child.terminate(); throw new Error('Native Codex account service is disposed') }
     if (!child.stdin || !child.stdout) {
       child.terminate()
       throw new Error('Codex app-server did not provide stdio')

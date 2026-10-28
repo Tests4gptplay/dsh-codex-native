@@ -143,7 +143,7 @@ export function searchNativeSkills(
 }
 
 interface Options {
-  spawn(spec: SubprocessSpawnSpec): SubprocessHandle
+  spawn(spec: SubprocessSpawnSpec): SubprocessHandle | Promise<SubprocessHandle>
   env: Readonly<Record<string, string>>
   maxJsonRpcLineBytes: number
   maxStderrBytes: number
@@ -161,12 +161,13 @@ export class NativeCodexSkills {
   private async connection<T>(cwd: string, signal: AbortSignal, task: (request: Request) => Promise<T>): Promise<T> {
     signal.throwIfAborted()
     if (this.disposed) throw new Error('Codex skill discovery is disposed')
-    const child = this.options.spawn({
+    const child = await this.options.spawn({
       argv: [...codexAppServerArgv(undefined, true, 'discovery', 'native', this.options.maxContextTokens),
         '-c', 'features.skip_host_skill_discovery=false', '-c', 'skills.include_instructions=false'],
       cwd, env: this.options.env, graceMs: this.options.disposeGraceMs,
       stdio: { stdin: 'pipe', stdout: 'pipe', stderr: { maxBytes: this.options.maxStderrBytes } },
     })
+    if (this.disposed || signal.aborted) { child.terminate(); signal.throwIfAborted(); throw new Error('Codex skill discovery is disposed') }
     const diagnostics = connectCodexProcess(child, this.options.maxJsonRpcLineBytes)
     const rpc = diagnostics.rpc
     let cleanup: Promise<void> | undefined
