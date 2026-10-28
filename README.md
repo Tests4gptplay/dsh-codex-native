@@ -4,8 +4,6 @@
 
 [简体中文](README.zh.md) · [Releases](https://github.com/Tests4gptplay/dsh-codex-native/releases) · [Installation guide](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/INSTALL.md) · [Release verification](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/STATUS.md)
 
-**Support / 赞助：** [GitHub Sponsors](https://github.com/sponsors/Tests4gptplay) · [Ko-fi](https://ko-fi.com/kou392350) · [Patreon](https://www.patreon.com/cw/Kou848) · [爱发电 / Afdian](https://afdian.com/a/kkt_ifd1) · [支付宝 / Alipay](SPONSOR.md)
-
 ## Latest release — v0.2.1-alpha.9-http.10
 
 New Codex processes resolve the official npm `@openai/codex@latest` channel and download the platform runtime when needed. Existing processes keep running; subsequent processes use the updated executable. An unavailable update retains the usable runtime and logs the reason. Updates are demand-driven, with no background polling.
@@ -85,3 +83,7 @@ The alpha.9 candidate passed Windows **191/191** plugin tests and Ubuntu **190 p
 Windows 10 MTA-dispatch patch reference: [chen0416ccc-cpu/codex-windows-fast-patch-skill](https://github.com/chen0416ccc-cpu/codex-windows-fast-patch-skill/blob/main/scripts/patch-computer-use-helper-win10.ps1). The bundled profile adapts the reference regions to the tested @oai/sky 0.7.13 binary.
 
 Community integration based on MIT-licensed [wss534857356/dsh-plugin-codex](https://github.com/wss534857356/dsh-plugin-codex), baseline `f1f61886f4defcf7294d63c3641fba01ee554e7b`. Original attribution is retained in [LICENSE](LICENSE). DeepSeek Harness is developed by DeepSeek; Codex is developed by OpenAI. Public reset-date data is credited to **codex-reset.com**. The ChatGPT icon uses [Lobe Icons](https://github.com/lobehub/lobe-icons) artwork; its MIT license is bundled in `assets/LOBE-ICONS-LICENSE.txt`.
+
+## 支持项目 / Support
+
+[GitHub Sponsors](https://github.com/sponsors/Tests4gptplay) · [Ko-fi](https://ko-fi.com/kou392350) · [Patreon](https://www.patreon.com/cw/Kou848) · [爱发电 / Afdian](https://afdian.com/a/kkt_ifd1) · [支付宝 / Alipay](SPONSOR.md)
