@@ -24,7 +24,7 @@ async function context(): Promise<Context> {
 }
 
 describe('plugin composition', () => {
-  it('materializes the default model catalog through Cordis config parsing', async () => {
+  it('advertises the live Codex model catalog through Cordis config parsing', async () => {
     const ctx = await context()
     await ctx.plugin(CodexAppServer, {})
 
@@ -38,47 +38,16 @@ describe('plugin composition', () => {
       maxDelayMs: 300_000,
     })
     const models = await ctx.llm.listModels('codex-local')
-    expect(models.map(model => model.id)).toEqual([
-      'gpt-6-astra',
-      'gpt-5.6-sol',
-      'gpt-5.6-terra',
-      'gpt-5.6-luna',
-      'gpt-5.5',
-      'gpt-5.3-codex-spark',
-    ])
-    expect(models).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        provider: 'codex-local',
-        id: 'gpt-6-astra',
-        name: 'GPT-6-Astra',
-        inputModalities: ['text', 'image'],
-      }),
-      expect.objectContaining({
-        provider: 'codex-local',
-        id: 'gpt-5.6-terra',
-        name: 'GPT-5.6-Terra',
-        inputModalities: ['text', 'image'],
-      }),
-      expect.objectContaining({
-        provider: 'codex-local',
-        id: 'gpt-5.3-codex-spark',
-        name: 'GPT-5.3-Codex-Spark',
-        inputModalities: ['text'],
-      }),
-    ]))
-    await expect(ctx.llm.resolveModelInfo('codex-local', 'gpt-6-astra')).resolves.toMatchObject({
-      inputModalities: ['text', 'image'],
-      context: { contextWindow: 272_000 },
-      reasoning: { defaultEffort: 'medium' },
-    })
-    await expect(ctx.llm.resolveModelInfo('codex-local', 'gpt-5.6-terra')).resolves.toMatchObject({
-      inputModalities: ['text', 'image'],
-      context: { contextWindow: 272_000 },
-      reasoning: { defaultEffort: 'medium' },
-    })
-    await expect(ctx.llm.resolveModelInfo('codex-local', 'gpt-5.3-codex-spark')).resolves.toMatchObject({
-      context: { contextWindow: 128_000 },
-      reasoning: { defaultEffort: 'high' },
+    expect(models.length).toBeGreaterThan(0)
+    expect(new Set(models.map(model => model.id)).size).toBe(models.length)
+    expect(models.every(model => model.provider === 'codex-local'
+      && typeof model.id === 'string' && model.id.length > 0)).toBe(true)
+    // A live catalog is account- and release-dependent. The host must resolve
+    // whichever model IDs the official App Server currently advertises.
+    const first = models[0]!
+    await expect(ctx.llm.resolveModelInfo('codex-local', first.id)).resolves.toMatchObject({
+      provider: 'codex-local', id: first.id,
+      name: first.name, pressureCompaction: 'provider',
     })
   })
 
