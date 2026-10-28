@@ -1,6 +1,13 @@
 # DSH Codex Native — releases and validation
 
-## Current release — v0.2.1-alpha.9-http.8
+## Current release — v0.2.1-alpha.9-http.9
+
+[Release and assets](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.9) · [Native installation](INSTALL.md)
+
+- On-demand native `model/list` refresh updates DSH model selection and reasoning/input metadata from the App Server.
+- Uses existing account RPC and keeps Codex runtime, login, HTTP transport, and settings.
+
+## Previous release — v0.2.1-alpha.9-http.8
 
 [Release and assets](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.8) · [Native installation](INSTALL.md)
 

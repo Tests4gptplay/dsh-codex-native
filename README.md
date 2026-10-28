@@ -6,9 +6,9 @@
 
 **Support / 赞助：** [GitHub Sponsors](https://github.com/sponsors/Tests4gptplay) · [Ko-fi](https://ko-fi.com/kou392350) · [Patreon](https://www.patreon.com/cw/Kou848) · [爱发电 / Afdian](https://afdian.com/a/kkt_ifd1) · [支付宝 / Alipay](SPONSOR.md)
 
-## Latest release — v0.2.1-alpha.9-http.8
+## Latest release — v0.2.1-alpha.9-http.9
 
-Adds **GPT-6.1 Sol** to the DSH model selector with the officially supported reasoning efforts (low, medium, high, xhigh, max; medium by default), retaining the existing Codex runtime, account sign-in and settings.
+The DSH model selector now reads the official Codex App Server `model/list` catalog on each model-list request, automatically reflecting newly available models, names, input capabilities and reasoning efforts when refreshed. Existing Codex runtime, account sign-in and settings remain unchanged.
 
 Embedded `codex_computer_use_recovery` provides `guide`, `status`, `repair`, `release`, and `rollback`. Patch bytes, exact-path process recovery and troubleshooting instructions ship in the plugin; no external BAT, PS1 or Python dependency is required.
 
@@ -16,7 +16,7 @@ The full guide loads only with the Computer Use skill body or an explicit guide 
 
 ## Included features
 
-[Release and downloads](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.8) · [Context accounting details](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/CONTEXT_COMPACTION_AUDIT.md)
+[Release and downloads](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.9) · [Context accounting details](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/CONTEXT_COMPACTION_AUDIT.md)
 
 - **Native questions and notifications:** Codex questions use DSH's selectable question cards and native notifications, including free-text answers.
 - **Automatic chat replies:** submitted answers return to the active task and appear as ordinary user messages, with a single submission and no extra send step.
@@ -35,20 +35,20 @@ The full guide loads only with the Computer Use skill body or an explicit guide 
 ### Installation
 
 ```text
-github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.8
+github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.9
 ```
 
 In Desktop, open **Plugins → Add plugin**, paste the fixed-version source above, and enable it. For Web:
 
 ```sh
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.8'
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.9'
 ```
 
 The fixed tag includes prebuilt runtime files. Upgrades retain existing configuration and sign-in. The [installation guide](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/INSTALL.md) covers login and the alternative TGZ package.
 
 ## On-demand skill discovery
 
-Version `0.2.1-alpha.9-http.8` provides `codex_skill_search` and `codex_skill_read` through DSH: models search summaries, then read the skills they need. The catalog covers local files and installed remote connector skills, preferring connectors for duplicate entries from the same plugin while retaining independently authored local skills. Both HTTP and local DSH models can use these tools.
+Version `0.2.1-alpha.9-http.9` provides `codex_skill_search` and `codex_skill_read` through DSH: models search summaries, then read the skills they need. The catalog covers local files and installed remote connector skills, preferring connectors for duplicate entries from the same plugin while retaining independently authored local skills. Both HTTP and local DSH models can use these tools.
 
 The default `skillsMode: dsh` replaces Codex's automatic skill catalog injection with these discovery tools. `skillsMaxContextTokens: 10000` selects the maximum native budget. Metadata is cached by working directory; use `refresh: true` after changing skills or plugins. `skillsMode: native` selects the native catalog. These settings apply to plugin-owned processes and retain existing authentication, connectors, and native tools.
 

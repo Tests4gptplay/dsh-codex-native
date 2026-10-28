@@ -4,6 +4,7 @@ import type { SubprocessHandle, SubprocessSpawnSpec } from '@deepseek-ai/dsh-sub
 import { codexCliEntry } from './runner.ts'
 import { JsonRpcConnection, object } from './wire.ts'
 import { connectCodexProcess } from './process-connection.ts'
+import type { CodexModel } from './adapter.ts'
 import { queryUsage } from './usage-query.ts'
 import type { UsageSnapshot } from './usage.ts'
 
@@ -95,6 +96,54 @@ export class NativeCodexAccount {
   async quota(): Promise<unknown> {
     const data = object(await this.withConnection(rpc => rpc.request('account/rateLimits/read', {})), 'account/rateLimits/read')
     return data.rateLimits ?? null
+  }
+  /** Read the current official picker catalog when DSH asks for its model list. */
+  async models(): Promise<readonly CodexModel[]> {
+    return this.withConnection(async rpc => {
+      const models: CodexModel[] = []
+      const cursors = new Set<string>()
+      let cursor: string | undefined
+      for (;;) {
+        const page = object(await rpc.request('model/list', {
+          includeHidden: false,
+          ...(cursor === undefined ? {} : { cursor }),
+        }), 'model/list')
+        if (!Array.isArray(page.data)) throw new Error('Codex model/list returned invalid data')
+        for (const entry of page.data) {
+          const model = object(entry, 'model/list model')
+          if (model.hidden === true) continue
+          const id = typeof model.model === 'string' ? model.model : model.id
+          if (typeof id !== 'string' || id.length === 0) throw new Error('Codex model/list returned invalid model id')
+          const inputModalities: Array<'text' | 'image'> = model.inputModalities === undefined
+            ? ['text', 'image']
+            : Array.isArray(model.inputModalities)
+              ? model.inputModalities.filter((value): value is 'text' | 'image' => value === 'text' || value === 'image')
+              : []
+          if (inputModalities.length === 0) continue
+          const reasoningEfforts = Array.isArray(model.supportedReasoningEfforts)
+            ? model.supportedReasoningEfforts.map(value => object(value, 'model/list reasoning effort').reasoningEffort)
+              .filter((value): value is string => typeof value === 'string' && value.length > 0)
+            : []
+          models.push({
+            id,
+            name: typeof model.displayName === 'string' ? model.displayName : id,
+            ...(typeof model.description === 'string' ? { description: model.description } : {}),
+            inputModalities,
+            reasoningEfforts,
+            ...(typeof model.defaultReasoningEffort === 'string'
+              && reasoningEfforts.includes(model.defaultReasoningEffort)
+              ? { defaultReasoningEffort: model.defaultReasoningEffort } : {}),
+          })
+        }
+        if (page.nextCursor == null) break
+        if (typeof page.nextCursor !== 'string' || !page.nextCursor || cursors.has(page.nextCursor)) {
+          throw new Error('Codex model/list returned an invalid pagination cursor')
+        }
+        cursor = page.nextCursor
+        cursors.add(cursor)
+      }
+      return models
+    })
   }
   /** Manual, read-only account-wide history. No token accumulation hook or background loop. */
   async usage(): Promise<UsageSnapshot> {
