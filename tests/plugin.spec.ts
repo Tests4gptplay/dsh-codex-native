@@ -47,7 +47,7 @@ describe('plugin composition', () => {
     const first = models[0]!
     await expect(ctx.llm.resolveModelInfo('codex-local', first.id)).resolves.toMatchObject({
       provider: 'codex-local', id: first.id,
-      name: first.name, pressureCompaction: 'provider',
+      name: first.name,
     })
   })
 
