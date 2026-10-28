@@ -55,6 +55,8 @@ export interface CodexAdapterOptions {
   readonly displayName: string
   readonly modelProvider: string
   readonly models: readonly CodexModel[]
+  readonly fetchModels?: () => Promise<readonly CodexModel[]>
+  readonly onModelDiscoveryError?: (error: unknown) => void
   readonly maxRetries: number
   readonly maxRequestImageBytes: number
   readonly maxCachedSessions: number
@@ -87,6 +89,7 @@ function modelInfo(provider: string, model: CodexModel): LlmModelInfo {
 /** Main-model adapter that maps live App Server events into the Harness loop. */
 export class CodexAppServerAdapter extends LlmAdapter {
   private readonly cache: CodexSessionCache
+  private liveModels: readonly CodexModel[] | undefined
 
   constructor(private readonly options: CodexAdapterOptions) {
     super()
@@ -96,6 +99,26 @@ export class CodexAppServerAdapter extends LlmAdapter {
       idleTimeoutMs: options.sessionIdleTimeoutMs,
       onCleanupError: options.onCleanupError,
     })
+  }
+
+  /** Refresh on each model-picker query; keep the last working catalog across transient errors. */
+  private async models(): Promise<readonly CodexModel[]> {
+    if (this.options.fetchModels === undefined) return this.options.models
+    try {
+      const catalog = await this.options.fetchModels()
+      if (catalog.length > 0) {
+        this.liveModels = catalog.map(model => {
+          const previous = this.options.models.find(item => item.id === model.id)
+          return {
+            ...(previous?.contextWindow === undefined ? {} : { contextWindow: previous.contextWindow }),
+            ...model,
+          }
+        })
+      }
+    } catch (error: unknown) {
+      this.options.onModelDiscoveryError?.(error)
+    }
+    return this.liveModels ?? this.options.models
   }
 
   override providerInfo(provider: string): LlmProviderInfo {
@@ -113,8 +136,8 @@ export class CodexAppServerAdapter extends LlmAdapter {
     }
   }
 
-  override listModels(provider: string): Promise<readonly LlmModelInfo[]> {
-    return Promise.resolve(this.options.models.map(model => modelInfo(provider, model)))
+  override async listModels(provider: string): Promise<readonly LlmModelInfo[]> {
+    return (await this.models()).map(model => modelInfo(provider, model))
   }
 
   override resolveModel(
@@ -122,7 +145,7 @@ export class CodexAppServerAdapter extends LlmAdapter {
     model: string,
     _signal?: AbortSignal,
   ): Promise<LlmResolvedModelInfo> {
-    const configured = this.options.models.find(candidate => candidate.id === model)
+    const configured = (this.liveModels ?? await this.models()).find(candidate => candidate.id === model)
     const fallback: CodexModel = {
       id: model,
       name: model,
@@ -169,7 +192,10 @@ export class CodexAppServerAdapter extends LlmAdapter {
       )
     }
     const hasImages = options.messages.some(message => contentHasImage(message.content))
-    const configuredModel = this.options.models.find(model => model.id === options.model)
+    const configuredModel = (this.liveModels ?? this.options.models).find(model => model.id === options.model)
+      ?? (hasImages && this.options.fetchModels !== undefined
+        ? (await this.models()).find(model => model.id === options.model)
+        : undefined)
     if (hasImages && configuredModel?.inputModalities.includes('image') !== true) {
       throw new LlmError(
         `Codex model "${options.model}" does not accept image input`,
