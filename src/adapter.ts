@@ -140,7 +140,7 @@ export class CodexAppServerAdapter extends LlmAdapter {
     return (await this.models()).map(model => modelInfo(provider, model))
   }
 
-  override resolveModel(
+  override async resolveModel(
     provider: string,
     model: string,
     _signal?: AbortSignal,
