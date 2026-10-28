@@ -326,11 +326,14 @@ export function apply(ctx: Context, config: Config): void {
   const reportCleanupError = (error: unknown): void => {
     ctx.logger.warn(`llm-codex-app-server: cached session cleanup failed: ${String(error)}`)
   }
+  const account = new NativeCodexAccount(spec => ctx.subprocess.spawn(codexSpawnSpec(spec)))
   const adapter = new DshCodexAdapter({
     provider: resolved.provider,
     displayName: resolved.displayName,
     modelProvider: resolved.modelProvider,
     models: resolved.models,
+    fetchModels: () => account.models(),
+    onModelDiscoveryError: error => ctx.logger.warn(`dsh-codex-native: model discovery failed: ${String(error)}`),
     maxRetries: resolved.maxRetries,
     maxRequestImageBytes: resolved.maxRequestImageBytes,
     maxCachedSessions: resolved.maxCachedSessions,
@@ -354,7 +357,6 @@ export function apply(ctx: Context, config: Config): void {
     registerCodexSkillTools(ctx, skills)
     ctx.effect(() => () => skills.dispose(), 'dsh-codex-native: close skill discovery processes')
   }
-  const account = new NativeCodexAccount(spec => ctx.subprocess.spawn(codexSpawnSpec(spec)))
   ctx.inject(['connection'], (scoped) => {
     scoped.effect(
       () => registerNativeCodexTransport(scoped.connection, account),
