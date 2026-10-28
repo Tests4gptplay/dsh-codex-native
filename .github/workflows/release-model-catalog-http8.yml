@@ -85,7 +85,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "build: packaged runtime for $TAG"
-          git tag -a "$TAG" -m "GPT-6.1 Sol model catalog"
+          git push origin HEAD:main
+          git tag -a "$TAG" -m "Live Codex App Server model catalog"
           git push origin "refs/tags/$TAG"
           (cd dist && sha256sum *.tgz source-manifest.json candidate-copy-audit.json > SHA256SUMS)
       - name: Publish regular GitHub Release with clean TGZ
