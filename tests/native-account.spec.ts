@@ -34,6 +34,20 @@ function mockOfficialCodex() {
         case 'account/rateLimits/read':
           result = { rateLimits: { primary: { usedPercent: 40 } } }
           break
+        case 'model/list':
+          result = (request.params as JsonObject).cursor === null
+            ? { data: [{
+              id: 'gpt-6.1-sol', displayName: 'GPT-6.1 Sol', description: 'Live model',
+              inputModalities: ['text', 'image'],
+              supportedReasoningEfforts: [{ reasoningEffort: 'low', description: 'Low' }, { reasoningEffort: 'high', description: 'High' }],
+              defaultReasoningEffort: 'low',
+            }], nextCursor: 'page-2' }
+            : { data: [{
+              id: 'gpt-6-astra', displayName: 'GPT-6 Astra', description: 'Live flagship',
+              inputModalities: ['text'], supportedReasoningEfforts: [{ reasoningEffort: 'ultra', description: 'Ultra' }],
+              defaultReasoningEffort: 'ultra',
+            }], nextCursor: null }
+          break
         case 'account/login/start':
           result = (request.params as JsonObject).type === 'chatgptDeviceCode'
             ? { loginId: 'native-device', verificationUrl: 'https://auth.openai.com/codex/device', userCode: 'ABCD-1234' }
@@ -68,6 +82,19 @@ describe('official Codex app-server account lifecycle', () => {
     expect(clients.flatMap(client => client.invocations)).toContain('account/read')
     expect(clients.flatMap(client => client.invocations)).toContain('account/rateLimits/read')
     expect(clients.every(client => client.terminated.mock.calls.length === 1)).toBe(true)
+    await manager.dispose()
+  })
+  it('reads all pages of the official live model catalog and closes the query process', async () => {
+    const client = mockOfficialCodex()
+    const manager = new NativeCodexAccount(() => client.handle)
+    const models = await manager.models()
+    expect(models.map(model => model.id)).toEqual(['gpt-6.1-sol', 'gpt-6-astra'])
+    expect(models[0]).toMatchObject({
+      name: 'GPT-6.1 Sol', inputModalities: ['text', 'image'],
+      reasoningEfforts: ['low', 'high'], defaultReasoningEffort: 'low',
+    })
+    expect(client.invocations.filter(method => method === 'model/list')).toHaveLength(2)
+    expect(client.terminated).toHaveBeenCalledOnce()
     await manager.dispose()
   })
   it.each(['browser', 'device'] as const)('delegates %s OAuth to official app-server', async mode => {
