@@ -1,0 +1,123 @@
+{
+  "environment": "Linux official DSH Host + frozen Native7 + handwritten synthetic upstream; no real Codex",
+  "packageSha256": "28ba1e9cfe142fba3fd59a31a7b5e4356bcb9a433b63d2b8ed8fb52da5131d94",
+  "actualHost": {
+    "turnStarts": 3,
+    "turnCompletions": 3,
+    "threadRequests": 1,
+    "providerChecks": [
+      {
+        "at": "2026-10-30T09:42:08.717Z",
+        "processProvider": "dsh-openai-http",
+        "threadProvider": "dsh-openai-http",
+        "allowed": true
+      },
+      {
+        "at": "2026-10-30T09:42:30.309Z",
+        "processProvider": "dsh-openai-http",
+        "threadProvider": "dsh-openai-http",
+        "allowed": true
+      },
+      {
+        "at": "2026-10-30T09:45:11.625Z",
+        "processProvider": "dsh-openai-http",
+        "threadProvider": "dsh-openai-http",
+        "allowed": true
+      }
+    ],
+    "diagnostics": [
+      {
+        "at": "2026-10-30T09:42:08.718Z",
+        "id": "A",
+        "channel": "official ctx.logger.exporter"
+      },
+      {
+        "at": "2026-10-30T09:45:11.627Z",
+        "id": "B",
+        "channel": "official ctx.logger.exporter"
+      }
+    ],
+    "selectedModelOverrides": [
+      {
+        "at": "2026-10-30T09:42:08.543Z",
+        "provider": "dsh-openai-http",
+        "selectedProviderOverrides": [
+          "model_provider=\"dsh-openai-http\""
+        ],
+        "skillBudgetOverrides": [
+          "skills.max_context_tokens=10001"
+        ]
+      }
+    ],
+    "threadParameterKeys": [
+      "model",
+      "modelProvider",
+      "cwd",
+      "multiAgentMode",
+      "ephemeral",
+      "historyMode",
+      "dynamicTools",
+      "experimentalRawEvents",
+      "serviceName"
+    ],
+    "baseInstructionsPresent": false
+  },
+  "componentSkills": {
+    "scope": "Actual NativeCodexSkills source with handwritten fake stdio; not actual Host GUI",
+    "searchReturned": 21,
+    "readLines": 1001,
+    "totalLines": 1101,
+    "nextOffset": 1002,
+    "contentsSha256": "0f77c05a2fc882c10450d366f64ab0121f7e4913c03a0b6b52bda8dbd4c3008c",
+    "discoveryExplicitBudget": 10001,
+    "discoveryProviderOverride": false,
+    "actualCodexExecuted": false,
+    "passed": true
+  },
+  "componentHostSkillAndImages": {
+    "scope": "Pure adapter protocol + actual official Host skill execute with synthetic skill service + actual image bridge with synthetic attachment port; no actualHost/Codex process",
+    "skill": {
+      "preservedSchema": true,
+      "preservedDescription": true,
+      "aliasAndCallId": true,
+      "HostSuccess": "Synthetic returned instructions",
+      "HostUnknownError": true,
+      "HostLookups": 2,
+      "namespaceAndOfferedMappingChecksRetained": true
+    },
+    "image": {
+      "roles": [
+        "assistant",
+        "developer",
+        "user"
+      ],
+      "orderPreserved": true,
+      "dataUrlPreserved": true,
+      "attachmentReadCount": 1
+    },
+    "passed": true
+  },
+  "componentCompaction": {
+    "chatBodyContainsWarning": false,
+    "finishReplayIdentityPreserved": true,
+    "PASS": true
+  },
+  "aggregateSummary": {
+    "sourcePass": 370,
+    "actualBinarySkipped": 2,
+    "rendererPass": 16,
+    "packagePass": 28
+  },
+  "provenance": [
+    {
+      "file": "WARNING-AAB-CHECKPOINT.json",
+      "sha256": "c38ce96565650427b81e9a73d5b3d8922ed610a3d32a62597ccffb56fd122a44"
+    },
+    {
+      "file": "PROPOSAL-TESTS.json",
+      "sha256": "c3842cdf0f47ecf7a3b756a9c2a2e04d9184121b5e4a3f0617127d42bada2dd3"
+    }
+  ],
+  "sourceCommit": "2debe255139ccf65a4dc0d2508d53aa6cfd480c6",
+  "format": "Public sanitized evidence extract; not raw logs"
+}

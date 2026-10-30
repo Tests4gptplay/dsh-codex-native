@@ -112,3 +112,6 @@ Native command/file approvals use the composed Host approval service with the re
 ## 候选7交付
 
 [安装与包校验](test-artifacts/INSTALL.md) · [验收与实机验证要求](docs/testing/ACCEPTANCE.md) · [变更](docs/testing/CHANGES.md)
+
+
+[查验具体用例、实际结果与公开净化证据](docs/testing/EVIDENCE.md)。
