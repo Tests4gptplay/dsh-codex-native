@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Codex Native",
-    "description": "将 Codex app-server 的动态模型目录、对话、工具与原生审批接入 DSH，提供 ChatGPT 登录和按需用量查询。"
+    "description": "使用 ChatGPT 账号在 DSH 中接入 Codex：选择模型与思考档位，进行图文对话、使用工具和技能，经审批执行本机任务，回答交互问题，压缩并续接长对话，查询额度和 Token 历史，并维护受支持的 Windows 截图辅助程序。"
   }
 }

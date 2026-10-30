@@ -1,0 +1,47 @@
+name: Publish approved Native 0.2.3
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-native-023.yml', 'scripts/package-native-023.py']
+permissions:
+  contents: read
+concurrency:
+  group: publish-native-023
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reproduce frozen reviewed package
+        run: python scripts/package-native-023.py
+      - name: Publish exact reviewed artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG=v0.2.3
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" > /dev/null 2>&1; then
+            echo 'Ref exists; refusing overwrite.'
+            exit 1
+          fi
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
+          gh release create "$TAG" dsh-codex-native-0.2.3.tgz verification.json SHA256SUMS --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'Codex Native 0.2.3 — complete user documentation' --notes-file RELEASE_NOTES.md --latest --prerelease=false
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-023-verified
+          path: |
+            dsh-codex-native-0.2.3.tgz
+            verification.json
+            SHA256SUMS

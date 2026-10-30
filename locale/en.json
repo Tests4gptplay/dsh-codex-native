@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Codex Native",
-    "description": "Connect Codex app-server models, conversation, tools and native approvals to DSH, with ChatGPT sign-in and on-demand usage queries."
+    "description": "Use your ChatGPT account to bring Codex models into DSH: choose models and thinking effort, chat with images, use tools and skills, approve local tasks, answer interactive questions, continue and compact long conversations, check quota and Token history, and maintain a supported Windows screenshot helper."
   }
 }

@@ -1,7 +1,7 @@
 {
   "name": "dsh-codex-native",
-  "version": "0.2.2",
-  "description": "Connect Codex app-server models, conversation, tools and native approvals to DSH, with ChatGPT sign-in and on-demand usage queries.",
+  "version": "0.2.3",
+  "description": "Use your ChatGPT account to bring Codex models into DSH: choose models and thinking effort, chat with images, use tools and skills, approve local tasks, answer interactive questions, continue and compact long conversations, check quota and Token history, and maintain a supported Windows screenshot helper.",
   "type": "module",
   "icon": "assets/chatgpt-auth.png",
   "repository": {
@@ -36,7 +36,8 @@
     "LICENSE",
     "locale/*.json",
     "assets/chatgpt-auth.png",
-    "assets/LOBE-ICONS-LICENSE.txt"
+    "assets/LOBE-ICONS-LICENSE.txt",
+    "RELEASE_NOTES.md"
   ],
   "scripts": {
     "build": "tsdown && tsc --project tsconfig.build.json --emitDeclarationOnly",
