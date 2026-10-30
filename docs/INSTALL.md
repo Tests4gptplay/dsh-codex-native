@@ -1,20 +1,60 @@
 # Install Codex Native / 安装 Codex Native
 
-## Desktop
+## Install or update
 
-Open **Plugins → Add plugin**, paste the fixed-version source below, and enable the plugin.
+Current version: **0.2.3**. The fixed tag and installation package include runtime files; no build is needed.
 
-打开 **插件 → 添加插件**，粘贴以下固定版本来源并启用：
+**First installation (Desktop):** Open **Plugins → Add plugin** in the sidebar (or **Install a third-party plugin** in the arrow menu). Paste the complete line below into **Package name or address**, click **Install**, check the version and click **Enable now**.
 
 ```text
-github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.10
+github:Tests4gptplay/dsh-codex-native#v0.2.3
 ```
 
-## Web
+**Updating:** Use the same dialog with the new versioned source above, verify the installed version and enable it. Retain existing settings and user files. If DSH reports that it is already installed or requires removal first, follow that message to remove only the plugin entry and install the new version; do not clear DSH data or manually delete plugin directories. Restart only when DSH asks you to; fully quit and reopen it, including the Desktop tray process.
+
+After enabling, sign in through the plugin settings if needed and select a model in DSH. Updating does not require clearing account storage.
+
+**Alternative package:** Paste this `.tgz` URL into the same **Package name or address** field, or download it and enter its full absolute path. No extraction is needed. The path must be on the computer running DSH.
+
+```text
+https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.3/dsh-codex-native-0.2.3.tgz
+```
+
+**Web:** Run this on the computer hosting the service. Stop the corresponding Web profile before updating and restart it after success. Web and Desktop installations are separate.
 
 ```sh
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.1-alpha.9-http.10'
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.3'
 ```
+
+Alternatively, replace the source in the command with the `.tgz` URL above or the downloaded file's absolute path.
+
+## 安装与升级
+
+当前版本：**0.2.3**。安装包与固定标签均已包含运行文件，无需编译。
+
+**首次安装（Desktop）：** 打开侧栏 **插件 → 添加插件**（箭头菜单的 **安装第三方插件** 也可进入），把下面一整行填入 **包名或地址**，点击 **安装**，核对版本后点击 **立即启用**。
+
+```text
+github:Tests4gptplay/dsh-codex-native#v0.2.3
+```
+
+**升级已有插件：** 同样填写上面的新版来源，成功后核对版本并启用；已有设置与用户文件保留。若宿主提示已安装或要求先卸载，再按提示仅卸载该插件条目并安装新版，不清除 DSH 数据或手工删除插件目录。是否需要重启以 DSH 提示为准；需要时完全退出并重新打开（Desktop 包括托盘）。
+
+启用后在插件设置中按需登录，并在 DSH 选择模型；升级不需要清除账号存储。
+
+**备用安装包：** 将下面的 `.tgz` 直链填入同一个 **包名或地址**；也可下载后填写文件的完整绝对路径，无需解压。该路径应属于运行 DSH 的电脑。
+
+```text
+https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.3/dsh-codex-native-0.2.3.tgz
+```
+
+**Web：** 在运行服务的环境中执行。升级前停止对应 Web profile，成功后重新启动；Web 与 Desktop 分别安装。
+
+```sh
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.3'
+```
+
+备用时将命令中的来源换成上面的 `.tgz` 直链或下载文件的完整绝对路径。
 
 ## Sign in and select a model / 登录与选择模型
 
@@ -42,11 +82,7 @@ The default `skillsMode: dsh` provides `codex_skill_search` and `codex_skill_rea
 
 `skillsMaxContextTokens` 默认为 `10000`；`skillsMode: native` 可切换至 Codex 原生技能目录。设置作用于本插件启动的进程。
 
-## Alternative package / 备用安装包
-
-Download the TGZ from the [Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.10), then enter its absolute path in **Add plugin**. `SHA256SUMS` records the package checksum.
-
-也可以从 [Release](https://github.com/Tests4gptplay/dsh-codex-native/releases/tag/v0.2.1-alpha.9-http.10) 下载 TGZ，在 **添加插件** 中输入其绝对路径。文件校验和见 `SHA256SUMS`。
+## Earlier integration notes / 历史集成说明
 
 Earlier alpha.9 source-host integration notes remain in the [engineering installation guide](INSTALL_PATCHED_HOST.md).
 

@@ -16,21 +16,33 @@
 - **使用熟悉的设置界面**：登录或退出账号，调整原生模型设置；中英文界面随 DSH 当前主题显示。
 - **维护受支持的 Windows 截图辅助程序**：查看排障指南和状态，修复受支持的已知辅助程序、释放选定的卡住进程或回滚。修复和中断均需确认。它辅助已有 Computer Use 环境，不是另一个桌面控制引擎，也不承诺修复所有截图问题。
 
-## 安装或升级
+## 安装与升级
 
-DSH Desktop 打开 **插件 → 添加插件**，粘贴以下固定版本安装包地址，然后启用插件：
+当前版本：**0.2.3**。安装包与固定标签均已包含运行文件，无需编译。
+
+**首次安装（Desktop）：** 打开侧栏 **插件 → 添加插件**（箭头菜单的 **安装第三方插件** 也可进入），把下面一整行填入 **包名或地址**，点击 **安装**，核对版本后点击 **立即启用**。
+
+```text
+github:Tests4gptplay/dsh-codex-native#v0.2.3
+```
+
+**升级已有插件：** 同样填写上面的新版来源，成功后核对版本并启用；已有设置与用户文件保留。若宿主提示已安装或要求先卸载，再按提示仅卸载该插件条目并安装新版，不清除 DSH 数据或手工删除插件目录。是否需要重启以 DSH 提示为准；需要时完全退出并重新打开（Desktop 包括托盘）。
+
+启用后在插件设置中按需登录，并在 DSH 选择模型；升级不需要清除账号存储。
+
+**备用安装包：** 将下面的 `.tgz` 直链填入同一个 **包名或地址**；也可下载后填写文件的完整绝对路径，无需解压。该路径应属于运行 DSH 的电脑。
 
 ```text
 https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.3/dsh-codex-native-0.2.3.tgz
 ```
 
-Web 版执行：
+**Web：** 在运行服务的环境中执行。升级前停止对应 Web profile，成功后重新启动；Web 与 Desktop 分别安装。
 
 ```sh
-dsh plugin --profile web add 'https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.3/dsh-codex-native-0.2.3.tgz'
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.3'
 ```
 
-安装包已包含预构建运行文件。升级后重启 DSH，已有配置和登录保留。首次使用时打开插件账号设置，按需登录 ChatGPT，再在 DSH 中选择 Codex 模型。可用模型与使用额度取决于账号本身。
+备用时将命令中的来源换成上面的 `.tgz` 直链或下载文件的完整绝对路径。
 
 ## 使用边界
 
