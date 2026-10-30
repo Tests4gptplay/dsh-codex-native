@@ -32,7 +32,7 @@ suite('official DSH 0.2.1 rendering contract with reported Codex events',()=>{
     blocks.forEach((block,index)=>chunks.push({type:'block-start',index,blockType:'codex-action'},{type:'block-end',index,block} as StreamChunk))
     chunks.push({type:'block-start',index:3,blockType:'text'},{type:'text-delta',index:3,text:'Actual answer survives.'},{type:'block-end',index:3,block:{type:'text',text:'Actual answer survives.'}})
     const visible: object[]=[]
-    for await(const c of presentForDsh((async function*(){yield* chunks})())){
+    for await(const c of presentForDsh((async function*(){yield* chunks})(), () => {})){
       if(c.type==='block-end')visible.push(c.block.type==='text'?{kind:'text',text:c.block.text}:{kind:'other',block:c.block})
     }
     const after=renderToStaticMarkup(createElement(AssistantMarkdown,{...props,blocks:visible}))

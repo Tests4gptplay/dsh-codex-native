@@ -2,21 +2,21 @@
 
 ## Core capabilities
 
-- Read Codex `model/list` dynamically and select models, input capabilities and reasoning efforts available to the current account in DSH.
-- Connect a main model through ChatGPT sign-in, DSH tools, Codex settings, and selectable/free-text question cards.
-- Query Token history and quota on demand, or clear the panel cache before querying again.
-- Use bundled Windows Computer Use guidance, status checks, known-helper repair, exact-process release and rollback. The Windows 10 repair targets the known `@oai/sky 0.7.13`; see operation guidance for signature changes and interruption confirmation.
-
+- **Dynamic model selection:** integrates Codex app-server as a DSH main-model provider and reads available models, input capabilities and reasoning efforts from the current account's `model/list`.
+- **Native tools and interaction:** connects DSH tools, Codex settings, selectable/free-text question cards, and native command/file approvals to one-time decisions in the active DSH session.
+- **Reliable history continuation:** preserves tool-call/result associations during replay; generated images are stored as attachments and restored from history after restart.
+- **Large-image handling:** Buffer-based encoding avoids call-stack errors from expanding large byte arrays. Extra JSON-RPC line limits and image-substitution budgets are disabled by default. An explicitly positive image budget can replace older images with text; Host and upstream limits still apply.
+- **Account and usage:** ChatGPT sign-in/sign-out, on-demand Token history/quota queries, and clearing the panel cache before querying again.
+- **Windows Computer Use maintenance:** bundled guidance, status checks, known-helper repair, exact-process release and rollback. The Windows 10 repair targets the known `@oai/sky 0.7.13` binary; see the operation guidance below for signature changes and interruption confirmation.
 
 **An OpenAI Codex app-server main-model integration for DeepSeek Harness.** Use ChatGPT sign-in, DSH tools, native Codex model settings and an on-demand Token usage history panel.
 
 [简体中文](README.zh.md) · [Releases](https://github.com/Tests4gptplay/dsh-codex-native/releases) · [Installation guide](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/INSTALL.md) · [Release verification](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/STATUS.md)
 
-## Test candidate progress
 
-[http.11 candidate4](https://github.com/Tests4gptplay/dsh-codex-native/tree/test/windows-native-20261030-candidate4) adds fixes for cold image-attachment restoration, long tool-call ID replay associations and native one-time approval bridging. Buffer-based image restoration avoids large-byte-array expansion stack errors; extra adapter image/line budgets default to disabled. Use that branch's test-artifacts for candidate installation; published-release installation remains below.
+This test candidate is 0.2.1-alpha.9-http.11-candidate.7. Use its accompanying frozen package and SHA-256 manifest; older tags below refer to historical releases.
 
-## Latest release — v0.2.1-alpha.9-http.10
+## Historical release — v0.2.1-alpha.9-http.10
 
 New Codex processes resolve the official npm `@openai/codex@latest` channel and download the platform runtime when needed. Existing processes keep running; subsequent processes use the updated executable. An unavailable update retains the usable runtime and logs the reason. Updates are demand-driven, with no background polling.
 
@@ -34,8 +34,8 @@ The full guide loads only with the Computer Use skill body or an explicit guide 
 - **Automatic chat replies:** submitted answers return to the active task and appear as ordinary user messages, with a single submission and no extra send step.
 - **Host version compatibility:** plugin peer dependencies use host-provided DSH modules without version-range gating.
 - **Direct HTTP connection:** the OpenAI route uses authenticated HTTP with existing ChatGPT sign-in, reducing reconnect waits after WebSocket interruptions.
-- **On-demand skill discovery:** DSH searches local and remote connector skills and reads selected instructions. Startup carries a compact discovery hint, with a 10,000-token skill budget.
-- **Session warning deduplication:** identical configuration, deprecation, and ordinary warnings appear once per session; changed notices and errors remain visible.
+- **On-demand skill discovery:** DSH searches local and remote connector skills and reads selected instructions. Startup carries a compact discovery hint. The skill budget follows the upstream configuration unless explicitly set.
+- **Session warning deduplication:** configuration, deprecation, and ordinary warnings are recorded once per session in Host diagnostic logs; changed notices and errors remain available there without entering model replies or compaction summaries.
 
 - **Context management:** Codex manages routine context compaction, with DSH's overflow recovery available for exceptional cases.
 - **Accurate usage accounting:** total token consumption is tracked independently from the latest active context-window sample; delayed reports are reconciled with completed responses.
@@ -62,7 +62,7 @@ The fixed tag includes prebuilt runtime files. Upgrades retain existing configur
 
 Version `0.2.1-alpha.9-http.10` provides `codex_skill_search` and `codex_skill_read` through DSH: models search summaries, then read the skills they need. The catalog covers local files and installed remote connector skills, preferring connectors for duplicate entries from the same plugin while retaining independently authored local skills. Both HTTP and local DSH models can use these tools.
 
-The default `skillsMode: dsh` replaces Codex's automatic skill catalog injection with these discovery tools. `skillsMaxContextTokens: 10000` selects the maximum native budget. Metadata is cached by working directory; use `refresh: true` after changing skills or plugins. `skillsMode: native` selects the native catalog. These settings apply to plugin-owned processes and retain existing authentication, connectors, and native tools.
+The default `skillsMode: dsh` replaces Codex's automatic skill catalog injection with these discovery tools. Set `skillsMaxContextTokens` to pass an explicit skill budget to Codex; leave it unset to use the upstream configuration. Metadata is cached by working directory; use `refresh: true` after changing skills or plugins. `skillsMode: native` selects the native catalog. These settings apply to plugin-owned processes and retain existing authentication, connectors, and native tools.
 
 ## Token usage panel
 
@@ -96,6 +96,19 @@ Windows 10 MTA-dispatch patch reference: [chen0416ccc-cpu/codex-windows-fast-pat
 
 Community integration based on MIT-licensed [wss534857356/dsh-plugin-codex](https://github.com/wss534857356/dsh-plugin-codex), baseline `f1f61886f4defcf7294d63c3641fba01ee554e7b`. Original attribution is retained in [LICENSE](LICENSE). DeepSeek Harness is developed by DeepSeek; Codex is developed by OpenAI. Public reset-date data is credited to **codex-reset.com**. The ChatGPT icon uses [Lobe Icons](https://github.com/lobehub/lobe-icons) artwork; its MIT license is bundled in `assets/LOBE-ICONS-LICENSE.txt`.
 
+### Bridge boundaries and optional resource budgets
+
+The adapter forwards the Host-selected model and image content; catalog modality metadata is advisory for the Host picker, not an additional admission gate. Model/provider/effort identifiers are opaque nonempty JSON strings, never interpolated into shell commands.
+
+`maxJsonRpcLineBytes` defaults to `0` (no extra adapter frame limit). `maxRequestImageBytes` defaults to `0` (no adapter replacement of historical images). Explicit positive values remain opt-in resource controls; the image budget may replace oldest images with reference text and is not lossless caching. Host attachment validation/normalization and native protocol constraints still apply. Existing explicit custom budgets remain explicit on upgrade.
+
+Native command/file approvals use the composed Host approval service with the real Agent and current turn. Only an offered one-time accept can be granted. Unavailable answerers, unsupported approval protocols, cancellation, and native withdrawal are distinguished from a human rejection. This does not claim that the entire DSH tool-guard pipeline ran for a native operation; native sandbox and permission policy remain in force. No session/permanent approval is fabricated.
+
 ## 支持项目 / Support
 
 [GitHub Sponsors](https://github.com/sponsors/Tests4gptplay) · [Ko-fi](https://ko-fi.com/kou392350) · [Patreon](https://www.patreon.com/cw/Kou848) · [爱发电 / Afdian](https://afdian.com/a/kkt_ifd1) · [支付宝 / Alipay](SPONSOR.md)
+
+
+## 候选7交付
+
+[安装与包校验](test-artifacts/INSTALL.md) · [验收与实机验证要求](docs/testing/ACCEPTANCE.md) · [变更](docs/testing/CHANGES.md)

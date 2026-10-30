@@ -1,3 +1,4 @@
+import { appServerCallId, appServerItemCallIds } from '../src/call-ids.ts'
 import { describe, expect, it } from 'vitest'
 import { AttachmentId } from '@deepseek-ai/dsh-attachment'
 import { MessageId, ToolCallId } from '@deepseek-ai/dsh-llm'
@@ -114,7 +115,7 @@ describe('App Server protocol translation', () => {
       { type: 'input_text', text: 'after' },
     ]
     expect(appServerHistory(options({ messages: [tool] }))).toEqual([{
-      type: 'function_call_output', call_id: 'call-images', output,
+      type: 'function_call_output', call_id: appServerCallId('call-images'), output,
     }])
     expect(appServerToolResults(options({ messages: [tool] }))).toEqual([{
       callId: 'call-images', output, success: false,
@@ -135,7 +136,7 @@ describe('App Server protocol translation', () => {
     })
     const modelHistory = [{
       type: 'function_call_output',
-      call_id: String(callId),
+      call_id: appServerCallId(String(callId)),
       output: [{ type: 'input_text', text: 'bounded omission' }],
     }]
 
@@ -147,9 +148,9 @@ describe('App Server protocol translation', () => {
   })
 
   it.each(['assistant', 'system'] as const)(
-    'rejects non-replayed %s image content',
+    'preserves non-replayed %s image content and role',
     (role) => {
-      expect(() => appServerHistory(options({
+      expect(appServerHistory(options({
         messages: [{
           id: MessageId(`${role}-image`),
           role,
@@ -158,7 +159,7 @@ describe('App Server protocol translation', () => {
             : { kind: 'system' },
           content: [{ type: 'image', attachment: image }],
         } as GenerateOptions['messages'][number]],
-      }))).toThrowError(expect.objectContaining({ code: 'UNSUPPORTED_CONTENT' }))
+      }))).toEqual([{type:'message',role:role === 'system' ? 'developer' : role,content:[{type:'input_image',image_url:marker}]}])
     },
   )
 
@@ -207,14 +208,14 @@ describe('App Server protocol translation', () => {
       },
       {
         type: 'function_call',
-        call_id: 'call-1',
+        call_id: appServerCallId('call-1'),
         namespace: 'deepseek_harness',
         name: 'read_file',
         arguments: '{"path":"a.txt"}',
       },
       {
         type: 'function_call_output',
-        call_id: 'call-1',
+        call_id: appServerCallId('call-1'),
         output: 'contents',
       },
     ])
@@ -236,7 +237,7 @@ describe('App Server protocol translation', () => {
       }],
     }))).toEqual([{
       type: 'function_call',
-      call_id: 'call-skill-1',
+      call_id: appServerCallId('call-skill-1'),
       namespace: 'deepseek_harness',
       name: 'harness_skill',
       arguments: '{"name":"domain-modeling"}',
@@ -343,7 +344,7 @@ describe('App Server protocol translation', () => {
       }],
     }))
 
-    expect(history).toEqual([pairedCall, pairedOutput])
+    expect(history).toEqual([pairedCall, pairedOutput].map(appServerItemCallIds))
   })
 
   it('removes legacy native compaction state from reconstructed replay', () => {
@@ -449,8 +450,8 @@ describe('App Server protocol translation', () => {
 
     expect(history).toEqual([
       latestReasoning,
-      call,
-      { type: 'function_call_output', call_id: String(callId), output: 'Harness result' },
+      appServerItemCallIds(call),
+      { type: 'function_call_output', call_id: appServerCallId(String(callId)), output: 'Harness result' },
       secondReasoning,
     ])
   })
@@ -458,7 +459,7 @@ describe('App Server protocol translation', () => {
   it('advances the synchronized history without replacing Harness tool results', () => {
     const history = [
       { type: 'reasoning', id: 'reasoning-1', encrypted_content: 'old' },
-      { type: 'function_call_output', call_id: 'call-1', output: 'Harness result' },
+      { type: 'function_call_output', call_id: appServerCallId('call-1'), output: 'Harness result' },
     ]
 
     expect(extendAppServerHistory(history, [
@@ -467,7 +468,7 @@ describe('App Server protocol translation', () => {
       { type: 'message', id: 'answer-1', role: 'assistant', content: [] },
     ])).toEqual([
       { type: 'reasoning', id: 'reasoning-1', encrypted_content: 'new' },
-      { type: 'function_call_output', call_id: 'call-1', output: 'Harness result' },
+      { type: 'function_call_output', call_id: appServerCallId('call-1'), output: 'Harness result' },
       { type: 'message', id: 'answer-1', role: 'assistant', content: [] },
     ])
   })
@@ -646,7 +647,7 @@ describe('App Server protocol translation', () => {
     expect(appServerDynamicTools(undefined)).toEqual([])
   })
 
-  it('labels and bounds the outer Harness skill loader by its current catalog', () => {
+  it('maps the outer Harness skill loader without duplicating Host catalog policy', () => {
     const skill = {
       name: 'skill',
       description: 'Load one Harness skill.',
@@ -661,19 +662,19 @@ describe('App Server protocol translation', () => {
     expect(appServerDynamicTools([skill], messages)).toEqual([{
       type: 'namespace',
       name: 'deepseek_harness',
-      description: 'Tools provided by the outer DeepSeek Harness agent loop. The harness_skill alias loads only names from the Harness session catalog; use Codex native skill support for Codex skills.',
+      description: 'Tools provided by the outer DeepSeek Harness agent loop.',
       tools: [{
         type: 'function',
         name: 'harness_skill',
-        description: 'Load one Harness skill. This App Server alias is only for the outer Harness session catalog, not Codex-native skills.',
+        description: 'Load one Harness skill.',
         inputSchema: {
           type: 'object',
-          properties: { name: { type: 'string', enum: ['domain-modeling', 'research'] } },
+          properties: { name: { type: 'string' } },
           required: ['name'],
         },
       }],
     }])
-    expect(appServerDynamicTools([skill])).toEqual([])
+    expect(appServerDynamicTools([skill])).toEqual(appServerDynamicTools([skill], messages))
 
     const event: Extract<CodexAppServerEvent, { kind: 'server-request' }> = {
       kind: 'server-request',
@@ -694,10 +695,10 @@ describe('App Server protocol translation', () => {
       name: 'skill',
       arguments: '{"name":"domain-modeling"}',
     })
-    expect(() => harnessToolCall({
+    expect(harnessToolCall({
       ...event,
       params: { ...event.params, arguments: { name: 'imagegen' } },
-    }, [skill], messages)).toThrowError(expect.objectContaining({ code: 'UNKNOWN_TOOL' }))
+    }, [skill], messages)).toEqual({ id:'call-skill-1',name:'skill',arguments:'{"name":"imagegen"}' })
     expect(() => harnessToolCall({
       ...event,
       params: { ...event.params, tool: 'skill' },
@@ -790,7 +791,7 @@ describe('App Server protocol translation', () => {
           type: 'codex-action',
           actionId: 'native-skill-1',
           actionType: 'item/tool/call',
-          phase: 'declined',
+          phase: 'failed',
         }),
       }),
     ]))
@@ -820,8 +821,8 @@ describe('App Server protocol translation', () => {
       },
     })).toThrowError(expect.objectContaining({
       code: CODEX_MODEL_CAPACITY_CODE,
-      failure: expect.objectContaining({
-        providerRetryAfterMs: CODEX_MODEL_CAPACITY_RETRY_AFTER_MS,
+      failure: expect.not.objectContaining({
+        providerRetryAfterMs: expect.anything(),
       }),
     }))
   })

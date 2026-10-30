@@ -1,4 +1,5 @@
 /** On-demand Codex skill discovery. Credentials and plugin connectivity remain owned by Codex. */
+import { abortable } from './abort.ts'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
@@ -120,7 +121,7 @@ export function searchNativeSkills(
   limit = 8,
 ) {
   if (!Number.isSafeInteger(offset) || offset < 0) throw new Error('offset must be a non-negative integer')
-  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 20) throw new Error('limit must be between 1 and 20')
+  if (!Number.isSafeInteger(limit) || limit < 1) throw new Error('limit must be a positive safe integer')
   const terms = query.toLocaleLowerCase().split(/\s+/u).filter(Boolean)
   const matches = catalog.skills
     .filter(skill => source === 'all' || skill.source === source)
@@ -148,7 +149,7 @@ interface Options {
   maxJsonRpcLineBytes: number
   maxStderrBytes: number
   disposeGraceMs: number
-  maxContextTokens: number
+  maxContextTokens?: number
 }
 
 /** Owns temporary discovery processes and a refreshable, last-workspace metadata cache. */
@@ -156,17 +157,20 @@ export class NativeCodexSkills {
   private cached: { cwd: string; catalog: SkillCatalog } | undefined
   private readonly active = new Set<() => Promise<void>>()
   private disposed = false
+  private readonly lifetime = new AbortController()
   constructor(private readonly options: Options) {}
 
   private async connection<T>(cwd: string, signal: AbortSignal, task: (request: Request) => Promise<T>): Promise<T> {
+    signal = AbortSignal.any([signal, this.lifetime.signal])
     signal.throwIfAborted()
     if (this.disposed) throw new Error('Codex skill discovery is disposed')
-    const child = await this.options.spawn({
+    const pending = Promise.resolve(this.options.spawn({
       argv: [...codexAppServerArgv(undefined, true, 'discovery', 'native', this.options.maxContextTokens),
         '-c', 'features.skip_host_skill_discovery=false', '-c', 'skills.include_instructions=false'],
-      cwd, env: this.options.env, graceMs: this.options.disposeGraceMs,
+      cwd, env: this.options.env, graceMs: this.options.disposeGraceMs, signal,
       stdio: { stdin: 'pipe', stdout: 'pipe', stderr: { maxBytes: this.options.maxStderrBytes } },
-    })
+    })).then(child => { if (signal.aborted) child.terminate(); return child })
+    const child = await abortable(pending, signal)
     if (this.disposed || signal.aborted) { child.terminate(); signal.throwIfAborted(); throw new Error('Codex skill discovery is disposed') }
     const diagnostics = connectCodexProcess(child, this.options.maxJsonRpcLineBytes)
     const rpc = diagnostics.rpc
@@ -175,7 +179,7 @@ export class NativeCodexSkills {
       rpc.dispose()
       diagnostics.markCleanup()
       child.terminate()
-      await child.waitForExit(AbortSignal.timeout(this.options.disposeGraceMs * 2)).catch(() => {})
+      await child.waitForExit(AbortSignal.timeout(Math.min(2_147_483_647, Math.max(1, this.options.disposeGraceMs * 2)))).catch(() => {})
       this.active.delete(close)
     })()
     this.active.add(close)
@@ -214,7 +218,7 @@ export class NativeCodexSkills {
 
   async read(cwd: string, id: string, signal: AbortSignal, offset = 1, limit = 400) {
     if (!Number.isSafeInteger(offset) || offset < 1) throw new Error('offset must be a positive line number')
-    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1000) throw new Error('limit must be between 1 and 1000')
+    if (!Number.isSafeInteger(limit) || limit < 1) throw new Error('limit must be a positive safe integer')
     const catalog = await this.catalog(cwd, signal)
     const skill = catalog.skills.find(skill => skill.id === id)
     if (!skill) throw new Error('Unknown skill id. Use codex_skill_search in this workspace first.')
@@ -244,6 +248,7 @@ export class NativeCodexSkills {
 
   async dispose(): Promise<void> {
     this.disposed = true
+    this.lifetime.abort(new Error('Codex skill discovery is disposed'))
     this.cached = undefined
     await Promise.all([...this.active].map(close => close()))
   }

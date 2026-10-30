@@ -9,8 +9,9 @@ import type {
   SubprocessHandle,
   SubprocessSpawnSpec,
 } from '@deepseek-ai/dsh-subprocess'
-import { SAFE_MODEL_ID } from './identifiers.ts'
+import { isNonEmptyIdentifier } from './identifiers.ts'
 import type { CodexQuestionHandler } from './user-questions.ts'
+import type { CodexNativeApprovals } from './native-approvals.ts'
 import { connectCodexProcess } from './process-connection.ts'
 import {
   ManagedCodexThread,
@@ -38,7 +39,7 @@ export interface CodexAppServerRequest {
   readonly model: string
   readonly modelProvider: string
   readonly reasoningEffort?: string
-  readonly system: string
+  readonly system?: string
   readonly history: readonly JsonValue[]
   readonly dynamicTools: readonly JsonValue[]
   /** Native Codex web-search policy for this process. */
@@ -53,7 +54,7 @@ export interface CodexAppServerThreadRequest {
   readonly sessionId?: string
   readonly model: string
   readonly modelProvider: string
-  readonly system: string
+  readonly system?: string
   readonly dynamicTools: readonly JsonValue[]
   /** Native Codex web-search policy for this process. */
   readonly webSearch?: CodexWebSearchMode
@@ -110,6 +111,7 @@ export interface CodexAppServerRunnerOptions {
   readonly skillsMode?: 'dsh' | 'native'
   readonly skillsMaxContextTokens?: number
   readonly questions?: CodexQuestionHandler
+  readonly approvals?: Pick<CodexNativeApprovals, 'resolve'>
 }
 
 /** Testable streaming process contract used by the adapter. */
@@ -136,7 +138,7 @@ export function codexAppServerArgv(
   imageGenerationEnabled = true,
   modelProvider = 'openai',
   skillsMode: 'dsh' | 'native' = 'native',
-  skillsMaxContextTokens = 10_000,
+  skillsMaxContextTokens?: number,
 ): string[] {
   return [
     process.execPath,
@@ -144,7 +146,7 @@ export function codexAppServerArgv(
     'app-server',
     '--stdio',
     ...(modelProvider === 'openai' ? ['-c', OPENAI_HTTP_CONFIG] : []),
-    '-c', `skills.max_context_tokens=${skillsMaxContextTokens}`,
+    ...(skillsMaxContextTokens === undefined ? [] : ['-c', `skills.max_context_tokens=${skillsMaxContextTokens}`]),
     ...(skillsMode === 'dsh' ? [
       '-c', 'skills.include_instructions=false',
       '-c', 'features.skip_host_skill_discovery=true',
@@ -229,12 +231,12 @@ function cleanupError(primary: LlmError | undefined, failures: readonly Error[])
 }
 
 function validateThreadRequest(request: CodexAppServerThreadRequest): void {
-  if (!SAFE_MODEL_ID.test(request.model)) {
-    throw new LlmError(`Codex model is not a safe identifier: ${JSON.stringify(request.model)}`, 'INVALID_MODEL')
+  if (!isNonEmptyIdentifier(request.model)) {
+    throw new LlmError(`Codex model must be a non-empty string: ${JSON.stringify(request.model)}`, 'INVALID_MODEL')
   }
-  if (!SAFE_MODEL_ID.test(request.modelProvider)) {
+  if (!isNonEmptyIdentifier(request.modelProvider)) {
     throw new LlmError(
-      `Codex model provider is not a safe identifier: ${JSON.stringify(request.modelProvider)}`,
+      `Codex model provider must be a non-empty string: ${JSON.stringify(request.modelProvider)}`,
       'INVALID_PROVIDER',
     )
   }
@@ -291,8 +293,9 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
     try {
       if (request.signal?.aborted) throw request.signal.reason
       child = await this.options.spawn({
-        argv: codexAppServerArgv(request.webSearch, request.imageGenerationEnabled, request.modelProvider,
+        argv: [...codexAppServerArgv(request.webSearch, request.imageGenerationEnabled, request.modelProvider,
           this.options.skillsMode, this.options.skillsMaxContextTokens),
+          '-c', `model_provider=${JSON.stringify(request.modelProvider === 'openai' ? OPENAI_HTTP_PROVIDER : request.modelProvider)}`],
         cwd: workdir,
         stdio: {
           stdin: 'pipe',
@@ -327,15 +330,10 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
         model: request.model,
         modelProvider: request.modelProvider === 'openai' ? OPENAI_HTTP_PROVIDER : request.modelProvider,
         cwd: workdir,
-        baseInstructions: request.system,
-        developerInstructions: '',
-        personality: 'none',
+        ...(request.system === undefined ? {} : { baseInstructions: request.system }),
         multiAgentMode: null,
         ephemeral: true,
         historyMode: 'legacy',
-        environments: [],
-        runtimeWorkspaceRoots: [],
-        selectedCapabilityRoots: [],
         dynamicTools: request.dynamicTools,
         experimentalRawEvents: true,
         serviceName: 'deepseek-harness',
@@ -361,6 +359,7 @@ export class CodexAppServerRunner implements CodexAppServerRunnerPort {
         threadId: id,
         ...(request.sessionId === undefined ? {} : { sessionId: request.sessionId }),
         ...(this.options.questions === undefined ? {} : { questions: this.options.questions }),
+        ...(this.options.approvals === undefined ? {} : { approvals: this.options.approvals }),
         abort: (reason: unknown): void => {
           if (!lifetime.signal.aborted) lifetime.abort(reason)
         },

@@ -300,3 +300,81 @@ describe('NativeImageBridge', () => {
     expect(store.readImage).toHaveBeenCalledWith(IMAGE_REF, controller.signal)
   })
 })
+
+describe('constant-stack image base64 validation', () => {
+  // This is a codec boundary test: the store is deliberately synthetic, not a PNG decoder.
+  const maximum = 5 * 1024 * 1024
+  const bytes = Buffer.alloc(maximum, 97)
+  const canonical = bytes.toString('base64')
+
+  it('accepts the existing exact byte limit and preserves bytes through cold replay', async () => {
+    const ref = { ...IMAGE_REF, bytes: maximum }
+    const store = imageStore()
+    store.saveImage = vi.fn(async input => {
+      expect(Buffer.from(input.data).equals(bytes)).toBe(true)
+      return ref
+    })
+    store.readImage = vi.fn(async () => ({ ref, data: bytes }))
+    const bridge = new NativeImageBridge(() => store)
+    const completed = await bridge.externalize(imageCompleted(canonical))
+    expect(completed.images).toEqual([ref])
+    const raw = rawImageOutput()
+    if (raw.kind !== 'notification') throw new Error('expected notification')
+    const rawItem = raw.params.item as { output: { type: string; image_url?: string }[] }
+    rawItem.output[1]!.image_url = `data:image/png;base64,${canonical}`
+    const externalized = await bridge.externalize(raw)
+    expect(externalized.images).toEqual([])
+    expect(store.saveImage).toHaveBeenCalledOnce()
+    if (externalized.event.kind !== 'notification') throw new Error('expected notification')
+    const fresh = new NativeImageBridge(() => store)
+    const hydrated = await fresh.hydrateHistory([externalized.event.params.item as JsonValue])
+    expect(hydrated).toMatchObject([{ output: [{ type: 'input_text' }, { image_url: `data:image/png;base64,${canonical}` }] }])
+  })
+
+  it.each([
+    ['invalid final character', () => canonical.slice(0, -1) + '!'],
+    ['embedded whitespace', () => canonical.slice(0, 4096) + '\n' + canonical.slice(4097)],
+    ['embedded non-ASCII', () => canonical.slice(0, 4096) + '界' + canonical.slice(4097)],
+    ['premature padding', () => canonical.slice(0, 4096) + '=' + canonical.slice(4097)],
+    ['noncanonical pad bits', () => canonical.slice(0, -2) + 'F='],
+    ['missing padding', () => canonical.slice(0, -1)],
+    ['extra padding', () => canonical + '===='],
+  ])('rejects large %s before storing', async (_name, input) => {
+    const store = imageStore()
+    const bridge = new NativeImageBridge(() => store)
+    await expect(bridge.externalize(imageCompleted(input()))).rejects.toMatchObject({ code: 'MALFORMED_RESPONSE' })
+    expect(store.saveImage).not.toHaveBeenCalled()
+  })
+
+  it('preserves all canonical padding forms and the existing one-byte-over-limit rejection', async () => {
+    for (const data of [Buffer.from([0]), Buffer.from([0, 1]), Buffer.from([0, 1, 255]), Buffer.from([0, 1, 2, 255])]) {
+      const store = imageStore()
+      store.saveImage = vi.fn(async input => {
+        expect(Buffer.from(input.data).equals(data)).toBe(true)
+        return { ...IMAGE_REF, bytes: data.length }
+      })
+      await new NativeImageBridge(() => store).externalize(imageCompleted(data.toString('base64')))
+      expect(store.saveImage).toHaveBeenCalledOnce()
+    }
+    const store = imageStore()
+    await expect(new NativeImageBridge(() => store).externalize(imageCompleted(Buffer.alloc(maximum + 1).toString('base64'))))
+      .rejects.toMatchObject({ code: 'MALFORMED_RESPONSE' })
+    expect(store.saveImage).not.toHaveBeenCalled()
+  })
+})
+
+describe('image history budgets are explicit opt-in policy', () => {
+  it('preserves every image by default even above the previous 20 MiB aggregate', () => {
+    const history: JsonValue[] = Array.from({ length: 6 }, (_, i) => ({ type: 'message', role: 'user', content: [
+      { type: 'input_text', text: `original ${i}` },
+      { type: 'input_image', image_url: imageAttachmentMarker({ ...IMAGE_REF, attachmentId: AttachmentId('qa-budget-'+i), bytes: 4 * 1024 * 1024 }) },
+    ] }))
+    const before = JSON.stringify(history)
+    expect(boundRequestImageHistory(history, 0)).toEqual(history)
+    expect(JSON.stringify(history)).toBe(before)
+    const bounded = boundRequestImageHistory(history, 6 * 1024 * 1024)
+    expect(JSON.stringify(bounded)).toContain('qa-budget-5')
+    expect(JSON.stringify(bounded)).not.toBe(before)
+    expect(JSON.stringify(history)).toBe(before)
+  })
+})

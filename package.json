@@ -1,7 +1,7 @@
 {
   "name": "dsh-codex-native",
-  "version": "0.2.1-alpha.9-http.10",
-  "description": "Connect Codex app-server models, native tools and question cards to DSH, with ChatGPT sign-in and on-demand usage queries.",
+  "version": "0.2.1-alpha.9-http.11-candidate.7",
+  "description": "Connect Codex app-server models, conversation, tools and native approvals to DSH, with ChatGPT sign-in and on-demand usage queries.",
   "type": "module",
   "icon": "assets/chatgpt-auth.png",
   "repository": {
@@ -92,7 +92,8 @@
     "@deepseek-ai/dsh-tools": "*",
     "react": "*",
     "@deepseek-ai/dsh-client-connection": "*",
-    "@deepseek-ai/dsh-user-questions": "*"
+    "@deepseek-ai/dsh-user-questions": "*",
+    "@deepseek-ai/dsh-user-approval": "*"
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.2",

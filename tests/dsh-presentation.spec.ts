@@ -6,10 +6,12 @@ import { CodexAppServerAdapter } from '../src/adapter.ts'
 import { DshCodexAdapter } from '../src/dsh-adapter.ts'
 
 const warning = 'Skill descriptions were shortened to fit the skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.'
+const diagnostics = vi.fn()
 const adapters: DshCodexAdapter[] = []
 
 afterEach(async () => {
   vi.restoreAllMocks()
+  diagnostics.mockClear()
   await Promise.all(adapters.splice(0).map(adapter => adapter.dispose()))
 })
 
@@ -20,7 +22,7 @@ function adapter(): DshCodexAdapter {
     maxCachedSessions: 8, sessionIdleTimeoutMs: 600_000,
     onCleanupError: vi.fn(), resolveAttachments: () => undefined,
     runner: { open: vi.fn(), stream: vi.fn() },
-  })
+  }, diagnostics)
   adapters.push(value)
   return value
 }
@@ -65,28 +67,29 @@ describe('session-scoped native notices', () => {
   it('shows an unchanged warning once across turns and retries, even with new action ids', async () => {
     const native = nativeSource()
     const value = adapter()
-    expect(text(await collect(value, request('session-a')))).toContain(warning)
+    expect(text(await collect(value, request('session-a')))).toBe('Reply'); expect(diagnostics).toHaveBeenLastCalledWith(`Codex: ${warning}`)
     native.mockImplementation(async function* () { yield* source(warning, 'warning', 'notice-2') })
     const repeated = await collect(value, request('session-a'))
     expect(text(repeated)).toBe('Reply')
     expect(repeated.filter(chunk => chunk.type === 'block-start').map(chunk => chunk.index)).toEqual([0])
     expect(repeated.at(-1)).toEqual(source().at(-1))
+    expect(diagnostics).toHaveBeenCalledTimes(1)
   })
 
   it('keeps new warnings and another session visible', async () => {
     const native = nativeSource()
     const value = adapter()
     await collect(value, request('session-a'))
-    expect(text(await collect(value, request('session-b')))).toContain(warning)
+    expect(text(await collect(value, request('session-b')))).toBe('Reply'); expect(diagnostics).toHaveBeenLastCalledWith(`Codex: ${warning}`)
     native.mockImplementation(async function* () { yield* source('A different configuration warning', 'configWarning') })
-    expect(text(await collect(value, request('session-a')))).toContain('A different configuration warning')
+    expect(text(await collect(value, request('session-a')))).toBe('Reply'); expect(diagnostics).toHaveBeenLastCalledWith('Codex: A different configuration warning')
   })
 
   it.each(['error', 'guardianWarning'])('does not suppress repeated %s notices', async actionType => {
     nativeSource().mockImplementation(async function* () { yield* source(warning, actionType) })
     const value = adapter()
-    expect(text(await collect(value, request('session-a')))).toContain(warning)
-    expect(text(await collect(value, request('session-a')))).toContain(warning)
+    expect(text(await collect(value, request('session-a')))).toBe('Reply'); expect(diagnostics).toHaveBeenLastCalledWith(`Codex: ${warning}`)
+    expect(text(await collect(value, request('session-a')))).toBe('Reply'); expect(diagnostics).toHaveBeenLastCalledWith(`Codex: ${warning}`)
   })
 
   it.each(['', 'Previous reply'])('restores a displayed notice from assistant history with suffix %j', async suffix => {
@@ -98,6 +101,7 @@ describe('session-scoped native notices', () => {
       content: [{ type: 'text', text: `Codex: ${warning}\n\n${suffix}` }],
     }]
     expect(text(await collect(value, request('session-a', messages)))).toBe('Reply')
+    expect(diagnostics).not.toHaveBeenCalled()
   })
 
   it('accepts history messages without an optional source', async () => {
@@ -107,7 +111,8 @@ describe('session-scoped native notices', () => {
       id: MessageId('source-free-history'), role: 'assistant',
       content: [{ type: 'text', text: 'Previous reply' }],
     }]
-    expect(text(await collect(value, request('session-a', messages)))).toContain(warning)
+    expect(text(await collect(value, request('session-a', messages)))).toBe('Reply')
+    expect(diagnostics).toHaveBeenLastCalledWith(`Codex: ${warning}`)
   })
 
   it('releases session state on disposal and does not share anonymous requests', async () => {
@@ -115,15 +120,15 @@ describe('session-scoped native notices', () => {
     const value = adapter()
     await collect(value, request('session-a'))
     await value.disposeSession('session-a')
-    expect(text(await collect(value, request('session-a')))).toContain(warning)
-    expect(text(await collect(value, request()))).toContain(warning)
-    expect(text(await collect(value, request()))).toContain(warning)
+    expect(text(await collect(value, request('session-a')))).toBe('Reply'); expect(diagnostics).toHaveBeenLastCalledWith(`Codex: ${warning}`)
+    expect(text(await collect(value, request()))).toBe('Reply'); expect(diagnostics).toHaveBeenLastCalledWith(`Codex: ${warning}`)
+    expect(text(await collect(value, request()))).toBe('Reply'); expect(diagnostics).toHaveBeenLastCalledWith(`Codex: ${warning}`)
   })
 
   it('does not let an internal compaction request hide a notice from the conversation', async () => {
     nativeSource()
     const value = adapter()
     await collect(value, { ...request('session-a'), purpose: 'compaction' })
-    expect(text(await collect(value, request('session-a')))).toContain(warning)
+    expect(text(await collect(value, request('session-a')))).toBe('Reply'); expect(diagnostics).toHaveBeenLastCalledWith(`Codex: ${warning}`)
   })
 })

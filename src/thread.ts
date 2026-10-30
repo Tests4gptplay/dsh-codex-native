@@ -5,10 +5,12 @@ import type {
   CodexAppServerThreadPort,
   CodexAppServerTurnRequest,
 } from './runner.ts'
-import { HARNESS_TOOL_NAMESPACE, SAFE_REASONING_EFFORT } from './identifiers.ts'
+import { HARNESS_TOOL_NAMESPACE, isNonEmptyIdentifier } from './identifiers.ts'
 import { JsonRpcConnection, jsonValue, object } from './wire.ts'
 import type { CodexAppServerEvent } from './wire.ts'
 import type { CodexQuestionHandler } from './user-questions.ts'
+import type { CodexNativeApprovals } from './native-approvals.ts'
+import type { JsonObject } from './wire.ts'
 
 const TIMEOUT_REASON = Symbol('codex-app-server-turn-timeout')
 
@@ -27,6 +29,7 @@ export interface ManagedCodexThreadOptions {
   readonly threadId: string
   readonly sessionId?: string
   readonly questions?: CodexQuestionHandler
+  readonly approvals?: Pick<CodexNativeApprovals, 'resolve'>
   readonly startedEvent: Extract<CodexAppServerEvent, { kind: 'thread-started' }>
   readonly abort: (reason: unknown) => void
   readonly dispose: () => Promise<void>
@@ -52,9 +55,9 @@ export function operationFailure(
 
 /** Validate the configurable fields sent at a turn boundary. */
 export function validateTurnRequest(request: CodexAppServerTurnRequest): void {
-  if (request.reasoningEffort !== undefined && !SAFE_REASONING_EFFORT.test(request.reasoningEffort)) {
+  if (request.reasoningEffort !== undefined && !isNonEmptyIdentifier(request.reasoningEffort)) {
     throw new LlmError(
-      `Codex reasoning effort is not a safe identifier: ${JSON.stringify(request.reasoningEffort)}`,
+      `Codex reasoning effort must be a non-empty string: ${JSON.stringify(request.reasoningEffort)}`,
       'UNSUPPORTED_REASONING_EFFORT',
     )
   }
@@ -105,16 +108,37 @@ async function resolveServerRequest(
   event: Extract<CodexAppServerEvent, { kind: 'server-request' }>,
   options: ManagedCodexThreadOptions,
   signal: AbortSignal,
+  turnId: string,
+  operation?: JsonObject,
 ): Promise<Extract<CodexAppServerEvent, { kind: 'server-request' }>> {
   switch (event.method) {
     case 'item/commandExecution/requestApproval':
-    case 'item/fileChange/requestApproval':
-      await connection.respond(event.id, { decision: 'decline' })
-      return { ...event, resolution: 'declined' }
+    case 'item/fileChange/requestApproval': {
+      if (options.approvals === undefined) {
+        const message = 'The composed DSH Host approval bridge is unavailable; this was not a user rejection.'
+        await connection.respondError(event.id, -32_001, message)
+        return { ...event, resolution: 'rejected', resolutionMessage: message }
+      }
+      const result = await options.approvals.resolve({ method: event.method, params: event.params }, {
+        threadId: options.threadId, turnId, signal,
+        ...(options.sessionId === undefined ? {} : { sessionId: options.sessionId }),
+        ...(operation === undefined ? {} : { operation }),
+      })
+      signal.throwIfAborted()
+      if (result.decision === undefined) {
+        await connection.respondError(event.id, -32_001, result.diagnostic ?? 'No supported one-time approval decision is available')
+      } else {
+        await connection.respond(event.id, { decision: result.decision })
+      }
+      return { ...event, resolution: result.resolution,
+        ...(result.diagnostic === undefined ? {} : { resolutionMessage: result.diagnostic }) }
+    }
     case 'applyPatchApproval':
-    case 'execCommandApproval':
-      await connection.respond(event.id, { decision: { denied: { rejection: 'Harness did not approve this Codex action.' } } })
-      return { ...event, resolution: 'declined' }
+    case 'execCommandApproval': {
+      const message = 'This legacy native approval protocol has no confirmed DSH Host mapping.'
+      await connection.respondError(event.id, -32_001, message)
+      return { ...event, resolution: 'rejected', resolutionMessage: message }
+    }
     case 'item/tool/requestUserInput': {
       try {
         if (options.questions === undefined) throw new Error('DSH user-question handler is unavailable')
@@ -128,9 +152,11 @@ async function resolveServerRequest(
         return { ...event, resolution: 'rejected' }
       }
     }
-    case 'mcpServer/elicitation/request':
-      await connection.respond(event.id, { action: 'cancel', content: null, _meta: null })
-      return { ...event, resolution: 'declined' }
+    case 'mcpServer/elicitation/request': {
+      const message = 'The DSH Host has no confirmed native MCP form-elicitation bridge; this was not a user rejection.'
+      await connection.respondError(event.id, -32_001, message)
+      return { ...event, resolution: 'rejected', resolutionMessage: message }
+    }
     case 'currentTime/read':
       await connection.respond(event.id, { currentTimeAt: Math.floor(Date.now() / 1_000) })
       return { ...event, resolution: 'answered' }
@@ -145,6 +171,7 @@ export class ManagedCodexThread implements CodexAppServerThreadPort {
   private state: ThreadState = { kind: 'idle' }
   private active = false
   private announced = false
+  private readonly operations = new Map<string, JsonObject>()
 
   constructor(private readonly options: ManagedCodexThreadOptions) {}
 
@@ -196,6 +223,8 @@ export class ManagedCodexThread implements CodexAppServerThreadPort {
         if (next.done) throw new LlmError('Codex App Server event stream ended before the turn', 'TRANSPORT')
         const event = next.value
         if (event.kind === 'server-request') {
+          const nativeSignal = this.options.connection.serverRequestSignal(event.id)
+          if (nativeSignal.aborted) { this.options.connection.forgetServerRequest(event.id); continue }
           if (event.method === 'item/tool/call'
             && event.params.namespace === HARNESS_TOOL_NAMESPACE) {
             this.assertToolRequest(event, turnId)
@@ -204,10 +233,27 @@ export class ManagedCodexThread implements CodexAppServerThreadPort {
             yield event
             return
           }
-          yield await resolveServerRequest(this.options.connection, event, this.options,
-            request.signal === undefined ? this.options.connection.signal
-              : AbortSignal.any([this.options.connection.signal, request.signal]))
+          try {
+            const signals = [this.options.connection.signal, nativeSignal]
+            if (request.signal !== undefined) signals.push(request.signal)
+            const operation = typeof event.params.itemId === 'string' ? this.operations.get(event.params.itemId) : undefined
+            yield await resolveServerRequest(this.options.connection, event, this.options,
+              AbortSignal.any(signals), turnId, operation)
+          } catch (error) {
+            if (!nativeSignal.aborted || this.options.connection.signal.aborted || request.signal?.aborted) throw error
+            // A resolved/withdrawn native RPC must never receive a late approval.
+            yield { ...event, resolution: 'rejected', resolutionMessage: 'Native request was withdrawn before a Host decision.' }
+          } finally {
+            this.options.connection.forgetServerRequest(event.id)
+          }
           continue
+        }
+        if (event.kind === 'notification' && ['item/started', 'item/updated', 'item/completed'].includes(event.method)
+          && event.params.threadId === this.threadId && event.params.turnId === turnId) {
+          const action = object(event.params.item, 'native action item')
+          if (typeof action.id === 'string' && (action.type === 'commandExecution' || action.type === 'fileChange')) {
+            this.operations.set(action.id, object(jsonValue(action, 'native operation'), 'native operation'))
+          }
         }
         if (event.kind === 'notification' && event.method === 'item/completed') {
           const item = object(event.params.item, 'completed item')
@@ -217,12 +263,15 @@ export class ManagedCodexThread implements CodexAppServerThreadPort {
         }
         if (event.kind === 'notification' && event.method === 'turn/completed') {
           const completed = object(event.params.turn, 'turn/completed turn')
-          if (completed.id === turnId) {
+          if (event.params.threadId === this.threadId && completed.id === turnId) {
             this.state = { kind: 'idle' }
+            this.operations.clear()
             retained = true
             yield event
             return
           }
+          // A different native/subagent turn must not terminate this Harness step.
+          continue
         }
         yield event
       }
@@ -246,6 +295,7 @@ export class ManagedCodexThread implements CodexAppServerThreadPort {
 
   private async beginOrResume(request: CodexAppServerTurnRequest): Promise<void> {
     if (this.state.kind === 'idle') {
+      this.operations.clear()
       if (request.toolResult !== undefined) {
         throw new LlmError('an idle Codex thread cannot accept a tool result', 'INVALID_CONTINUATION')
       }
@@ -307,7 +357,7 @@ export class ManagedCodexThread implements CodexAppServerThreadPort {
   }
 
   private assertToolRequest(event: PendingToolRequest, turnId: string): void {
-    if (event.params.turnId !== turnId
+    if (event.params.threadId !== this.threadId || event.params.turnId !== turnId
       || typeof event.params.callId !== 'string'
       || event.params.callId.length === 0) {
       throw new LlmError('Codex App Server returned an invalid dynamic-tool callback', 'MALFORMED_RESPONSE')
@@ -316,6 +366,7 @@ export class ManagedCodexThread implements CodexAppServerThreadPort {
 
   dispose(): Promise<void> {
     this.state = { kind: 'disposed' }
+    this.operations.clear()
     return this.options.dispose()
   }
 }

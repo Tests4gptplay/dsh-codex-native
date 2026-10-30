@@ -1,7 +1,8 @@
-/** CLI-safe Codex route identifiers shared by configuration and dispatch. */
+/** JSON protocol identifiers are opaque strings, not shell fragments. */
 
-export const SAFE_MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/u
-export const SAFE_REASONING_EFFORT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$/u
+export function isNonEmptyIdentifier(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
+}
 
 /** App Server namespace whose callbacks are owned by the outer Harness loop. */
 export const HARNESS_TOOL_NAMESPACE = 'deepseek_harness'

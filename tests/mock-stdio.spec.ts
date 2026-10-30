@@ -15,7 +15,7 @@ async function execute(mode: 'answer' | 'error' | 'exit-during-turn'): Promise<S
     // Dependency injection is confined to this TEST. No mock selector enters the shipped plugin.
     spawn:spec=>ctx.subprocess.spawn({...spec,argv:[process.execPath,fileURLToPath(new URL('./fixtures/mock-app-server.mjs',import.meta.url))],env:{...spec.env,TEST_CODEX_SCENARIO:mode}}),
   })
-  const adapter=new DshCodexAdapter({provider:'codex-local',displayName:'test',modelProvider:'openai',models:[{id:'fixture-model',name:'test',inputModalities:['text'],reasoningEfforts:[]}],maxRetries:0,maxRequestImageBytes:1048576,maxCachedSessions:1,sessionIdleTimeoutMs:600000,onCleanupError:()=>{},resolveAttachments:()=>undefined,runner})
+  const adapter=new DshCodexAdapter({provider:'codex-local',displayName:'test',modelProvider:'openai',models:[{id:'fixture-model',name:'test',inputModalities:['text'],reasoningEfforts:[]}],maxRetries:0,maxRequestImageBytes:1048576,maxCachedSessions:1,sessionIdleTimeoutMs:600000,onCleanupError:()=>{},resolveAttachments:()=>undefined,runner}, () => {})
   const chunks: StreamChunk[]=[]
   try{
     for await(const c of adapter.stream({provider:'codex-local',model:'fixture-model',messages:[{id:MessageId('test-user'),role:'user',source:{kind:'user'},content:[{type:'text',text:'fixture'}]}]}))chunks.push(c)

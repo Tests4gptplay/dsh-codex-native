@@ -4,6 +4,7 @@ import { MessageId, ReasoningEffortId, ToolCallId, offloadedImageText } from '@d
 import type { GenerateOptions, Message, StreamChunk } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { CodexAppServerAdapter } from '../src/adapter.ts'
+import { LlmError } from '@deepseek-ai/dsh-llm'
 import type { CodexModel } from '../src/adapter.ts'
 import type { CodexImageStorePort } from '../src/images.ts'
 import {
@@ -502,19 +503,20 @@ describe('CodexAppServerAdapter', () => {
     expect(store.readImage).toHaveBeenCalledWith(second, undefined)
   })
 
-  it('rejects image input for an uncatalogued text-only route before opening App Server', async () => {
+  it('forwards image input for an uncatalogued route instead of inventing admission policy', async () => {
     const store = inputImageStore()
-    const fixture = adapter([], () => store)
+    const fixture = adapter(answerEvents('uncatalogued', 'provider accepted'), () => store)
     const base = request()
-    await expect(collect(fixture.adapter, request({
+    const chunks = await collect(fixture.adapter, request({
       model: 'uncatalogued',
       messages: [{
         ...base.messages[0]!,
         content: [{ type: 'image', attachment: INPUT_IMAGE_REF }],
       }],
-    }))).rejects.toMatchObject({ code: 'UNSUPPORTED_CONTENT' })
-    expect(fixture.stream).not.toHaveBeenCalled()
-    expect(store.readImage).not.toHaveBeenCalled()
+    }))
+    expect(chunks.some(chunk => chunk.type === 'finish')).toBe(true)
+    expect(fixture.stream).toHaveBeenCalledOnce()
+    expect(store.readImage).toHaveBeenCalledOnce()
   })
 
   it('publishes native generated images without retaining their base64 in blocks or replay state', async () => {
@@ -646,6 +648,21 @@ describe('CodexAppServerAdapter', () => {
       input: [{ type: 'text', text: 'follow up', text_elements: [] }],
     })
     expect(secondChunks.at(-1)).toMatchObject({ type: 'finish', reason: { kind: 'stop' } })
+    await cached.adapter.dispose()
+  })
+
+  it.each(['model', 'effort'] as const)('rebuilds retained session for actual %s setting changes without erasing history', async setting => {
+    const cached = cachedAdapter([answerEvents('1','first answer'),answerEvents('2','second answer')])
+    const firstRequest=request({sessionId:SessionId('route-setting')})
+    const chunks=await collect(cached.adapter,firstRequest)
+    const answer:Message={id:MessageId('route-answer'),role:'assistant',source:{kind:'model',provider:'codex-local',model:'gpt-5.6-sol',replayState:replayState(chunks)},content:[{type:'text',text:'first answer'}]}
+    const next:Message={id:MessageId('route-next'),role:'user',source:{kind:'user'},content:[{type:'text',text:'continue history'}]}
+    await collect(cached.adapter,request({sessionId:SessionId('route-setting'),messages:[...firstRequest.messages,answer,next],...(setting==='model'?{model:'qa-model-changed'}:{reasoningEffort:ReasoningEffortId('high')})}))
+    expect(cached.open).toHaveBeenCalledTimes(2)
+    expect(cached.thread.dispose).toHaveBeenCalledOnce()
+    expect(cached.requests[1].injectedItems).toEqual(expect.arrayContaining([expect.objectContaining({role:'assistant'})]))
+    if(setting==='model')expect(cached.open.mock.calls[1][0].model).toBe('qa-model-changed')
+    else expect(cached.requests[1].reasoningEffort).toBe('high')
     await cached.adapter.dispose()
   })
 
@@ -1217,5 +1234,75 @@ describe('CodexAppServerAdapter', () => {
   it('maps an actual failed Codex turn', async () => {
     const { adapter: instance } = adapter([turnCompleted('failed')])
     await expect(collect(instance, request())).rejects.toMatchObject({ code: 'RATE_LIMIT' })
+  })
+})
+
+describe('bounded call IDs across real adapter lifecycles with a synthetic server contract', () => {
+  const tools = [{ name:'qa_probe',description:'Synthetic no-op',parameters:{type:'object',properties:{}} }]
+  function historyFor(id:string, text='你好'):Message[] {
+    const callId=ToolCallId(id)
+    return [
+      ...request().messages,
+      {id:MessageId('foreign-tool'),role:'assistant',source:{kind:'model',provider:'foreign',model:'qa'},content:[{type:'tool-call',id:callId,name:'qa_probe',arguments:'{}'}]},
+      {id:MessageId('foreign-result'),role:'tool',source:{kind:'tool',callId},toolCallId:callId,content:[{type:'text',text:'Synthetic result'}],isError:false},
+      {id:MessageId('following-user'),role:'user',source:{kind:'user'},content:[{type:'text',text}]},
+    ]
+  }
+  function serviceValidate(items:readonly unknown[]):string[] {
+    const ids:string[]=[]
+    for(const [i,item] of items.entries())if(item&&typeof item==='object'&&'call_id' in item){
+      const id=(item as {call_id:string}).call_id
+      if([...id].length>64)throw new LlmError(`Invalid input[${i}].call_id: maximum64 got${[...id].length}`, 'CODEX_PROCESS')
+      ids.push(id)
+    }
+    return ids
+  }
+  it('repairs old history for retry and independent cold sessions without changing user messages',async()=>{
+    const received:CodexAppServerRequest[]=[];let fail=true
+    const runner:CodexAppServerRunnerPort={open:async()=>{throw Error('not used')},stream(input){received.push(input);return(async function*(){serviceValidate(input.history);if(fail){fail=false;throw new LlmError('synthetic transport reset','TRANSPORT')}for(const e of answerEvents('bounded','ok'))yield e})()}}
+    const a=instance(runner),b=instance(runner),messages=historyFor('f'.repeat(83));const snapshot=JSON.stringify(messages)
+    await expect(collect(a,request({messages}))).rejects.toMatchObject({code:'TRANSPORT'})
+    expect((await collect(a,request({messages}))).at(-1)).toMatchObject({type:'finish'})
+    expect((await collect(b,request({messages}))).at(-1)).toMatchObject({type:'finish'})
+    expect(received[0]?.history).toEqual(received[1]?.history);expect(received[1]?.history).toEqual(received[2]?.history)
+    expect(serviceValidate(received[2]!.history)).toHaveLength(2);expect(JSON.stringify(messages)).toBe(snapshot)
+    await a.dispose();await b.dispose()
+  })
+  it.each([63,64,65,83])('current callback length%s continues exactly once using warm or repaired cold thread',async length=>{
+    const id='q'.repeat(length),callId=ToolCallId(id),requests:CodexAppServerTurnRequest[]=[],disposals:string[]=[];let opens=0,first=true
+    const runner:CodexAppServerRunnerPort={stream:()=>{throw Error('not used')},open:async()=>{
+      const tid=`thread-${++opens}`
+      return {threadId:tid,dispose:async()=>{disposals.push(tid)},stream(input){requests.push(input);return(async function*(){
+        serviceValidate(input.injectedItems??[])
+        if(first){first=false;yield {kind:'notification',method:'rawResponseItem/completed',params:{threadId:tid,turnId:'turn',item:{type:'function_call',id:'raw-tool',call_id:id,namespace:'deepseek_harness',name:'qa_probe',arguments:'{}'}}} as CodexAppServerEvent
+          yield {kind:'server-request',id:'rpc-current',method:'item/tool/call',params:{threadId:tid,turnId:'turn',callId:id,namespace:'deepseek_harness',tool:'qa_probe',arguments:{}},resolution:'pending'} as CodexAppServerEvent
+        }else{
+          // A faithful warm server still owns the original call ID. It cannot be
+          // repaired just by changing the callback result in the adapter.
+          if(length>64&&input.toolResult)throw new LlmError('unrepaired live call_id','CODEX_PROCESS')
+          for(const e of answerEvents('continued','Synthetic result received'))yield e
+        }
+      })()}}
+    }}
+    const a=instance(runner),firstRequest=request({sessionId:SessionId('same-session'),tools})
+    try{
+      const one=await collect(a,firstRequest)
+      expect(one).toContainEqual(expect.objectContaining({type:'block-end',block:expect.objectContaining({type:'tool-call',id})}))
+      const assistant:Message={id:MessageId('current-tool'),role:'assistant',source:{kind:'model',provider:'codex-local',model:'gpt-5.6-sol',replayState:replayState(one)},content:[{type:'tool-call',id:callId,name:'qa_probe',arguments:'{}'}]}
+      const result:Message={id:MessageId('current-result'),role:'tool',source:{kind:'tool',callId},toolCallId:callId,content:[{type:'text',text:'Synthetic result'}],isError:false}
+      const two=await collect(a,request({sessionId:SessionId('same-session'),tools,messages:[...firstRequest.messages,assistant,result]}))
+      expect(two.at(-1)).toMatchObject({type:'finish',reason:{kind:'stop'}})
+      expect(opens).toBe(length<=64?1:2)
+      if(length<=64)expect(requests[1]?.toolResult?.callId).toBe(id)
+      else {expect(disposals).toContain('thread-1');expect(requests[1]?.toolResult).toBeUndefined();const ids=serviceValidate(requests[1]!.injectedItems!);expect(ids).toHaveLength(2);expect(ids[0]).toBe(ids[1])}
+    }finally{await a.dispose()}
+  })
+  it('keeps separate session histories and same-prefix tool identities distinct',async()=>{
+    const inputs:CodexAppServerTurnRequest[]=[]
+    const runner:CodexAppServerRunnerPort={stream:()=>{throw Error('not used')},open:async()=>({threadId:'synthetic',dispose:async()=>{},stream(input){inputs.push(input);return(async function*(){serviceValidate(input.injectedItems??[]);for(const e of answerEvents('thread','ok'))yield e})()}})}
+    const a=instance(runner)
+    try{for(const suffix of ['A','B'])await collect(a,request({sessionId:SessionId('thread-'+suffix),tools,messages:historyFor('z'.repeat(82)+suffix)}))
+      const ids=inputs.map(x=>serviceValidate(x.injectedItems!));expect(ids[0]![0]).not.toBe(ids[1]![0]);expect(ids[0]![0]).toBe(ids[0]![1]);expect(ids[1]![0]).toBe(ids[1]![1])
+    }finally{await a.dispose()}
   })
 })

@@ -21,7 +21,7 @@ export function registerCodexSkillTools(ctx: Context, catalog: NativeCodexSkills
       query: { type: 'string', description: 'Keywords to match names and descriptions. Omit to browse.' },
       source: { type: 'string', enum: ['all', 'local', 'connector'], description: 'Source filter; defaults to all.' },
       offset: { type: 'integer', description: 'Zero-based result offset; defaults to 0.' },
-      limit: { type: 'integer', description: 'Number of results, 1–20; defaults to 8.' },
+      limit: { type: 'integer', description: 'Number of results; defaults to 8.' },
       refresh: { type: 'boolean', description: 'Rescan after skills or connected plugins change; defaults to false.' },
     },
     output: {
@@ -42,7 +42,7 @@ export function registerCodexSkillTools(ctx: Context, catalog: NativeCodexSkills
     parameters: {
       id: { type: 'string', required: true, description: 'Exact id returned by codex_skill_search in this workspace.' },
       offset: { type: 'integer', description: 'First line, starting at 1; defaults to 1.' },
-      limit: { type: 'integer', description: 'Number of lines, 1–1000; defaults to 400. Continue with nextOffset if present.' },
+      limit: { type: 'integer', description: 'Number of lines; defaults to 400. Continue with nextOffset if present.' },
     },
     output: {
       schema: { type: 'json' },

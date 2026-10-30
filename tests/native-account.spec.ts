@@ -1,5 +1,6 @@
 import { PassThrough } from 'node:stream'
 import { describe, expect, it, vi } from 'vitest'
+import { codexCliEntry } from '../src/runner.ts'
 import type { SubprocessHandle } from '@deepseek-ai/dsh-subprocess'
 import { NativeCodexAccount } from '../src/native-account.ts'
 
@@ -74,7 +75,8 @@ function mockOfficialCodex() {
 describe('official Codex app-server account lifecycle', () => {
   it('reads native account and quota without custom OAuth credentials', async () => {
     const clients: ReturnType<typeof mockOfficialCodex>[] = []
-    const manager = new NativeCodexAccount(() => {
+    const manager = new NativeCodexAccount(spec => {
+      expect(spec.argv).toEqual([process.execPath,codexCliEntry(),'app-server','--stdio'])
       const client = mockOfficialCodex(); clients.push(client); return client.handle
     })
     expect(await manager.status()).toEqual({ authenticated: true, email: 'test@example.test', planType: 'pro' })
@@ -86,7 +88,10 @@ describe('official Codex app-server account lifecycle', () => {
   })
   it('reads all pages of the official live model catalog and closes the query process', async () => {
     const client = mockOfficialCodex()
-    const manager = new NativeCodexAccount(() => client.handle)
+    const manager = new NativeCodexAccount(spec => {
+      expect(spec.argv).toEqual([process.execPath,codexCliEntry(),'app-server','--stdio'])
+      return client.handle
+    })
     const models = await manager.models()
     expect(models.map(model => model.id)).toEqual(['gpt-6.1-sol', 'gpt-6-astra'])
     expect(models[0]).toMatchObject({

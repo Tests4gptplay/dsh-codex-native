@@ -225,7 +225,7 @@ describe('accounting across cached Harness tool continuations', () => {
       expect(opens).toBe(1)
       expect(disposals).toBe(0)
       expect(requests).toHaveLength(2)
-      expect(requests[1]).toEqual({ input: [{ type: 'text', text: 'continue', text_elements: [] }] })
+      expect(requests[1]).toEqual({ input: [{ type: 'text', text: 'continue', text_elements: [] }], signal: expect.any(AbortSignal) })
       expect(first.at(-1)).toMatchObject({ type: 'finish', reason: { kind: 'stop' } })
       expect(second.at(-1)).toMatchObject({ type: 'finish', reason: { kind: 'stop' } })
     } finally {

@@ -72,7 +72,7 @@ describe('plugin composition', () => {
     expect(section?.text).toContain('codex_skill_search')
     expect(section?.text).not.toContain('nte-mod-authoring')
     expect(section!.text.length).toBeLessThan(700)
-    expect(CodexAppServer.Config({}).skillsMaxContextTokens).toBe(10000)
+    expect(CodexAppServer.Config({}).skillsMaxContextTokens).toBeUndefined()
     await fiber.dispose()
     expect(ctx.tools.get('codex_skill_search')).toBeUndefined()
     expect((await ctx.systemPrompt.assemble()).sections.some(section => section.name === 'dsh-codex-skill-discovery')).toBe(false)

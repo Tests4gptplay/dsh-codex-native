@@ -1,10 +1,14 @@
 /** DSH presentation boundary over the Codex wire/replay adapter. */
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
-import { CodexAppServerAdapter } from './adapter.ts'
+import { CodexAppServerAdapter, type CodexAdapterOptions } from './adapter.ts'
 import { presentForDsh } from './presentation.ts'
 
 export class DshCodexAdapter extends CodexAppServerAdapter {
   private readonly shownWarnings = new Map<string, Set<string>>()
+
+  constructor(options: CodexAdapterOptions, private readonly reportDiagnostic: (message: string) => void) {
+    super(options)
+  }
 
   override async* stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
     const sessionId = options.purpose === 'compaction' || options.sessionId === undefined
@@ -23,7 +27,7 @@ export class DshCodexAdapter extends CodexAppServerAdapter {
         for (const notice of block.text.matchAll(/^Codex: [\s\S]*?\n\n/gm)) warnings.add(notice[0])
       }
     }
-    yield* presentForDsh(super.stream(options), warnings)
+    yield* presentForDsh(super.stream(options), this.reportDiagnostic, warnings)
   }
 
   override disposeSession(sessionId: string): Promise<void> {

@@ -1,4 +1,5 @@
 /** Use the existing authenticated DSH connection; never create a public HTTP listener. */
+import { diagnosticText } from './process-connection.ts'
 import { clientRequestSchema } from '@deepseek-ai/dsh-client-connection'
 import type { HostConnectionHandle } from '@deepseek-ai/dsh-client-connection'
 import type { NativeCodexAccount } from './native-account.ts'
@@ -23,13 +24,13 @@ export function registerNativeCodexTransport(connection: HostConnectionHandle, a
             request.signal.throwIfAborted()
             let value: unknown
             switch (endpoint) {
-              case 'status': value = await account.status(); break
-              case 'quota': value = await account.quota(); break
-              case 'usage': value = await account.usage(); break
+              case 'status': value = await account.status(request.signal); break
+              case 'quota': value = await account.quota(request.signal); break
+              case 'usage': value = await account.usage(request.signal); break
               case 'login/start': {
                 const mode = payload?.mode
                 if (mode !== 'browser' && mode !== 'device') throw new Error('Unknown Codex login mode')
-                value = await account.start(mode); break
+                value = await account.start(mode, request.signal); break
               }
               case 'login/status': {
                 if (typeof payload?.id !== 'string') throw new Error('Login id required')
@@ -39,11 +40,11 @@ export function registerNativeCodexTransport(connection: HostConnectionHandle, a
                 if (typeof payload?.id !== 'string') throw new Error('Login id required')
                 value = await account.cancel(payload.id); break
               }
-              case 'logout': value = await account.logout(); break
+              case 'logout': value = await account.logout(request.signal); break
             }
             return Response.json({ type: 'server-response', rpcId: received.data.rpcId, result: { ok: true, value } })
           } catch (error: unknown) {
-            const message = error instanceof Error ? error.message.slice(0, 3_000) : 'Codex account operation failed'
+            const message = error instanceof Error ? diagnosticText(error.message).slice(0, 3_000) : 'Codex account operation failed'
             return Response.json({ type: 'server-response', rpcId: received.data.rpcId, result: { ok: false, error: { code: 'native_codex', message, details: { issues: [] } } } })
           }
         },

@@ -1,4 +1,5 @@
 /** Follow the official npm release channel when opening a new Codex process. */
+import { abortable } from './abort.ts'
 import { existsSync, readFileSync } from 'node:fs'
 import { mkdir, mkdtemp, rename, rm } from 'node:fs/promises'
 import { createRequire } from 'node:module'
@@ -21,7 +22,7 @@ const targetTriples: Record<string, string> = {
 }
 export interface Runtime { version: string; executable: string }
 export class LatestCodexRuntime {
-  private pending: Promise<Runtime> | undefined
+  private pending: { task: Promise<Runtime>; controller: AbortController; waiters: number } | undefined
   private current: Runtime | undefined
   private readonly platform = process.platform === 'android' ? 'linux' : process.platform
   private readonly key = `${this.platform}-${process.arch}`
@@ -43,16 +44,31 @@ export class LatestCodexRuntime {
     return { version, executable: this.executable(root) }
   }
   /** Concurrent opens share only the current refresh, never a permanent version lock. */
-  resolve(): Promise<Runtime> {
+  async resolve(signal?: AbortSignal): Promise<Runtime> {
+    signal?.throwIfAborted()
     if (!this.pending) {
-      this.pending = this.refresh().finally(() => { this.pending = undefined })
+      const controller = new AbortController()
+      const pending = { task: Promise.resolve<Runtime>(undefined!), controller, waiters: 0 }
+      pending.task = this.refresh(controller.signal).finally(() => {
+        if (this.pending === pending) this.pending = undefined
+      })
+      this.pending = pending
     }
-    return this.pending
+    const pending = this.pending
+    pending.waiters++
+    try { return await abortable(pending.task, signal) }
+    finally {
+      pending.waiters--
+      if (pending.waiters === 0 && this.pending === pending) {
+        this.pending = undefined
+        pending.controller.abort(new Error('No Codex runtime refresh callers remain'))
+      }
+    }
   }
-  private async refresh(): Promise<Runtime> {
+  private async refresh(signal: AbortSignal): Promise<Runtime> {
     this.current ??= this.bundled()
     try {
-      const latest = await this.source.manifest('@openai/codex@latest', options)
+      const latest = await abortable(this.source.manifest('@openai/codex@latest', { ...options, signal }), signal)
       if (latest.version === this.current.version && existsSync(this.current.executable)) return this.current
       const alias = latest.optionalDependencies?.[`@openai/codex-${this.key}`]
       if (!alias) throw new Error(`Official Codex ${latest.version} has no package for ${this.key}`)
@@ -63,14 +79,17 @@ export class LatestCodexRuntime {
         const staging = await mkdtemp(join(this.root, '.install-'))
         try {
           // Pacote uses npm's integrity-checked archive extraction; no custom downloader.
-          await this.source.extract(alias.replace(/^npm:/, ''), staging, options)
+          await this.source.extract(alias.replace(/^npm:/, ''), staging, { ...options, signal })
+          signal.throwIfAborted()
           if (!existsSync(this.executable(staging))) throw new Error('Official Codex archive has no executable')
           try { await rename(staging, destination) }
           catch (error) { if (!existsSync(executable)) throw error }
         } finally { await rm(staging, { recursive: true, force: true }) }
       }
+      signal.throwIfAborted()
       this.current = { version: latest.version, executable }
     } catch (error) {
+      signal.throwIfAborted()
       if (!existsSync(this.current.executable)) throw error
       this.warn(`Codex latest refresh failed; using installed ${this.current.version}: ${String(error)}`)
     }
@@ -78,7 +97,7 @@ export class LatestCodexRuntime {
   }
   async spawnSpec(spec: SubprocessSpawnSpec): Promise<SubprocessSpawnSpec> {
     spec.signal?.throwIfAborted()
-    const runtime = await this.resolve()
+    const runtime = await this.resolve(spec.signal)
     spec.signal?.throwIfAborted()
     // DSH owns the native process directly, including hidden Windows launch and teardown.
     return { ...spec, argv: [runtime.executable, ...spec.argv.slice(2)] }

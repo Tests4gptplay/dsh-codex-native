@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { NativeCodexRpc } from './native-rpc.ts'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
@@ -16,40 +16,81 @@ export function CodexNativeSection({ rpc, t }: { rpc: NativeCodexRpc; t: Transla
   const [flow, setFlow] = useState<Flow | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const refresh = useCallback(async () => { setAccount(await rpc.call<Account>('status')) }, [rpc])
+  const [starting, setStarting] = useState(false)
+  const lifetime = useRef(new AbortController())
+  const operation = useRef<AbortController | null>(null)
   useEffect(() => {
-    let active = true
-    void rpc.call<Account>('status').then(value => { if (active) setAccount(value) }).catch(err => { if (active) setError(String(err)) })
-    return () => { active = false }
+    lifetime.current = new AbortController()
+    return () => { lifetime.current.abort(); operation.current?.abort() }
+  }, [])
+  const refresh = useCallback(async (signal?: AbortSignal) => {
+    const value = await rpc.call<Account>('status', {}, signal)
+    signal?.throwIfAborted()
+    setAccount(value)
   }, [rpc])
   useEffect(() => {
+    const controller = new AbortController()
+    void refresh(controller.signal).catch(err => { if (!controller.signal.aborted) setError(String(err)) })
+    return () => controller.abort()
+  }, [refresh])
+  useEffect(() => {
     if (!flow || flow.phase !== 'pending') return
-    let active = true, pending = false
-    // Existing OAuth completion check only. Usage history never runs on this timer.
+    const controller = new AbortController()
+    let pending = false
+    // This only reads the already-running login attempt; no usage or model polling.
     const timer = setInterval(() => {
       if (pending) return
       pending = true
-      void rpc.call<Flow>('login/status', { id: flow.id }).then(async next => {
-        if (!active) return
-        setFlow(next)
-        if (next.phase === 'authenticated') {
-          const status = await rpc.call<Account>('status')
-          if (active) setAccount(status)
-        }
-      }).catch(err => { if (active) setError(String(err)) }).finally(() => { pending = false })
+      void rpc.call<Flow>('login/status', { id: flow.id }, controller.signal).then(next => {
+        if (!controller.signal.aborted) setFlow(next)
+      }).catch(err => { if (!controller.signal.aborted) setError(String(err)) }).finally(() => { pending = false })
     }, 1500)
-    return () => { active = false; clearInterval(timer) }
+    return () => { controller.abort(); clearInterval(timer) }
   }, [flow?.id, flow?.phase, rpc])
-  const run = async (operation: () => Promise<void>): Promise<void> => {
+  // Completion changes the polling effect's lifetime. Refresh under its own lifetime,
+  // not the just-cancelled pending-phase effect.
+  useEffect(() => {
+    if (flow?.phase !== 'authenticated') return
+    const controller = new AbortController()
+    void refresh(controller.signal).catch(err => { if (!controller.signal.aborted) setError(String(err)) })
+    return () => controller.abort()
+  }, [flow?.id, flow?.phase, refresh])
+  const run = async (action: (signal: AbortSignal) => Promise<void>): Promise<void> => {
+    if (operation.current !== null) return
+    const controller = new AbortController()
+    operation.current = controller
+    const signal = AbortSignal.any([controller.signal, lifetime.current.signal])
     setBusy(true); setError('')
-    try { await operation() } catch (err) { setError(err instanceof Error ? err.message : String(err)) }
-    finally { setBusy(false) }
+    try { await action(signal) }
+    catch (err) { if (!signal.aborted) setError(err instanceof Error ? err.message : String(err)) }
+    finally {
+      if (operation.current === controller) {
+        operation.current = null
+        if (!lifetime.current.signal.aborted) setBusy(false)
+      }
+    }
   }
-  const start = (mode: 'browser' | 'device'): void => { void run(async () => setFlow(await rpc.call<Flow>('login/start', { mode }))) }
+  const start = (mode: 'browser' | 'device'): void => {
+    void run(async signal => {
+      setStarting(true)
+      try {
+        const next = await rpc.call<Flow>('login/start', { mode }, signal)
+        signal.throwIfAborted()
+        setFlow(next)
+      } finally { if (!lifetime.current.signal.aborted) setStarting(false) }
+    })
+  }
   const cancel = (): void => {
-    if (flow) void run(async () => setFlow(await rpc.call<Flow>('login/cancel', { id: flow.id })))
+    if (starting) { operation.current?.abort(); setStarting(false); return }
+    if (flow) void run(async signal => {
+      const next = await rpc.call<Flow>('login/cancel', { id: flow.id }, signal)
+      signal.throwIfAborted(); setFlow(next)
+    })
   }
-  const logout = (): void => { void run(async () => { await rpc.call('logout'); setFlow(null); await refresh() }) }
+  const logout = (): void => { void run(async signal => {
+    await rpc.call('logout', {}, signal)
+    signal.throwIfAborted(); setFlow(null); setAccount({ authenticated: false })
+  }) }
   return (
     <section style={ui.section}>
       <header>
@@ -65,14 +106,15 @@ export function CodexNativeSection({ rpc, t }: { rpc: NativeCodexRpc; t: Transla
           {account.email ?? ''}{account.planType ? ` · ${t('plan')}: ${account.planType}` : ''}
         </p>}
         <div style={ui.toolbar}>
+          <Button variant="outline" size="sm" disabled={busy} onClick={() => { void run(refresh) }}>{t('refresh')}</Button>
           {account?.authenticated ? <>
-            <Button variant="outline" size="sm" disabled={busy} onClick={() => { void run(refresh) }}>{t('refresh')}</Button>
             <Button variant="outline" size="sm" disabled={busy} onClick={logout}>{t('logout')}</Button>
           </> : <>
             <Button variant="outline" size="sm" disabled={busy || flow?.phase === 'pending'} onClick={() => start('browser')}>{t('signIn')}</Button>
             <Button variant="outline" size="sm" disabled={busy || flow?.phase === 'pending'} onClick={() => start('device')}>{t('deviceCode')}</Button>
           </>}
         </div>
+        {starting && <Button variant="outline" size="sm" onClick={cancel}>{t('cancel')}</Button>}
         {flow?.phase === 'pending' && <div style={{ ...ui.secondary, marginTop: 14 }}>
           <p>{t('waiting')}</p>
           {flow.authUrl && <a style={ui.link} href={flow.authUrl} target="_blank" rel="noopener noreferrer">{t('openPage')}</a>}

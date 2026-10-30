@@ -156,7 +156,6 @@ describe('Codex App Server runner', () => {
     expect(argv).toEqual([
       process.execPath, codexCliEntry(), 'app-server', '--stdio',
       '-c', 'model_providers.dsh-openai-http={name="OpenAI",requires_openai_auth=true,supports_websockets=false}',
-      '-c', 'skills.max_context_tokens=10000',
     ])
     expect(argv).not.toContain('--strict-config')
     expect(argv).not.toContain('--disable')
@@ -168,7 +167,6 @@ describe('Codex App Server runner', () => {
     expect(codexAppServerArgv('disabled', false)).toEqual([
       process.execPath, codexCliEntry(), 'app-server', '--stdio',
       '-c', 'model_providers.dsh-openai-http={name="OpenAI",requires_openai_auth=true,supports_websockets=false}',
-      '-c', 'skills.max_context_tokens=10000',
       '-c', 'web_search="disabled"', '--disable', 'image_generation',
     ])
   })
@@ -218,13 +216,13 @@ describe('Codex App Server runner', () => {
     expect(messages.find(message => message.method === 'thread/start')).toMatchObject({
       params: {
         baseInstructions: 'Harness system',
-        developerInstructions: '',
         dynamicTools: [],
         ephemeral: true,
         experimentalRawEvents: true,
       },
     })
     const threadParams = object(messages.find(message => message.method === 'thread/start')?.params)
+    expect(threadParams).not.toHaveProperty('developerInstructions')
     expect(threadParams).not.toHaveProperty('sandbox')
     expect(threadParams).not.toHaveProperty('approvalPolicy')
     expect(messages.find(message => message.method === 'thread/inject_items')).toMatchObject({
@@ -676,7 +674,7 @@ describe('Codex App Server runner', () => {
     }
   })
 
-  it('reports and declines a Codex-native approval without failing the turn', async () => {
+  it('reports an unavailable approval bridge without pretending the user declined', async () => {
     const setup = runner((message, send, sendRaw) => {
       standardScript((write) => {
         write({
@@ -686,7 +684,7 @@ describe('Codex App Server runner', () => {
         })
       })(message, send, sendRaw)
       if (message.id === 'approval-1') {
-        expect(message.result).toEqual({ decision: 'decline' })
+        expect(message.error).toMatchObject({ code: -32_001, message: expect.stringContaining('unavailable') })
         send({ method: 'turn/completed', params: {
           threadId: 'thread-1',
           turn: { id: 'turn-1', status: 'completed', error: null },
@@ -699,7 +697,7 @@ describe('Codex App Server runner', () => {
       expect.objectContaining({
         kind: 'server-request',
         method: 'item/commandExecution/requestApproval',
-        resolution: 'declined',
+        resolution: 'rejected',
       }),
       expect.objectContaining({ kind: 'notification', method: 'turn/completed' }),
     ]))
@@ -794,7 +792,7 @@ describe('Codex App Server runner', () => {
     expect(setup.child.terminate).toHaveBeenCalledOnce()
   })
 
-  it('rejects unsafe model and provider ids before spawning', async () => {
+  it('requires nonempty JSON model and provider identities before spawning', async () => {
     const spawn = vi.fn(() => scriptedHandle(() => {}))
     const instance = new CodexAppServerRunner({
       timeoutMs: 1_000,
@@ -804,10 +802,179 @@ describe('Codex App Server runner', () => {
       env: {},
       spawn,
     })
-    await expect(collect(instance, request({ model: '--config' }))).rejects.toMatchObject({ code: 'INVALID_MODEL' })
-    await expect(collect(instance, request({ modelProvider: '--provider' }))).rejects.toMatchObject({
+    await expect(collect(instance, request({ model: '' }))).rejects.toMatchObject({ code: 'INVALID_MODEL' })
+    await expect(collect(instance, request({ modelProvider: '' }))).rejects.toMatchObject({
       code: 'INVALID_PROVIDER',
     })
     expect(spawn).not.toHaveBeenCalled()
+  })
+})
+
+// End-to-end runner/connection/thread/helper tests; synthetic pipes and Host only.
+import type { Context } from '@deepseek-ai/cordis'
+import { CodexNativeApprovals } from '../src/native-approvals.ts'
+
+function hostApproval(answer: (request: { signal: AbortSignal; reason?: string }) => Promise<unknown>) {
+  const log = [{ type: 'turn/start' }]
+  const agent = { session: { id: 'qa-session', get seq() { return log.length }, eventAt: (seq: number) => log[seq] } }
+  const asked = vi.fn(answer)
+  const ctx = { on() {}, effect() {}, get(name: string) {
+    return name === 'agents' ? { get: () => agent } : name === 'approval' ? { request: asked } : undefined
+  } } as unknown as Context
+  return { bridge: new CodexNativeApprovals(ctx), asked, log }
+}
+
+const nativeCommand = { id: 'native-command', type: 'commandExecution', command: 'echo synthetic-only', cwd: '/synthetic', status: 'inProgress' }
+const nativeFile = { id: 'native-file', type: 'fileChange', status: 'inProgress', changes: [{ path: '/synthetic/file', kind: { type: 'add' }, diff: '+synthetic-only' }] }
+function nativeRequest(send: (message: JsonObject) => void, file = false, decisions: string[] = ['accept', 'decline', 'cancel']) {
+  const item = file ? nativeFile : nativeCommand
+  send({ method: 'item/started', params: { threadId: 'thread-1', turnId: 'turn-1', item } })
+  send({ id: 'native-approval', method: file ? 'item/fileChange/requestApproval' : 'item/commandExecution/requestApproval', params: {
+    threadId: 'thread-1', turnId: 'turn-1', itemId: item.id, availableDecisions: decisions,
+    ...(file ? { grantRoot: '/synthetic' } : { command: nativeCommand.command, cwd: nativeCommand.cwd }),
+  } })
+}
+function complete(send: (message: JsonObject) => void) { send({ method: 'turn/completed', params: { threadId: 'thread-1', turn: { id: 'turn-1', status: 'completed', error: null } } }) }
+
+describe('native approvals are routed through the actual runner/thread/Host-helper chain', () => {
+  it('propagates a failed approval write instead of swallowing it as native cancellation', async () => {
+    const h = hostApproval(async () => 'allowed-once')
+    const setup = runner((message, send, raw) => {
+      standardScript(send => nativeRequest(send))(message, send, raw)
+      if (message.id === 'native-approval') throw new Error('synthetic approval write failed')
+    }, { approvals: h.bridge })
+    try {
+      const error = await collect(setup.runner, request({ sessionId: 'qa-session' })).then(
+        () => { throw new Error('Expected a transport failure') }, error => error,
+      )
+      expect(error).toMatchObject({ code: 'TRANSPORT' })
+      const causes: string[] = []
+      for (let value: unknown = error; value instanceof Error; value = value.cause) causes.push(value.message)
+      expect(causes).toContain('synthetic approval write failed')
+      expect(h.asked).toHaveBeenCalledOnce()
+      expect(setup.child.terminate).toHaveBeenCalledOnce()
+    } finally { h.bridge.dispose() }
+  })
+
+  it('does not end the owning turn when another thread emits the same turn id', async () => {
+    const setup = runner(standardScript(send => {
+      send({ method: 'turn/completed', params: { threadId: 'other-thread', turn: { id: 'turn-1', status: 'failed', error: null } } })
+      send({ method: 'item/agentMessage/delta', params: { threadId: 'thread-1', turnId: 'turn-1', itemId: 'm', delta: 'still active' } })
+      complete(send)
+    }))
+    const events = await collect(setup.runner, request())
+    expect(events).toContainEqual(expect.objectContaining({ method: 'item/agentMessage/delta' }))
+    expect(events.filter(e => e.kind === 'notification' && e.method === 'turn/completed')).toHaveLength(1)
+  })
+  it.each([
+    ['allowed-once', 'accept', 'answered'], ['rejected', 'decline', 'declined'],
+    ['cancelled', 'cancel', 'declined'], ['unavailable', undefined, 'rejected'],
+  ] as const)('maps Host %s without inventing a broader grant', async (outcome, decision, resolution) => {
+    const h = hostApproval(async () => outcome); const replies: JsonObject[] = []
+    const setup = runner((message, send, raw) => {
+      standardScript(send => nativeRequest(send))(message, send, raw)
+      if (message.id === 'native-approval') { replies.push(message); complete(send) }
+    }, { approvals: h.bridge })
+    try {
+      const events = await collect(setup.runner, request({ sessionId: 'qa-session' }))
+      expect(h.asked).toHaveBeenCalledOnce(); expect(h.asked.mock.calls[0]![0].reason).toContain('echo synthetic-only')
+      expect(replies).toHaveLength(1)
+      if(decision === undefined){expect(replies[0]).not.toHaveProperty('result');expect(replies[0]?.error).toMatchObject({code:-32001})}
+      else expect(replies[0]?.result).toEqual({ decision })
+      expect(events).toContainEqual(expect.objectContaining({ kind: 'server-request', resolution }))
+      if (outcome === 'unavailable') expect(events).toContainEqual(expect.objectContaining({ resolutionMessage: expect.stringContaining('not a user rejection') }))
+    } finally { h.bridge.dispose() }
+  })
+
+  it('carries the actual matching file diff to the Host rather than approving vague IDs', async () => {
+    const h = hostApproval(async () => 'allowed-once')
+    const setup = runner((message, send, raw) => {
+      standardScript(send => nativeRequest(send, true))(message, send, raw)
+      if (message.id === 'native-approval') { expect(message.result).toEqual({ decision: 'accept' }); complete(send) }
+    }, { approvals: h.bridge })
+    try { await collect(setup.runner, request({ sessionId: 'qa-session' })); expect(h.asked.mock.calls[0]![0].reason).toContain('+synthetic-only') }
+    finally { h.bridge.dispose() }
+  })
+
+  it.each(['resolved', 'completed'] as const)('withdraws an already displayed approval on native %s, before next() can consume it', async kind => {
+    const late = Promise.withResolvers<unknown>(); let nativeSend: ((message: JsonObject) => void) | undefined; const replies: JsonObject[] = []
+    const h = hostApproval(async () => {
+      if (kind === 'resolved') nativeSend!({ method: 'serverRequest/resolved', params: { threadId: 'thread-1', requestId: 'native-approval' } })
+      complete(nativeSend!)
+      return late.promise
+    })
+    const setup = runner((message, send, raw) => {
+      nativeSend = send; standardScript(send => nativeRequest(send))(message, send, raw)
+      if (message.id === 'native-approval') replies.push(message)
+    }, { approvals: h.bridge })
+    try {
+      const events = await collect(setup.runner, request({ sessionId: 'qa-session' }))
+      expect(h.asked).toHaveBeenCalledOnce(); expect(h.asked.mock.calls[0]![0].signal.aborted).toBe(true)
+      late.resolve('allowed-once'); await Promise.resolve()
+      expect(replies).toEqual([]); expect(events).toContainEqual(expect.objectContaining({ method: 'turn/completed' }))
+    } finally { late.resolve('cancelled'); h.bridge.dispose() }
+  })
+
+  it('never upgrades a native session-only grant into one-time Host permission', async () => {
+    const h = hostApproval(async () => 'allowed-once'); const replies: JsonObject[] = []
+    const setup = runner((message, send, raw) => {
+      standardScript(send => nativeRequest(send, false, ['acceptForSession']))(message, send, raw)
+      if (message.id === 'native-approval') { replies.push(message); complete(send) }
+    }, { approvals: h.bridge })
+    try {
+      await collect(setup.runner, request({ sessionId: 'qa-session' })); expect(h.asked).not.toHaveBeenCalled()
+      expect(replies[0]?.error).toMatchObject({ code: -32_001 }); expect(replies[0]).not.toHaveProperty('result')
+    } finally { h.bridge.dispose() }
+  })
+
+  it.each(['stop', 'pipe'] as const)('withdraws Host native approval on %s and ignores a late grant', async end => {
+    const ready = Promise.withResolvers<AbortSignal>()
+    const late = Promise.withResolvers<unknown>()
+    const stop = new AbortController()
+    const replies: JsonObject[] = []
+    const h = hostApproval(async ({ signal }) => { ready.resolve(signal); return late.promise })
+    const setup = runner((message, send, raw) => {
+      standardScript(send => nativeRequest(send))(message, send, raw)
+      if (message.id === 'native-approval') replies.push(message)
+    }, { timeoutMs: 0, approvals: h.bridge })
+    try {
+      const pending = collect(setup.runner, request({ sessionId: 'qa-session', signal: stop.signal }))
+      const failed = expect(pending).rejects.toMatchObject({ code: end === 'stop' ? 'ABORTED' : 'TRANSPORT' })
+      const signal = await ready.promise
+      if (end === 'stop') stop.abort(new Error('synthetic stop'))
+      else setup.child.stdout!.destroy()
+      await failed
+      expect(signal.aborted).toBe(true)
+      late.resolve('allowed-once'); await Promise.resolve()
+      expect(replies).toEqual([])
+      expect(setup.child.terminate).toHaveBeenCalledOnce()
+    } finally { late.resolve('cancelled'); h.bridge.dispose() }
+  })
+
+  it('reports missing file details as an integration gap, not as a user decision', async () => {
+    const h = hostApproval(async () => 'allowed-once')
+    const setup = runner((message, send, raw) => {
+      standardScript(send => send({ id: 'native-approval', method: 'item/fileChange/requestApproval', params: {
+        threadId: 'thread-1', turnId: 'turn-1', itemId: 'unknown-file', grantRoot: '/synthetic',
+      } }))(message, send, raw)
+      if (message.id === 'native-approval') { expect(message).not.toHaveProperty('result');expect(message.error).toMatchObject({code:-32001}); complete(send) }
+    }, { approvals: h.bridge })
+    try {
+      const events = await collect(setup.runner, request({ sessionId: 'qa-session' }))
+      expect(h.asked).not.toHaveBeenCalled()
+      expect(events).toContainEqual(expect.objectContaining({ kind: 'server-request', resolution: 'rejected' }))
+    } finally { h.bridge.dispose() }
+  })
+
+  it('forwards long Unicode and option-looking JSON identities without shell interpretation', async () => {
+    const identities = { model: '--model; 模型'.repeat(30), modelProvider: '提供者/'.repeat(30), reasoningEffort: '思考 🌈 '.repeat(15) }
+    const received: JsonObject[] = []
+    const setup = runner((message, send, raw) => { received.push(message); standardScript(complete)(message, send, raw) })
+    await collect(setup.runner, request(identities))
+    const started = received.find(x => x.method === 'thread/start')!
+    expect(started.params).toMatchObject({ model: identities.model, modelProvider: identities.modelProvider })
+    expect(received.find(x => x.method === 'turn/start')?.params).toMatchObject({ effort: identities.reasoningEffort })
+    expect(setup.spec().argv).not.toContain(identities.model)
+    expect(setup.spec().argv).not.toContain(identities.reasoningEffort)
   })
 })

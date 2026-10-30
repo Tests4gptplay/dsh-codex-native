@@ -114,6 +114,7 @@ describe('DSH Codex skill discovery', () => {
       const catalog = await service.catalog(directory, signal)
       expect(process.specs).toHaveLength(1)
       expect(process.specs[0].argv).toContain('features.skip_host_skill_discovery=false')
+      expect(process.specs[0].argv.some(arg => arg.startsWith('model_provider='))).toBe(false)
       expect(await service.catalog(directory, signal)).toBe(catalog)
       const local = catalog.skills.find(s => s.name === 'nte-mod-authoring')!
       expect(await service.read(directory, local.id, signal, 1, 2)).toMatchObject({

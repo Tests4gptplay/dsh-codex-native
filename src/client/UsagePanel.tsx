@@ -94,14 +94,15 @@ export function UsagePanel({ rpc, t, enabled }: { rpc: NativeCodexRpc; t: Transl
   const [error, setError] = useState('')
   const [open, setOpen] = useState<Set<string>>(new Set())
   const alive = useRef(true)
+  const lifetime = useRef(new AbortController())
   const requesting = useRef(false)
-  useEffect(() => { alive.current = true; return () => { alive.current = false } }, [])
+  useEffect(() => { alive.current = true; lifetime.current = new AbortController(); return () => { alive.current = false; lifetime.current.abort() } }, [])
   const query = async (): Promise<void> => {
     if (requesting.current || !enabled) return
     requesting.current = true
     setBusy(true); setError('')
     try {
-      const result = await rpc.call<UsageSnapshot>('usage')
+      const result = await rpc.call<UsageSnapshot>('usage', {}, lifetime.current.signal)
       if (!alive.current) return
       setSnapshot(result)
       const first = groupUsage(result.days ?? [], result.resets)[0]

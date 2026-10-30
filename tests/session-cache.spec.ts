@@ -1,3 +1,4 @@
+import { appServerCallId } from '../src/call-ids.ts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AttachmentId } from '@deepseek-ai/dsh-attachment'
 import type {
@@ -221,18 +222,18 @@ describe('CodexSessionCache', () => {
     const firstUser = user('read it')
     const call: JsonValue = {
       type: 'function_call',
-      call_id: 'call-1',
+      call_id: appServerCallId('call-1'),
       namespace: 'deepseek_harness',
       name: 'read_file',
       arguments: '{"path":"a.txt"}',
     }
     const output: JsonValue = {
       type: 'function_call_output',
-      call_id: 'call-1',
+      call_id: appServerCallId('call-1'),
       output: 'contents',
     }
     const first = await cache.begin(request('session-1', [firstUser]))
-    first.commit([firstUser, call], 'call-1')
+    first.commit([firstUser, call], appServerCallId('call-1'))
 
     const second = await cache.begin(request('session-1', [firstUser, call, output], {
       toolResults: [{ callId: 'call-1', output: 'contents', success: true }],
@@ -251,18 +252,18 @@ describe('CodexSessionCache', () => {
     const firstUser = user('delegate')
     const call: JsonValue = {
       type: 'function_call',
-      call_id: 'call-inbox',
+      call_id: appServerCallId('call-inbox'),
       namespace: 'deepseek_harness',
       name: 'subagent',
       arguments: '{}',
     }
     const output: JsonValue = {
       type: 'function_call_output',
-      call_id: 'call-inbox',
+      call_id: appServerCallId('call-inbox'),
       output: 'started',
     }
     const first = await cache.begin(request('session-tool-inbox', [firstUser]))
-    first.commit([firstUser, call], 'call-inbox')
+    first.commit([firstUser, call], appServerCallId('call-inbox'))
 
     const second = await cache.begin(request(
       'session-tool-inbox',
@@ -290,7 +291,7 @@ describe('CodexSessionCache', () => {
     const firstUser = user('first')
     const call: JsonValue = {
       type: 'function_call',
-      call_id: 'call-image',
+      call_id: appServerCallId('call-image'),
       namespace: 'deepseek_harness',
       name: 'read_image',
       arguments: '{}',
@@ -301,11 +302,11 @@ describe('CodexSessionCache', () => {
     ]
     const output: JsonValue = {
       type: 'function_call_output',
-      call_id: 'call-image',
+      call_id: appServerCallId('call-image'),
       output: durableOutput,
     }
     const first = await cache.begin(request('session-tool-image', [firstUser]))
-    first.commit([firstUser, call], 'call-image')
+    first.commit([firstUser, call], appServerCallId('call-image'))
 
     const loadToolResult = vi.fn(async () => ({
       callId: 'call-image',

@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Codex Native",
-    "description": "Connect Codex app-server models, native tools and question cards to DSH, with ChatGPT sign-in and on-demand usage queries."
+    "description": "Connect Codex app-server models, conversation, tools and native approvals to DSH, with ChatGPT sign-in and on-demand usage queries."
   }
 }

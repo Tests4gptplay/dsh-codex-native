@@ -12,13 +12,14 @@ import { DshCodexAdapter } from './dsh-adapter.ts'
 import { LatestCodexRuntime } from './latest-runtime.ts'
 import type { SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
 import type { CodexModel } from './adapter.ts'
-import { SAFE_MODEL_ID, SAFE_REASONING_EFFORT } from './identifiers.ts'
+import { isNonEmptyIdentifier } from './identifiers.ts'
 import { CodexAppServerRunner } from './runner.ts'
 import { NativeCodexAccount } from './native-account.ts'
 import { registerNativeCodexTransport } from './native-transport.ts'
 import { NativeCodexSkills } from './native-skills.ts'
 import { registerCodexSkillTools } from './skill-tools.ts'
 import { CodexUserQuestions } from './user-questions.ts'
+import { CodexNativeApprovals } from './native-approvals.ts'
 import { registerComputerUseRecovery } from './computer-use-recovery.ts'
 
 export { CodexAppServerAdapter } from './adapter.ts'
@@ -75,7 +76,9 @@ export interface Config {
   }>
   timeoutMs?: number
   disposeGraceMs?: number
+  /** Optional inbound frame byte budget; 0 leaves framing to upstream/Host. */
   maxJsonRpcLineBytes?: number
+  /** Opt-in image substitution budget in encoded bytes; 0 preserves all images. */
   maxRequestImageBytes?: number
   maxStderrBytes?: number
   maxRetries?: number
@@ -91,7 +94,6 @@ const DEFAULT_MODELS = [
     id: 'gpt-6-astra',
     name: 'GPT-6-Astra',
     description: 'Our most capable model for complex, demanding work.',
-    contextWindow: 272_000,
     inputModalities: ['text', 'image'],
     reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'],
     defaultReasoningEffort: 'medium',
@@ -100,7 +102,6 @@ const DEFAULT_MODELS = [
     id: 'gpt-6.1-sol',
     name: 'GPT-6.1-Sol',
     description: 'Near-Astra performance for complex work at a lower cost.',
-    contextWindow: 1_050_000,
     inputModalities: ['text', 'image'],
     reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'],
     defaultReasoningEffort: 'medium',
@@ -109,7 +110,6 @@ const DEFAULT_MODELS = [
     id: 'gpt-5.6-sol',
     name: 'GPT-5.6-Sol',
     description: 'Reliable agentic workhorse for everyday tasks.',
-    contextWindow: 272_000,
     inputModalities: ['text', 'image'],
     reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'],
     defaultReasoningEffort: 'low',
@@ -118,7 +118,6 @@ const DEFAULT_MODELS = [
     id: 'gpt-5.6-terra',
     name: 'GPT-5.6-Terra',
     description: 'Balanced agentic coding model for everyday work.',
-    contextWindow: 272_000,
     inputModalities: ['text', 'image'],
     reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'],
     defaultReasoningEffort: 'medium',
@@ -127,7 +126,6 @@ const DEFAULT_MODELS = [
     id: 'gpt-5.6-luna',
     name: 'GPT-5.6-Luna',
     description: 'Fast and affordable agentic coding model.',
-    contextWindow: 272_000,
     inputModalities: ['text', 'image'],
     reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'],
     defaultReasoningEffort: 'medium',
@@ -136,7 +134,6 @@ const DEFAULT_MODELS = [
     id: 'gpt-5.5',
     name: 'GPT-5.5',
     description: 'Proven previous-generation model for coding and general work.',
-    contextWindow: 272_000,
     inputModalities: ['text', 'image'],
     reasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
     defaultReasoningEffort: 'medium',
@@ -145,15 +142,14 @@ const DEFAULT_MODELS = [
     id: 'gpt-5.3-codex-spark',
     name: 'GPT-5.3-Codex-Spark',
     description: 'Ultra-fast coding model.',
-    contextWindow: 128_000,
     inputModalities: ['text'],
     reasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
     defaultReasoningEffort: 'high',
   },
-] satisfies Array<Required<NonNullable<Config['models']>[number]>>
+] satisfies Array<Omit<Required<NonNullable<Config['models']>[number]>, 'contextWindow'>>
 
-const DEFAULT_MAX_JSON_RPC_LINE_BYTES = 8 * 1024 * 1024
-const DEFAULT_MAX_REQUEST_IMAGE_BYTES = 20 * 1024 * 1024
+const DEFAULT_MAX_JSON_RPC_LINE_BYTES = 0
+const DEFAULT_MAX_REQUEST_IMAGE_BYTES = 0
 
 const modelSchema = z.object({
   id: z.string().required(),
@@ -172,15 +168,15 @@ export const Config: z<Config> = z.object({
   models: z.array(modelSchema).default(DEFAULT_MODELS),
   timeoutMs: z.number().min(0).max(2_147_483_647).default(0),
   disposeGraceMs: z.number().max(2_147_483_647).default(3_000),
-  maxJsonRpcLineBytes: z.number().step(1).min(1).default(DEFAULT_MAX_JSON_RPC_LINE_BYTES),
-  maxRequestImageBytes: z.number().step(1).min(1).default(DEFAULT_MAX_REQUEST_IMAGE_BYTES),
+  maxJsonRpcLineBytes: z.number().step(1).min(0).default(DEFAULT_MAX_JSON_RPC_LINE_BYTES),
+  maxRequestImageBytes: z.number().step(1).min(0).default(DEFAULT_MAX_REQUEST_IMAGE_BYTES),
   maxStderrBytes: z.number().step(1).min(1).default(64 * 1024),
   maxRetries: z.number().step(1).min(0).max(Number.MAX_SAFE_INTEGER).default(1),
   maxCachedSessions: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(8),
   sessionIdleTimeoutMs: z.number().step(1).min(1).max(2_147_483_647).default(600_000),
   imageGenerationEnabled: z.boolean().default(true),
   skillsMode: z.union(['dsh', 'native']).default('dsh'),
-  skillsMaxContextTokens: z.number().step(1).min(1).max(10_000).default(10_000),
+  skillsMaxContextTokens: z.number().step(1).min(1),
   env: z.dict(z.string()).default({}),
 })
 
@@ -199,11 +195,10 @@ interface ResolvedConfig {
   readonly sessionIdleTimeoutMs: number
   readonly imageGenerationEnabled: boolean
   readonly skillsMode: 'dsh' | 'native'
-  readonly skillsMaxContextTokens: number
+  readonly skillsMaxContextTokens?: number
   readonly env: Readonly<Record<string, string>>
 }
 
-const SAFE_ROUTE = /^[a-z0-9][a-z0-9._-]{0,79}$/u
 
 function resolveConfig(config: Config): ResolvedConfig {
   const provider = config.provider ?? 'codex-local'
@@ -219,16 +214,17 @@ function resolveConfig(config: Config): ResolvedConfig {
   const sessionIdleTimeoutMs = config.sessionIdleTimeoutMs ?? 600_000
   const imageGenerationEnabled = config.imageGenerationEnabled ?? true
   const skillsMode = config.skillsMode ?? 'dsh'
-  const skillsMaxContextTokens = config.skillsMaxContextTokens ?? 10_000
+  const skillsMaxContextTokens = config.skillsMaxContextTokens
   if (skillsMode !== 'dsh' && skillsMode !== 'native') throw new Error('skillsMode must be dsh or native')
-  if (!Number.isSafeInteger(skillsMaxContextTokens) || skillsMaxContextTokens < 1 || skillsMaxContextTokens > 10_000) {
-    throw new Error('skillsMaxContextTokens must be between 1 and 10000')
+  if (skillsMaxContextTokens !== undefined
+    && (!Number.isSafeInteger(skillsMaxContextTokens) || skillsMaxContextTokens < 1)) {
+    throw new Error('skillsMaxContextTokens must be a positive safe integer')
   }
   const env = config.env ?? {}
-  if (!SAFE_ROUTE.test(provider)) throw new Error('llm-codex-app-server: provider is not a safe route id')
+  if (!isNonEmptyIdentifier(provider)) throw new Error('llm-codex-app-server: provider must be a non-empty string')
   if (displayName.trim().length === 0) throw new Error('llm-codex-app-server: displayName must not be empty')
-  if (!SAFE_ROUTE.test(modelProvider)) {
-    throw new Error('llm-codex-app-server: modelProvider is not a safe Codex provider id')
+  if (!isNonEmptyIdentifier(modelProvider)) {
+    throw new Error('llm-codex-app-server: modelProvider must be a non-empty string')
   }
   if (!Number.isFinite(timeoutMs) || timeoutMs < 0 || timeoutMs > 2_147_483_647) {
     throw new Error('dsh-codex-native: timeoutMs must be a non-negative finite number (0 disables the additional hard timer)')
@@ -236,11 +232,11 @@ function resolveConfig(config: Config): ResolvedConfig {
   if (!Number.isFinite(disposeGraceMs) || disposeGraceMs <= 0 || disposeGraceMs > 2_147_483_647) {
     throw new Error('llm-codex-app-server: disposeGraceMs must be a positive finite number')
   }
-  if (!Number.isSafeInteger(maxJsonRpcLineBytes) || maxJsonRpcLineBytes <= 0) {
-    throw new Error('llm-codex-app-server: maxJsonRpcLineBytes must be a positive safe integer')
+  if (!Number.isSafeInteger(maxJsonRpcLineBytes) || maxJsonRpcLineBytes < 0) {
+    throw new Error('llm-codex-app-server: maxJsonRpcLineBytes must be a non-negative safe integer (0 disables the optional limit)')
   }
-  if (!Number.isSafeInteger(maxRequestImageBytes) || maxRequestImageBytes <= 0) {
-    throw new Error('llm-codex-app-server: maxRequestImageBytes must be a positive safe integer')
+  if (!Number.isSafeInteger(maxRequestImageBytes) || maxRequestImageBytes < 0) {
+    throw new Error('llm-codex-app-server: maxRequestImageBytes must be a non-negative safe integer (0 disables the optional budget)')
   }
   if (!Number.isSafeInteger(maxStderrBytes) || maxStderrBytes <= 0) {
     throw new Error('llm-codex-app-server: maxStderrBytes must be a positive safe integer')
@@ -256,11 +252,11 @@ function resolveConfig(config: Config): ResolvedConfig {
     || sessionIdleTimeoutMs > 2_147_483_647) {
     throw new Error('llm-codex-app-server: sessionIdleTimeoutMs must be a positive timer duration')
   }
-  const configuredModels = config.models ?? DEFAULT_MODELS
+  const configuredModels: NonNullable<Config['models']> = config.models ?? DEFAULT_MODELS
   if (configuredModels.length === 0) throw new Error('llm-codex-app-server: models must not be empty')
   const seen = new Set<string>()
   const models = configuredModels.map((candidate): CodexModel => {
-    if (!SAFE_MODEL_ID.test(candidate.id) || seen.has(candidate.id)) {
+    if (!isNonEmptyIdentifier(candidate.id) || seen.has(candidate.id)) {
       throw new Error(`llm-codex-app-server: invalid or duplicate model id ${JSON.stringify(candidate.id)}`)
     }
     seen.add(candidate.id)
@@ -271,7 +267,7 @@ function resolveConfig(config: Config): ResolvedConfig {
       throw new Error(`llm-codex-app-server: model ${JSON.stringify(candidate.id)} has invalid inputModalities`)
     }
     const efforts = [...(candidate.reasoningEfforts ?? [])]
-    if (efforts.some(effort => !SAFE_REASONING_EFFORT.test(effort)) || new Set(efforts).size !== efforts.length) {
+    if (efforts.some(effort => !isNonEmptyIdentifier(effort)) || new Set(efforts).size !== efforts.length) {
       throw new Error(`llm-codex-app-server: model ${JSON.stringify(candidate.id)} has invalid reasoningEfforts`)
     }
     if (candidate.defaultReasoningEffort !== undefined && !efforts.includes(candidate.defaultReasoningEffort)) {
@@ -304,7 +300,7 @@ function resolveConfig(config: Config): ResolvedConfig {
     sessionIdleTimeoutMs,
     imageGenerationEnabled,
     skillsMode,
-    skillsMaxContextTokens,
+    ...(skillsMaxContextTokens === undefined ? {} : { skillsMaxContextTokens }),
     env,
   }
 }
@@ -322,14 +318,16 @@ export function apply(ctx: Context, config: Config): void {
     maxStderrBytes: resolved.maxStderrBytes,
     env: resolved.env,
     skillsMode: resolved.skillsMode,
-    skillsMaxContextTokens: resolved.skillsMaxContextTokens,
+    ...(resolved.skillsMaxContextTokens === undefined ? {} : { skillsMaxContextTokens: resolved.skillsMaxContextTokens }),
     spawn: spawn,
     questions: new CodexUserQuestions(ctx),
+    approvals: new CodexNativeApprovals(ctx),
   })
   const reportCleanupError = (error: unknown): void => {
     ctx.logger.warn(`llm-codex-app-server: cached session cleanup failed: ${String(error)}`)
   }
-  const account = new NativeCodexAccount(spawn)
+  const account = new NativeCodexAccount(spawn, { env: resolved.env, disposeGraceMs: resolved.disposeGraceMs,
+    maxJsonRpcLineBytes: resolved.maxJsonRpcLineBytes, maxStderrBytes: resolved.maxStderrBytes })
   const adapter = new DshCodexAdapter({
     provider: resolved.provider,
     displayName: resolved.displayName,
@@ -345,7 +343,7 @@ export function apply(ctx: Context, config: Config): void {
     resolveAttachments: () => ctx.get('attachments'),
     resolveImageGenerationEnabled: () => resolved.imageGenerationEnabled,
     runner,
-  })
+  }, message => ctx.logger.warn(message))
   ctx.llm.registerAdapter([resolved.provider], adapter)
   ctx.on('session/disposed', (session) => {
     void adapter.disposeSession(String(session.id)).catch(reportCleanupError)
@@ -355,7 +353,7 @@ export function apply(ctx: Context, config: Config): void {
       spawn: spawn,
       env: resolved.env, maxJsonRpcLineBytes: resolved.maxJsonRpcLineBytes,
       maxStderrBytes: resolved.maxStderrBytes, disposeGraceMs: resolved.disposeGraceMs,
-      maxContextTokens: resolved.skillsMaxContextTokens,
+      ...(resolved.skillsMaxContextTokens === undefined ? {} : { maxContextTokens: resolved.skillsMaxContextTokens }),
     })
     registerCodexSkillTools(ctx, skills)
     ctx.effect(() => () => skills.dispose(), 'dsh-codex-native: close skill discovery processes')

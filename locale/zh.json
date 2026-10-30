@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Codex Native",
-    "description": "将 Codex app-server 的动态模型、原生工具和问题卡接入 DSH，提供 ChatGPT 登录与按需用量查询。"
+    "description": "将 Codex app-server 的动态模型目录、对话、工具与原生审批接入 DSH，提供 ChatGPT 登录和按需用量查询。"
   }
 }

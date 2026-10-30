@@ -29,7 +29,7 @@ describe('official DSH controls with exclusively manual history requests', () =>
     const query = box.querySelector<HTMLButtonElement>('[data-usage-query]')!
     expect(query.className).toContain('outline')
     await act(async () => query.click())
-    expect(call.mock.calls).toEqual([['usage']])
+    expect(call.mock.calls).toEqual([['usage', {}, expect.any(AbortSignal)]])
     expect(box.querySelector('[data-usage-total]')?.textContent).toBe('30')
     const disclosure = box.querySelector<HTMLElement>('[data-disclosure-row]')!
     await act(async () => disclosure.click())

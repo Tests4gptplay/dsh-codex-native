@@ -1,5 +1,6 @@
-/** Bounded bidirectional newline-delimited JSON-RPC transport for App Server. */
+/** Newline-delimited JSON-RPC transport with an optional explicit byte budget. */
 
+import { diagnosticText } from './diagnostic.ts'
 import { once } from 'node:events'
 import type { Readable, Writable } from 'node:stream'
 import { LlmError } from '@deepseek-ai/dsh-llm'
@@ -34,6 +35,7 @@ export type CodexAppServerEvent =
       readonly method: string
       readonly params: JsonObject
       readonly resolution: 'answered' | 'declined' | 'rejected'
+      readonly resolutionMessage?: string
     }
 
 interface PendingRequest {
@@ -114,9 +116,11 @@ function thrown(value: unknown): Error {
 /** One connected App Server JSON-RPC peer. */
 export class JsonRpcConnection {
   private readonly pending = new Map<string, PendingRequest>()
+  private readonly serverRequests = new Map<string, { params: JsonObject; controller: AbortController }>()
   private readonly events = new AsyncQueue<CodexAppServerEvent>()
   private nextId = 1
-  private buffer = ''
+  private fragments: string[] = []
+  private bufferedBytes = 0
   private stopped = false
   private failure: Error | undefined
   private readonly stopSignal = new AbortController()
@@ -124,7 +128,7 @@ export class JsonRpcConnection {
   /**
    * @param input - writable App Server stdin.
    * @param output - readable App Server stdout.
-   * @param maxJsonRpcLineBytes - maximum UTF-8 bytes retained for one frame.
+   * @param maxJsonRpcLineBytes - opt-in maximum UTF-8 bytes per frame; 0 disables it.
    */
   constructor(
     private readonly input: Writable,
@@ -151,30 +155,37 @@ export class JsonRpcConnection {
       || this.input.destroyed || this.input.writableEnded
   }
 
+  private limitExceeded(bytes: number): boolean {
+    if (this.maxJsonRpcLineBytes === 0 || bytes <= this.maxJsonRpcLineBytes) return false
+    this.fail(new LlmError('Codex App Server JSON-RPC line exceeded its configured limit', 'OUTPUT_LIMIT'))
+    return true
+  }
+
   private readonly onData = (chunk: string): void => {
     if (this.stopped) return
-    this.buffer += chunk
-    while (true) {
-      const newline = this.buffer.indexOf('\n')
+    let offset = 0
+    while (offset < chunk.length) {
+      const newline = chunk.indexOf('\n', offset)
+      const part = chunk.slice(offset, newline === -1 ? undefined : newline)
+      if (part.length > 0) {
+        this.fragments.push(part)
+        this.bufferedBytes += Buffer.byteLength(part)
+      }
       if (newline === -1) {
-        if (Buffer.byteLength(this.buffer) > this.maxJsonRpcLineBytes) {
-          this.fail(new LlmError(
-            'Codex App Server JSON-RPC line exceeded its configured limit',
-            'OUTPUT_LIMIT',
-          ))
-        }
+        this.limitExceeded(this.bufferedBytes - (part.endsWith('\r') ? 1 : 0))
         return
       }
-      const line = this.buffer.slice(0, newline).replace(/\r$/u, '')
-      this.buffer = this.buffer.slice(newline + 1)
+      // Each incoming chunk is scanned/counts bytes once. Join only a completed
+      // frame, rather than repeatedly copying/scanning the entire partial line.
+      const joined = this.fragments.join('')
+      const carriageReturn = joined.endsWith('\r')
+      const line = carriageReturn ? joined.slice(0, -1) : joined
+      const bytes = this.bufferedBytes - (carriageReturn ? 1 : 0)
+      this.fragments = []
+      this.bufferedBytes = 0
+      offset = newline + 1
       if (line.trim().length === 0) continue
-      if (Buffer.byteLength(line) > this.maxJsonRpcLineBytes) {
-        this.fail(new LlmError(
-          'Codex App Server JSON-RPC line exceeded its configured limit',
-          'OUTPUT_LIMIT',
-        ))
-        return
-      }
+      if (this.limitExceeded(bytes)) return
       try {
         this.receive(JSON.parse(line))
       } catch (error: unknown) {
@@ -190,7 +201,7 @@ export class JsonRpcConnection {
 
   private readonly onEnd = (): void => {
     if (this.stopped) return
-    if (this.buffer.trim().length !== 0) {
+    if (this.fragments.join('').trim().length !== 0) {
       this.fail(new LlmError('Codex App Server stdout ended with an incomplete JSON-RPC line', 'MALFORMED_RESPONSE'))
       return
     }
@@ -207,8 +218,25 @@ export class JsonRpcConnection {
     if (typeof envelope.method === 'string') {
       const params = object(envelope.params ?? {}, `${envelope.method} params`)
       if (id === undefined) {
+        // This runs on receipt, while a Host answerer may block next(). Native
+        // withdrawal/turn completion must dismiss that prompt immediately.
+        if (envelope.method === 'serverRequest/resolved') {
+          const requestId = rpcId(params.requestId)
+          const pending = requestId === undefined ? undefined : this.serverRequests.get(rpcKey(requestId))
+          if (pending !== undefined && pending.params.threadId === params.threadId) {
+            pending.controller.abort(new LlmError('Native request was resolved or withdrawn', 'ABORTED'))
+          }
+        } else if (envelope.method === 'turn/completed') {
+          const turn = object(params.turn, 'turn/completed turn')
+          for (const pending of this.serverRequests.values()) {
+            if (pending.params.threadId === params.threadId && pending.params.turnId === turn.id) {
+              pending.controller.abort(new LlmError('Native approval turn ended', 'ABORTED'))
+            }
+          }
+        }
         this.events.push({ kind: 'notification', method: envelope.method, params })
       } else {
+        this.serverRequests.set(rpcKey(id), { params, controller: new AbortController() })
         this.events.push({
           kind: 'server-request',
           id,
@@ -225,7 +253,7 @@ export class JsonRpcConnection {
     this.pending.delete(rpcKey(id))
     if (envelope.error !== undefined) {
       pending.waiter.reject(new LlmError(
-        `Codex App Server ${pending.method} failed: ${JSON.stringify(envelope.error)}`,
+        `Codex App Server ${pending.method} failed: ${diagnosticText(JSON.stringify(envelope.error))}`,
         'CODEX_PROTOCOL',
       ))
     } else {
@@ -264,13 +292,28 @@ export class JsonRpcConnection {
   }
 
   /** Resolve one App Server request. */
-  respond(id: JsonRpcId, result: JsonValue): Promise<void> {
-    return this.send({ id, result })
+  async respond(id: JsonRpcId, result: JsonValue): Promise<void> {
+    this.serverRequests.get(rpcKey(id))?.controller.signal.throwIfAborted()
+    try { await this.send({ id, result }) } finally { this.forgetServerRequest(id) }
   }
 
   /** Reject one App Server request. */
-  respondError(id: JsonRpcId, code: number, message: string): Promise<void> {
-    return this.send({ id, error: { code, message } })
+  async respondError(id: JsonRpcId, code: number, message: string): Promise<void> {
+    this.serverRequests.get(rpcKey(id))?.controller.signal.throwIfAborted()
+    try { await this.send({ id, error: { code, message } }) } finally { this.forgetServerRequest(id) }
+  }
+
+  /** Cancellation for an actually received native RPC, including queued withdrawals. */
+  serverRequestSignal(id: JsonRpcId): AbortSignal {
+    return this.serverRequests.get(rpcKey(id))?.controller.signal
+      ?? AbortSignal.abort(new LlmError('Native request is no longer pending', 'ABORTED'))
+  }
+
+  /** Release a consumed request, whether answered or already withdrawn. */
+  forgetServerRequest(id: JsonRpcId): void {
+    // Completion/cleanup is not a native withdrawal. In particular, a failed
+    // response write must propagate rather than look like an upstream cancel.
+    this.serverRequests.delete(rpcKey(id))
   }
 
   /** Read the next notification or server request. */
@@ -304,6 +347,10 @@ export class JsonRpcConnection {
   }
 
   private detach(): void {
+    this.fragments = []
+    this.bufferedBytes = 0
+    for (const pending of this.serverRequests.values()) pending.controller.abort(this.failure)
+    this.serverRequests.clear()
     this.output.off('data', this.onData)
     this.output.off('end', this.onEnd)
     this.output.off('close', this.onEnd)

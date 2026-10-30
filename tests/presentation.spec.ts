@@ -10,7 +10,7 @@ function action(block: object, index: number): StreamChunk[] {
 }
 async function project(chunks: StreamChunk[]): Promise<StreamChunk[]> {
   const result: StreamChunk[]=[]
-  for await(const chunk of presentForDsh((async function*(){yield* chunks})()))result.push(chunk)
+  for await(const chunk of presentForDsh((async function*(){yield* chunks})(), () => {}))result.push(chunk)
   return result
 }
 describe('DSH native content boundary',()=>{

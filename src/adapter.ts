@@ -1,7 +1,6 @@
 /** Harness LLM adapter backed by one ephemeral Codex App Server per request. */
 
 import {
-  contentHasImage,
   LlmAdapter,
   LlmError,
   ReasoningEffortId,
@@ -16,6 +15,7 @@ import type {
   StreamChunk,
 } from '@deepseek-ai/dsh-llm'
 import { HARNESS_TOOL_NAMESPACE } from './identifiers.ts'
+import { appServerCallId } from './call-ids.ts'
 import { boundRequestImageHistory, NativeImageBridge } from './images.ts'
 import type { CodexImageStorePort } from './images.ts'
 import {
@@ -191,17 +191,8 @@ export class CodexAppServerAdapter extends LlmAdapter {
         'UNSUPPORTED_OPTION',
       )
     }
-    const hasImages = options.messages.some(message => contentHasImage(message.content))
-    const configuredModel = (this.liveModels ?? this.options.models).find(model => model.id === options.model)
-      ?? (hasImages && this.options.fetchModels !== undefined
-        ? (await this.models()).find(model => model.id === options.model)
-        : undefined)
-    if (hasImages && configuredModel?.inputModalities.includes('image') !== true) {
-      throw new LlmError(
-        `Codex model "${options.model}" does not accept image input`,
-        'UNSUPPORTED_CONTENT',
-      )
-    }
+    // Catalog metadata is for the Host picker, not an adapter admission policy.
+    // Preserve the Host's selected model and image request for the provider.
     const history = boundRequestImageHistory(
       appServerHistory(options),
       this.options.maxRequestImageBytes,
@@ -224,7 +215,7 @@ export class CodexAppServerAdapter extends LlmAdapter {
         model: options.model,
         modelProvider: this.options.modelProvider,
         ...(reasoningEffort === undefined ? {} : { reasoningEffort }),
-        system: options.system ?? '',
+        ...(options.system === undefined ? {} : { system: options.system }),
         history: injectedHistory,
         dynamicTools,
         imageGenerationEnabled,
@@ -238,7 +229,7 @@ export class CodexAppServerAdapter extends LlmAdapter {
           sessionId: String(options.sessionId),
           model: options.model,
           modelProvider: this.options.modelProvider,
-          system: options.system ?? '',
+          ...(options.system === undefined ? {} : { system: options.system }),
           dynamicTools,
           imageGenerationEnabled,
         },
@@ -320,7 +311,7 @@ export class CodexAppServerAdapter extends LlmAdapter {
       modelProvider: this.options.modelProvider,
       model: options.model,
       reasoningEffort: options.reasoningEffort === undefined ? null : String(options.reasoningEffort),
-      system: options.system ?? '',
+      system: options.system ?? null,
       dynamicTools: [...dynamicTools],
       imageGenerationEnabled,
       maxRequestImageBytes: this.options.maxRequestImageBytes,
@@ -336,11 +327,15 @@ export class CodexAppServerAdapter extends LlmAdapter {
     pendingCallId?: string,
   ): Promise<boolean> {
     if (cached === undefined) return false
-    if (!mapper.canReuseThread()) {
+    // We cannot rewrite an App Server's already-created callback/history in place.
+    // Retire only this incompatible live thread; the next Harness tool-result step
+    // cold-replays the same call+output using their stable bounded wire alias.
+    if (!mapper.canReuseThread()
+      || (pendingCallId !== undefined && pendingCallId.length > 64)) {
       await cached.discard()
       return false
     }
-    cached.commit(extendAppServerHistory(history, outputs), pendingCallId)
+    cached.commit(extendAppServerHistory(history, outputs), pendingCallId === undefined ? undefined : appServerCallId(pendingCallId))
     return true
   }
 }

@@ -260,11 +260,12 @@ describe('assembled Harness transcript', () => {
     })
     const second = await assemble(ctx, [user, first.message, result])
 
+    expect(runner.turnRequests.every(turn => turn.signal instanceof AbortSignal)).toBe(true)
     expect({
       first: { finish: first.finish, content: first.message.content },
       transport: {
         openCount: runner.openRequests.length,
-        turns: runner.turnRequests,
+        turns: runner.turnRequests.map(({ signal, ...request }) => request),
       },
       second: { finish: second.finish, content: second.message.content },
     }).toMatchSnapshot()

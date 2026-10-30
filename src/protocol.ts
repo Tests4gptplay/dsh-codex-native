@@ -18,6 +18,7 @@ import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import type { CodexAppServerToolResult } from './runner.ts'
 import { imageAttachmentMarker } from './images.ts'
 import { HARNESS_TOOL_NAMESPACE } from './identifiers.ts'
+import { appServerCallId, appServerItemCallIds, requiresCallIdReplay } from './call-ids.ts'
 import { jsonValue, object } from './wire.ts'
 import type { CodexAppServerEvent, JsonObject, JsonValue } from './wire.ts'
 
@@ -99,54 +100,16 @@ function checkedAdd(left: number, right: number, label: string): number {
   return result
 }
 
-function jsonRecord(value: JsonValue, label: string): Record<string, JsonValue> {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-    throw new LlmError(`${label} must be a JSON object`, 'INVALID_TOOL_SCHEMA')
-  }
-  return value
-}
-
 function appServerToolName(name: string): string {
   return name === HARNESS_SKILL_NAME ? HARNESS_SKILL_TOOL_NAME : name
 }
 
-function harnessSkillCatalogNames(messages: GenerateOptions['messages']): string[] {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const source = messages[index]!.source as unknown as {
-      readonly kind?: unknown
-      readonly form?: unknown
-      readonly entries?: unknown
-    }
-    if (source.kind !== 'skill-catalog') continue
-    if (source.form !== 'catalog' || !Array.isArray(source.entries)) {
-      throw new LlmError('Harness history contains an invalid skill catalog', 'INVALID_HISTORY')
-    }
-    const names: string[] = []
-    const seen = new Set<string>()
-    for (const entry of source.entries) {
-      if (entry === null || typeof entry !== 'object' || Array.isArray(entry)
-        || typeof (entry as { readonly name?: unknown }).name !== 'string'
-        || (entry as { readonly name: string }).name.length === 0
-        || seen.has((entry as { readonly name: string }).name)) {
-        throw new LlmError('Harness history contains an invalid skill catalog entry', 'INVALID_HISTORY')
-      }
-      const name = (entry as { readonly name: string }).name
-      seen.add(name)
-      names.push(name)
-    }
-    return names
-  }
-  return []
-}
-
 function bridgedTools(
   tools: readonly ToolSchema[] | undefined,
-  skillNames: readonly string[],
 ): BridgedTool[] {
   const bridged: BridgedTool[] = []
   const seen = new Set<string>()
   for (const tool of tools ?? []) {
-    if (tool.name === HARNESS_SKILL_NAME && skillNames.length === 0) continue
     const name = appServerToolName(tool.name)
     if (seen.has(name)) {
       throw new LlmError(`Harness tool names collide after App Server mapping: ${JSON.stringify(name)}`, 'INVALID_TOOL_SCHEMA')
@@ -155,21 +118,6 @@ function bridgedTools(
     bridged.push({ name, tool })
   }
   return bridged
-}
-
-function appServerToolSchema(tool: ToolSchema, skillNames: readonly string[]): JsonValue {
-  const schema = jsonValue(tool.parameters, `schema for ${tool.name}`)
-  if (tool.name !== HARNESS_SKILL_NAME) return schema
-  const root = jsonRecord(schema, 'Harness skill tool schema')
-  const properties = jsonRecord(root.properties!, 'Harness skill tool schema properties')
-  const name = jsonRecord(properties.name!, 'Harness skill name schema')
-  return {
-    ...root,
-    properties: {
-      ...properties,
-      name: { ...name, enum: [...skillNames] },
-    },
-  }
 }
 
 function replayItems(value: unknown): JsonValue[] | undefined {
@@ -383,7 +331,7 @@ export function appServerHistory(options: GenerateOptions): JsonValue[] {
   const history: JsonValue[] = []
   const identities = new Map<string, HistoryIdentitySlot>()
   const append = (item: JsonValue, origin: HistoryItemOrigin): void => {
-    appendHistoryItem(history, identities, item, origin)
+    appendHistoryItem(history, identities, appServerItemCallIds(item), origin)
   }
   for (const message of options.messages) {
     // DSH 0.2+ persists tool results as their own role='tool' messages,
@@ -397,7 +345,7 @@ export function appServerHistory(options: GenerateOptions): JsonValue[] {
       continue
     }
     const replay = message.role === 'assistant'
-      && message.source.kind === 'model'
+      && message.source?.kind === 'model'
       && message.source.provider === options.provider
       ? replayItems(message.source.replayState)
       : undefined
@@ -436,12 +384,6 @@ export function appServerHistory(options: GenerateOptions): JsonValue[] {
           }, 'harness')
           break
         case 'image':
-          if (message.role !== 'user') {
-            throw new LlmError(
-              `Codex App Server cannot reconstruct ${message.role} image content without provider replay`,
-              'UNSUPPORTED_CONTENT',
-            )
-          }
           content.push({ type: 'input_image', image_url: imageAttachmentMarker(block.attachment) })
           break
         default:
@@ -464,7 +406,7 @@ function existingHistoryOrigin(item: JsonValue): HistoryItemOrigin {
   return 'provider'
 }
 
-/** Append newly logged provider outputs using the same identities as request reconstruction. */
+/** Append RAW provider receipts to an already-WIRE history. Never re-encode the prefix. */
 export function extendAppServerHistory(
   history: readonly JsonValue[],
   outputs: readonly JsonValue[],
@@ -472,11 +414,11 @@ export function extendAppServerHistory(
   const extended: JsonValue[] = []
   const identities = new Map<string, HistoryIdentitySlot>()
   for (const item of history) appendHistoryItem(extended, identities, item, existingHistoryOrigin(item))
-  for (const item of outputs) appendHistoryItem(extended, identities, item, 'provider')
+  for (const item of outputs) appendHistoryItem(extended, identities, appServerItemCallIds(item), 'provider')
   return extended
 }
 
-/** Extract logged Harness tool outcomes for exact App Server callback continuation. */
+/** Retain RAW callback IDs, but read outputs from the already-WIRE model history. */
 export function appServerToolResults(
   options: GenerateOptions,
   modelHistory?: readonly JsonValue[],
@@ -487,6 +429,7 @@ export function appServerToolResults(
       && item.type === 'function_call_output'
       && typeof item.call_id === 'string'
       && item.output !== undefined) {
+      // modelHistory is already a wire projection, not a raw replay receipt.
       visibleOutputs.set(item.call_id, item.output)
     }
   }
@@ -495,7 +438,7 @@ export function appServerToolResults(
     const callId = String(message.toolCallId)
     return [{
       callId,
-      output: visibleOutputs.get(callId) ?? resultOutput(message),
+      output: visibleOutputs.get(appServerCallId(callId)) ?? resultOutput(message),
       success: message.isError !== true,
     }]
   })
@@ -504,24 +447,19 @@ export function appServerToolResults(
 /** Translate available Harness tools to App Server dynamic tools. */
 export function appServerDynamicTools(
   tools: readonly ToolSchema[] | undefined,
-  messages: GenerateOptions['messages'] = [],
+  _messages: GenerateOptions['messages'] = [],
 ): JsonValue[] {
-  const skillNames = harnessSkillCatalogNames(messages)
-  const declared = bridgedTools(tools, skillNames)
+  const declared = bridgedTools(tools)
   if (declared.length === 0) return []
   return [{
     type: 'namespace',
     name: HARNESS_TOOL_NAMESPACE,
-    description: declared.some(({ tool }) => tool.name === HARNESS_SKILL_NAME)
-      ? 'Tools provided by the outer DeepSeek Harness agent loop. The harness_skill alias loads only names from the Harness session catalog; use Codex native skill support for Codex skills.'
-      : 'Tools provided by the outer DeepSeek Harness agent loop.',
+    description: 'Tools provided by the outer DeepSeek Harness agent loop.',
     tools: declared.map(({ name, tool }) => ({
       type: 'function',
       name,
-      description: tool.name === HARNESS_SKILL_NAME
-        ? `${tool.description} This App Server alias is only for the outer Harness session catalog, not Codex-native skills.`
-        : tool.description,
-      inputSchema: appServerToolSchema(tool, skillNames),
+      description: tool.description,
+      inputSchema: jsonValue(tool.parameters, `schema for ${tool.name}`),
     })),
   }]
 }
@@ -530,7 +468,7 @@ export function appServerDynamicTools(
 export function harnessToolCall(
   event: Extract<CodexAppServerEvent, { kind: 'server-request' }>,
   tools: readonly ToolSchema[] | undefined,
-  messages: GenerateOptions['messages'] = [],
+  _messages: GenerateOptions['messages'] = [],
 ): HarnessToolCall {
   if (event.method !== 'item/tool/call') {
     throw new LlmError(`Expected a dynamic tool call, received ${event.method}`, 'MALFORMED_RESPONSE')
@@ -543,17 +481,12 @@ export function harnessToolCall(
   if (params.namespace !== HARNESS_TOOL_NAMESPACE) {
     throw new LlmError('Codex requested a tool outside the DeepSeek Harness namespace', 'UNKNOWN_TOOL')
   }
-  const skillNames = harnessSkillCatalogNames(messages)
-  const offered = new Map(bridgedTools(tools, skillNames).map(({ name, tool }) => [name, tool.name]))
+  const offered = new Map(bridgedTools(tools).map(({ name, tool }) => [name, tool.name]))
   const originalName = offered.get(params.tool)
   if (originalName === undefined) {
     throw new LlmError(`Codex requested unavailable Harness tool "${params.tool}"`, 'UNKNOWN_TOOL')
   }
-  const args = object(params.arguments, `arguments for ${params.tool}`)
-  if (originalName === HARNESS_SKILL_NAME
-    && (typeof args.name !== 'string' || !skillNames.includes(args.name))) {
-    throw new LlmError('Codex requested a skill outside the current Harness session catalog', 'UNKNOWN_TOOL')
-  }
+  object(params.arguments, `arguments for ${params.tool}`)
   return {
     id: ToolCallId(params.callId),
     name: originalName,
@@ -669,6 +602,7 @@ export class AppServerEventMapper {
   private contextCompacting = false
   private currentContextUsage: CodexContextUsage | null = null
   private nativeCompactionSeen = false
+  private callIdReplayRequired = false
   private nextIndex = 0
   private nextRawAction = 0
 
@@ -706,7 +640,12 @@ export class AppServerEventMapper {
 
   private retainRawItem(value: unknown): RetainedRawItem {
     const candidate = responseItem(value, `raw response item ${this.rawItems.length + this.contextItems.length}`)
-    if (this.consumeBaseline(candidate)) return { kind: 'known' }
+    // Normalized replay cannot repair the server's existing in-memory history.
+    // Reconstruct it at the next turn instead of continuing a poisoned thread.
+    if (requiresCallIdReplay(candidate)) this.callIdReplayRequired = true
+    // Injected wire echoes match directly; live raw callbacks match their wire
+    // projection. Keep only NEW raw receipts so cold history never double-encodes.
+    if (this.consumeBaseline(candidate) || this.consumeBaseline(appServerItemCallIds(candidate))) return { kind: 'known' }
     if (NATIVE_COMPACTION_ITEM_TYPES.has(candidate.type)) {
       this.nativeCompactionSeen = true
       this.currentContextUsage = null
@@ -874,11 +813,12 @@ export class AppServerEventMapper {
         actionId,
         event.method,
         'action',
-        event.resolution === 'answered' ? 'completed' : 'declined',
+        event.resolution === 'answered' ? 'completed' : event.resolution === 'rejected' ? 'failed' : 'declined',
         event.method,
         {
           params: event.params,
           resolution: event.resolution,
+          ...(event.resolutionMessage === undefined ? {} : { diagnostic: event.resolutionMessage }),
         },
       )
     }
@@ -1035,7 +975,7 @@ export class AppServerEventMapper {
 
   /** Whether the live thread still has only reconstructible Harness-owned history. */
   canReuseThread(): boolean {
-    return !this.nativeCompactionSeen
+    return !this.nativeCompactionSeen && !this.callIdReplayRequired
   }
 
   /** Snapshot raw provider items so the next Harness request can inject them. */
@@ -1092,7 +1032,5 @@ export function assertCompletedTurn(event: CodexAppServerEvent): void {
     : details?.codexErrorInfo === 'contextWindowExceeded'
       ? CONTEXT_WINDOW_EXCEEDED_CODE
       : codexFailureCode(error)
-  throw new LlmError(error, code, code === CODEX_MODEL_CAPACITY_CODE
-    ? { providerRetryAfterMs: CODEX_MODEL_CAPACITY_RETRY_AFTER_MS }
-    : undefined)
+  throw new LlmError(error, code)
 }

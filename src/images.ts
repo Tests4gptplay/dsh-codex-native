@@ -1,6 +1,7 @@
 /** Durable projection and transient hydration of Codex image content. */
 
 import { createHash } from 'node:crypto'
+import { appServerCallId } from './call-ids.ts'
 import { AttachmentId } from '@deepseek-ai/dsh-attachment'
 import type {
   ImageAttachmentLimits,
@@ -26,7 +27,6 @@ const IMAGE_MEDIA_TYPES = new Set<ImageMediaType>([
   'image/gif',
 ])
 const IMAGE_DETAILS = new Set(['auto', 'low', 'high', 'original'])
-const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u
 
 interface JsonObject {
   readonly [key: string]: unknown
@@ -142,10 +142,11 @@ function decodedBase64(
   const maximumEncodedBytes = 4 * Math.ceil(limits.maxImageBytes / 3)
   if (encoded.length === 0
     || encoded.length > maximumEncodedBytes
-    || encoded.length % 4 !== 0
-    || !BASE64.test(encoded)) {
+    || encoded.length % 4 !== 0) {
     throw new LlmError(`Codex App Server returned invalid ${label}`, 'MALFORMED_RESPONSE')
   }
+  // Buffer decoding is permissive, so the exact canonical round trip below
+  // validates alphabet/padding without a repeated-group RegExp stack per quartet.
   const data = Buffer.from(encoded, 'base64')
   if (data.byteLength === 0
     || data.byteLength > limits.maxImageBytes
@@ -246,9 +247,12 @@ export function boundRequestImageHistory(
   history: readonly JsonValue[],
   maxRequestImageBytes: number,
 ): JsonValue[] {
-  if (!Number.isSafeInteger(maxRequestImageBytes) || maxRequestImageBytes <= 0) {
-    throw new LlmError('Codex maxRequestImageBytes must be a positive safe integer', 'INVALID_REQUEST')
+  if (!Number.isSafeInteger(maxRequestImageBytes) || maxRequestImageBytes < 0) {
+    throw new LlmError('Codex maxRequestImageBytes must be a non-negative safe integer (0 disables the optional budget)', 'INVALID_REQUEST')
   }
+  // A zero budget means no adapter image substitution. Explicit positive values
+  // retain the user's opt-in request budget; Host attachment limits still apply.
+  if (maxRequestImageBytes === 0) return [...history]
   const lengths: number[] = []
   for (const [index, item] of history.entries()) {
     collectModelImageLengths(item, `history[${index}]`, lengths)
@@ -447,7 +451,7 @@ export class NativeImageBridge {
   ): Promise<ExternalizedCodexEvent> {
     const current = object(event.params.item, 'Codex raw response item', 'MALFORMED_RESPONSE')
     if (current.type === 'function_call_output' && Array.isArray(current.output)) {
-      const supplied = typeof current.call_id === 'string' && this.harnessCallIds.has(current.call_id)
+      const supplied = typeof current.call_id === 'string' && (this.harnessCallIds.has(current.call_id) || this.harnessCallIds.has(appServerCallId(current.call_id)))
       return this.externalizeRawContent(event, current, 'output', supplied)
     }
     if (current.type === 'message' && current.role !== 'assistant' && Array.isArray(current.content)) {

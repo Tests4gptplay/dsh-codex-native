@@ -1,6 +1,7 @@
 /** Disposable App Server thread leases keyed by Harness session identity. */
 
 import { isDeepStrictEqual } from 'node:util'
+import { appServerCallId } from './call-ids.ts'
 import { LlmError } from '@deepseek-ai/dsh-llm'
 import type {
   CodexAppServerEvent,
@@ -34,7 +35,7 @@ export interface CodexSessionRequest {
   readonly sessionId: string
   readonly epoch: JsonValue
   readonly thread: Omit<CodexAppServerThreadRequest, 'signal'>
-  /** Externalized history used only to prove an exact warm continuation. */
+  /** Wire-projected history used only to prove an exact warm continuation. */
   readonly history: readonly JsonValue[]
   /** Resolve provider-ready history only when a new thread must be reconstructed. */
   readonly loadInjectedHistory: () => Promise<readonly JsonValue[]>
@@ -97,7 +98,7 @@ function matchingToolResult(
 ): CodexAppServerToolResult | undefined {
   if (item === undefined || item === null || typeof item !== 'object' || Array.isArray(item)) return undefined
   if (item.type !== 'function_call_output' || item.call_id !== callId) return undefined
-  return results.find(result => result.callId === callId && isDeepStrictEqual(result.output, item.output))
+  return results.find(result => appServerCallId(result.callId) === callId && isDeepStrictEqual(result.output, item.output))
 }
 
 function turnRequest(
@@ -276,12 +277,28 @@ export class CodexSessionCache {
   private readonly leases = new Map<string, SessionLease>()
   private clock = 0
   private disposed = false
+  private readonly opening = new Map<string, AbortController>()
 
   constructor(private readonly options: CodexSessionCacheOptions) {}
 
   /** Open or exactly continue the thread lease for one Harness request. */
   async begin(request: CodexSessionRequest): Promise<CodexSessionStep> {
     if (this.disposed) throw new LlmError('Codex session cache is disposed', 'ABORTED')
+    if (this.opening.has(request.sessionId)) {
+      throw new LlmError('Codex session already has an active model step', 'INVALID_CONTINUATION')
+    }
+    const opening = new AbortController()
+    this.opening.set(request.sessionId, opening)
+    const signal = request.signal === undefined ? opening.signal : AbortSignal.any([opening.signal, request.signal])
+    try {
+      return await this.beginOwned({ ...request, signal })
+    } finally {
+      if (this.opening.get(request.sessionId) === opening) this.opening.delete(request.sessionId)
+    }
+  }
+
+  private async beginOwned(request: CodexSessionRequest): Promise<CodexSessionStep> {
+    request.signal?.throwIfAborted()
     let lease = this.leases.get(request.sessionId)
     if (lease !== undefined) {
       if (lease.active) {
@@ -300,6 +317,8 @@ export class CodexSessionCache {
       lease = undefined
     }
     await this.trimToSize(this.options.maxSessions - 1)
+    request.signal?.throwIfAborted()
+    if (this.disposed) throw new LlmError('Codex session cache is disposed', 'ABORTED')
     const created = new SessionLease(
       request.sessionId,
       request.epoch,
@@ -322,6 +341,7 @@ export class CodexSessionCache {
 
   /** Dispose the lease owned by one ended Harness session, when present. */
   async disposeSession(sessionId: string): Promise<void> {
+    this.opening.get(sessionId)?.abort(DISPOSE_REASON)
     const lease = this.leases.get(sessionId)
     if (lease !== undefined) await this.retire(lease)
   }
@@ -330,6 +350,7 @@ export class CodexSessionCache {
   async dispose(): Promise<void> {
     if (this.disposed) return
     this.disposed = true
+    for (const pending of this.opening.values()) pending.abort(DISPOSE_REASON)
     const leases = [...this.leases.values()]
     this.leases.clear()
     const results = await Promise.allSettled(leases.map(lease => lease.dispose()))
