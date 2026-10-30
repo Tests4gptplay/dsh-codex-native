@@ -1,6 +1,6 @@
 {
   "name": "dsh-codex-native",
-  "version": "0.2.1-alpha.9-http.11-candidate.7",
+  "version": "0.2.1-alpha.9-http.11",
   "description": "Connect Codex app-server models, conversation, tools and native approvals to DSH, with ChatGPT sign-in and on-demand usage queries.",
   "type": "module",
   "icon": "assets/chatgpt-auth.png",

@@ -1,0 +1,16 @@
+# Codex Native 0.2.1-alpha.9-http.11
+
+Promotes the tested candidate7 runtime without changing implementation. Source baseline: d0da6b0390f9423c11ea9c72a3bb194848c755f0. The published TGZ differs from the frozen candidate only in package.json version; all other packaged bytes are preserved.
+
+## Changes
+- Preserve Host skill schemas, explicit budgets, upstream defaults, image history roles and long tool-call identifiers.
+- Keep diagnostic warnings out of model text and compaction summaries.
+- Map unavailable native-approval service to an integration error, not a user rejection.
+- Preserve provider selection, continuation, questions and native approval adapters.
+
+## Verification and boundaries
+Existing frozen source/renderer/package records: 370/16/28 passed; typecheck/build passed. These are prior candidate records, not a fresh live run. User-provided Windows evidence covers real replies/continuation, 21 skill results, 1001-line read and continuation, explicit budget 10001, manual compaction and subsequent reply, question selection, and Host write sandbox Reject/Allow once/re-denial.
+
+Host write sandbox approval is not proof of native commandExecution/fileChange protocol approval coverage. Those native protocol events remain unconfirmed; the live unavailable branch and exact prior startup-warning condition were not reproduced. No new Codex execution or user-machine testing was performed for this packaging promotion.
+
+Windows Computer Use integration is on-demand maintenance for the supported helper, not a desktop-control engine or proof of screenshot success. Existing temporary cwd mapping, compaction-tool policy and legacy retry defaults remain unchanged.
