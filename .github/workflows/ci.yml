@@ -143,7 +143,10 @@ jobs:
             const meta = JSON.parse(readFileSync('.tmp/candidate-unpacked/locale/'+locale+'.json','utf8'))
             assert(meta.meta.title && meta.meta.description)
           }
-          assert.equal(pkg.description,'Codex app-server main models for DSH with ChatGPT sign-in, Token history, context management and native tools.')
+          assert.equal(typeof pkg.description, 'string')
+          assert(pkg.description.trim().length > 0, 'Package description must not be empty')
+          assert.equal(pkg.description, JSON.parse(readFileSync('package.json', 'utf8')).description,
+            'Installed description differs from the source package metadata')
           for (const locale of ['README.md','README.zh.md']) {
             assert.equal(readFileSync('.tmp/candidate-unpacked/'+locale,'utf8'),
               readFileSync(locale,'utf8'),
