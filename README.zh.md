@@ -1,8 +1,20 @@
 # DSH Codex Native
 
+## 核心功能
+
+- 动态读取 Codex `model/list`，在 DSH 中选择当前账号可用的模型、输入能力和推理档位。
+- 通过 ChatGPT 登录接入主模型，连接 DSH 工具、Codex 原生设置、可选择及自由填写的问题卡。
+- 按需查询 Token 历史和额度，支持清空面板缓存后重新查询。
+- 内置 Windows Computer Use 指南、状态检查、已知 helper 修复、精确进程释放与回滚；Windows 10 修复针对已知 `@oai/sky 0.7.13`，签名影响与中断确认见操作说明。
+
+
 **将 OpenAI 官方 Codex app-server 接入 DeepSeek Harness 的主模型插件。** 支持 ChatGPT 账号登录、DSH 工具、Codex 原生模型设置，以及手动查询 Token 历史用量。
 
 [English](README.md) · [版本发布](https://github.com/Tests4gptplay/dsh-codex-native/releases) · [安装指南](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/INSTALL.md) · [发布验证](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/STATUS.md)
+
+## 测试候选进展
+
+[http.11 candidate4](https://github.com/Tests4gptplay/dsh-codex-native/tree/test/windows-native-20261030-candidate4) 增加大图附件冷恢复、长工具调用 ID 回放关联及原生一次性审批桥接修正。大图恢复使用 Buffer 编码，修复大字节数组展开引起的调用栈错误；适配层额外图片/行预算默认关闭。候选安装见该分支 test-artifacts，正式版安装仍见下文。
 
 ## 最新版本 — v0.2.1-alpha.9-http.10
 

@@ -1,8 +1,20 @@
 # DSH Codex Native
 
+## Core capabilities
+
+- Read Codex `model/list` dynamically and select models, input capabilities and reasoning efforts available to the current account in DSH.
+- Connect a main model through ChatGPT sign-in, DSH tools, Codex settings, and selectable/free-text question cards.
+- Query Token history and quota on demand, or clear the panel cache before querying again.
+- Use bundled Windows Computer Use guidance, status checks, known-helper repair, exact-process release and rollback. The Windows 10 repair targets the known `@oai/sky 0.7.13`; see operation guidance for signature changes and interruption confirmation.
+
+
 **An OpenAI Codex app-server main-model integration for DeepSeek Harness.** Use ChatGPT sign-in, DSH tools, native Codex model settings and an on-demand Token usage history panel.
 
 [简体中文](README.zh.md) · [Releases](https://github.com/Tests4gptplay/dsh-codex-native/releases) · [Installation guide](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/INSTALL.md) · [Release verification](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/docs/STATUS.md)
+
+## Test candidate progress
+
+[http.11 candidate4](https://github.com/Tests4gptplay/dsh-codex-native/tree/test/windows-native-20261030-candidate4) adds fixes for cold image-attachment restoration, long tool-call ID replay associations and native one-time approval bridging. Buffer-based image restoration avoids large-byte-array expansion stack errors; extra adapter image/line budgets default to disabled. Use that branch's test-artifacts for candidate installation; published-release installation remains below.
 
 ## Latest release — v0.2.1-alpha.9-http.10
 
