@@ -1,0 +1,42 @@
+name: Publish approved Native 0.2.2
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-native-022.yml', 'scripts/promote-native-022.py']
+permissions:
+  contents: write
+concurrency:
+  group: publish-native-022
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reproduce approved metadata-only package and verify frozen runtime
+        run: python scripts/promote-native-022.py
+      - name: Publish exact approved source and artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG=v0.2.2
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" > /dev/null 2>&1; then
+            echo 'Ref exists; refusing to overwrite or republish.'
+            exit 1
+          fi
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
+          gh release create "$TAG" dist/dsh-codex-native-0.2.2.tgz dist/promotion-manifest.json dist/SHA256SUMS --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'Codex Native 0.2.2 — tested runtime promotion' --notes-file docs/releases/0.2.2.md --latest --prerelease=false
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-022-promotion
+          path: dist/

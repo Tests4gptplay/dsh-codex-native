@@ -1,3 +1,5 @@
+> Current version: 0.2.2. The tested candidate7 runtime is preserved; see [release notes](docs/releases/0.2.2.md) for changes and scoped validation.
+
 # DSH Codex Native
 
 ## Core capabilities
