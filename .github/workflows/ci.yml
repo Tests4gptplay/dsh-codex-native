@@ -96,7 +96,7 @@ jobs:
             return statSync(p).isDirectory() ? files(p) : [relative(dir,p).replaceAll('\\','/')]
           })
           const items = files(dir)
-          const allowed = new Set(['package.json','LICENSE','cordis.patch.yml','README.md','README.zh.md','assets/chatgpt-auth.png','assets/LOBE-ICONS-LICENSE.txt','locale/en.json','locale/zh.json'])
+          const allowed = new Set(['package.json','LICENSE','cordis.patch.yml','README.md','README.zh.md','RELEASE_NOTES.md','assets/chatgpt-auth.png','assets/LOBE-ICONS-LICENSE.txt','locale/en.json','locale/zh.json'])
           for (const p of items) assert(allowed.has(p)||/^lib\/(?:index\.js|client\.js|(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.d\.ts)$/.test(p),'Unexpected file: '+p)
           assert(!manifest.scripts && !manifest.devDependencies)
           assert(Object.values(manifest.peerDependencies ?? {}).every(range => range === '*'), 'Installed package must retain unrestricted host peer ranges')
@@ -119,8 +119,13 @@ jobs:
           const docs = ['README.md','README.zh.md'].map(name=>readFileSync(join(dir,name),'utf8'))
           for (const snippet of old) for (const payload of [client,...docs]) assert(!payload.includes(snippet),'Old copy in installed package: '+snippet)
           for (const payload of docs) {
-            assert(payload.includes('v0.2.1-alpha.9'))
-            assert(payload.includes('https://raw.githubusercontent.com/Tests4gptplay/dsh-codex-native/main/docs/screenshots/codex-usage-desktop-anonymized.png'))
+            assert(payload.includes(`releases/download/v${manifest.version}/dsh-codex-native-${manifest.version}.tgz`), 'Current versioned install URL missing')
+            assert(payload.includes('(RELEASE_NOTES.md)'), 'Bundled release notes link missing')
+            assert(!payload.includes('This test candidate is') && !payload.includes('本测试候选为'), 'Stale current-candidate wording')
+            for (const match of payload.matchAll(/\]\(([^)]+)\)/g)) {
+              const target = match[1]
+              if (!/^https?:\/\/|^#/.test(target)) assert(items.includes(target), 'Missing packaged Markdown target: '+target)
+            }
           }
           assert(client.includes('账号总用量') && client.includes('ChatGPT account total'),'Refined UI labels missing from compiled client')
           console.log('CLEAN_CANDIDATE_COPY_VERIFIED', {version:manifest.version,files:items.length})
