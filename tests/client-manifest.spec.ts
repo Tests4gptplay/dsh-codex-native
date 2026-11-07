@@ -8,6 +8,6 @@ describe('DSH 0.2.1 client manifest', () => {
     expect(inject).toContain('@deepseek-ai/dsh-client-locale')
     expect(inject).toContain('@deepseek-ai/dsh-client-ui-settings')
     expect(inject).not.toContain('@deepseek-ai/dsh-client-runtime')
-    expect(p.name).toBe('dsh-codex-native')
+    expect(p.name).toBe('@tests4gptplay/dsh-codex-native')
   })
 })

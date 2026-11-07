@@ -1,5 +1,5 @@
 import { defineConfig } from 'tsdown'
-const PACKAGE_ID = 'dsh-codex-native'
+const PACKAGE_ID = '@tests4gptplay/dsh-codex-native'
 export default defineConfig([
   {
     name: PACKAGE_ID, entry: ['src/index.ts'], outDir: 'lib', format: ['esm'], platform: 'node', target: 'es2024',

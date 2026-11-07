@@ -62,7 +62,7 @@ jobs:
           const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
           const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim()
           const digest = path => createHash('sha256').update(readFileSync(path)).digest('hex')
-          const artifact = `dsh-codex-native-${pkg.version}.tgz`
+          const artifact = `tests4gptplay-dsh-codex-native-${pkg.version}.tgz`
           writeFileSync('dist/source-manifest.json', JSON.stringify({
             version: pkg.version,
             sourceCommit: git('rev-parse', 'HEAD'),
@@ -81,7 +81,7 @@ jobs:
           set -euo pipefail
           VERSION="$(node -p 'require("./package.json").version')"
           mkdir -p .tmp/clean-candidate .tmp/candidate-unpacked
-          tar -xzf "dist/dsh-codex-native-$VERSION.tgz" --strip-components=1 -C .tmp/clean-candidate
+          tar -xzf "dist/tests4gptplay-dsh-codex-native-$VERSION.tgz" --strip-components=1 -C .tmp/clean-candidate
           node --input-type=module <<'NODE'
           import assert from 'node:assert/strict'
           import { copyFileSync, readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs'
@@ -130,9 +130,9 @@ jobs:
           assert(client.includes('账号总用量') && client.includes('ChatGPT account total'),'Refined UI labels missing from compiled client')
           console.log('CLEAN_CANDIDATE_COPY_VERIFIED', {version:manifest.version,files:items.length})
           NODE
-          rm "dist/dsh-codex-native-$VERSION.tgz"
+          rm "dist/tests4gptplay-dsh-codex-native-$VERSION.tgz"
           (cd .tmp/clean-candidate && pnpm pack --pack-destination "$GITHUB_WORKSPACE/dist")
-          tar -xzf "dist/dsh-codex-native-$VERSION.tgz" --strip-components=1 -C .tmp/candidate-unpacked
+          tar -xzf "dist/tests4gptplay-dsh-codex-native-$VERSION.tgz" --strip-components=1 -C .tmp/candidate-unpacked
           node --input-type=module <<'NODE'
           import assert from 'node:assert/strict'
           import { readFileSync,writeFileSync } from 'node:fs'
@@ -158,7 +158,7 @@ jobs:
               'Installed '+locale+' differs from the candidate copy')
           }
           const manifest = JSON.parse(readFileSync('dist/source-manifest.json','utf8'))
-          const bundle = readFileSync(`dist/dsh-codex-native-${pkg.version}.tgz`)
+          const bundle = readFileSync(`dist/tests4gptplay-dsh-codex-native-${pkg.version}.tgz`)
           manifest.artifactSha256 = createHash('sha256').update(bundle).digest('hex')
           for (const [path,hash] of Object.entries(manifest.runtimeSha256)) {
             const data = readFileSync('.tmp/candidate-unpacked/'+path)
@@ -192,7 +192,7 @@ jobs:
           set -euo pipefail
           VERSION="$(node -p 'require("./package.json").version')"
           mkdir -p .tmp/release-candidate
-          tar -xzf "dist/dsh-codex-native-$VERSION.tgz" --strip-components=1 -C .tmp/release-candidate
+          tar -xzf "dist/tests4gptplay-dsh-codex-native-$VERSION.tgz" --strip-components=1 -C .tmp/release-candidate
           pnpm exec vitest run --config vitest.release.config.ts
       - uses: actions/upload-artifact@v4
         if: always()

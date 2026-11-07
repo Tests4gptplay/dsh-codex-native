@@ -26,6 +26,8 @@ Current version: **0.2.3**. The fixed tag and installation package include runti
 github:Tests4gptplay/dsh-codex-native#v0.2.3
 ```
 
+**npm installation:** You can also enter `@tests4gptplay/dsh-codex-native@0.2.3` in **Package name or address**.
+
 **Updating:** Use the same dialog with the new versioned source above, verify the installed version and enable it. Retain existing settings and user files. If DSH reports that it is already installed or requires removal first, follow that message to remove only the plugin entry and install the new version; do not clear DSH data or manually delete plugin directories. Restart only when DSH asks you to; fully quit and reopen it, including the Desktop tray process.
 
 After enabling, sign in through the plugin settings if needed and select a model in DSH. Updating does not require clearing account storage.
