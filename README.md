@@ -56,4 +56,6 @@ Approval prompts do not bypass the sandbox. Windows helper maintenance is Window
 
 Community integration; DeepSeek Harness is developed by DeepSeek and Codex by OpenAI. Original project and artwork attribution are retained in [LICENSE](LICENSE), [project credits](https://github.com/Tests4gptplay/dsh-codex-native/blob/72b092f364c913722e2013de43878d22b35fc741/README.md#license-and-attribution), and the bundled Lobe Icons license. Reference-period dates use codex-reset.com announcements.
 
-[Support the project](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/SPONSOR.md)
+## 支持项目 / Support
+
+[GitHub Sponsors](https://github.com/sponsors/Tests4gptplay) · [Ko-fi](https://ko-fi.com/kou392350) · [支付宝 / Alipay](SPONSOR.md)
