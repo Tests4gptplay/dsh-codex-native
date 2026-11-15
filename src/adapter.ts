@@ -110,8 +110,9 @@ export class CodexAppServerAdapter extends LlmAdapter {
         this.liveModels = catalog.map(model => {
           const previous = this.options.models.find(item => item.id === model.id)
           return {
-            ...(previous?.contextWindow === undefined ? {} : { contextWindow: previous.contextWindow }),
             ...model,
+            // An explicit user budget remains authoritative over discovery.
+            ...(previous?.contextWindow === undefined ? {} : { contextWindow: previous.contextWindow }),
           }
         })
       }

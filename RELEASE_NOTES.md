@@ -1,47 +1,36 @@
-# Codex Native 0.2.3
+# Codex Native 0.2.4
 
-Connect your ChatGPT account to use Codex models in DeepSeek Harness, with current model choices, tools, questions, approval integration and usage information.
+## Fixed
 
-## What changed
-- Corrected the installed English and Chinese README version labels and installation URLs.
-- Expanded plugin-manager descriptions to explain account sign-in, model and thinking choices, image conversations, tools and skills, local-task approvals, interactive questions, long-conversation continuation and compaction, usage information and supported Windows screenshot-helper maintenance.
-- Included these release notes inside the package so documentation links work after installation.
-- Preserved the tested candidate7 executable runtime; this documentation correction does not change model or tool behavior.
+- Fixed DSH model switches failing with `compaction-basic: no context capacity` for native Codex models.
+- Keep an explicit per-model `contextWindow` configured by the user. Otherwise use a positive capacity returned by App Server, then the matching `context_window` in the official Codex `models_cache.json`.
+- Read the catalog from the same `CODEX_HOME` as the native query process after refreshing `model/list`. Newly advertised models can acquire their official default capacity without adding their names to the plugin.
+- Do not substitute `max_context_window` or invent a capacity for an unknown model. Missing or malformed optional cache data does not hide live models.
+- Model availability and default reasoning effort continue to come from App Server.
 
-## Install or update
+## Packages and installation
 
-Current version: **0.2.3**. The fixed tag and installation package include runtime files; no build is needed.
-
-**First installation (Desktop):** Open **Plugins → Add plugin** in the sidebar (or **Install a third-party plugin** in the arrow menu). Paste the complete line below into **Package name or address**, click **Install**, check the version and click **Enable now**.
+Both distributions contain the same backend and behavior:
 
 ```text
-github:Tests4gptplay/dsh-codex-native#v0.2.3
+@tests4gptplay/dsh-codex-native@0.2.4
+dsh-codex-native@0.2.4
 ```
 
-**Updating:** Use the same dialog with the new versioned source above, verify the installed version and enable it. Retain existing settings and user files. If DSH reports that it is already installed or requires removal first, follow that message to remove only the plugin entry and install the new version; do not clear DSH data or manually delete plugin directories. Restart only when DSH asks you to; fully quit and reopen it, including the Desktop tray process.
+In DSH Desktop, enter either package name in **Plugins → Add plugin → Package name or address**. Do not enable both distributions at the same time: they provide the same `codex-local` route. Existing account storage and configuration are retained.
 
-After enabling, sign in through the plugin settings if needed and select a model in DSH. Updating does not require clearing account storage.
+The GitHub release also provides both `.tgz` packages. Their only variant differences are the package name, bundle module name and frontend loader ID. Original licenses, attribution, repository metadata and `publishConfig` are preserved; old cryptographic signatures are not copied onto changed bytes.
 
-**Alternative package:** Paste this `.tgz` URL into the same **Package name or address** field, or download it and enter its full absolute path. No extraction is needed. The path must be on the computer running DSH.
+## Release workflow
 
-```text
-https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.3/dsh-codex-native-0.2.3.tgz
-```
+`.github/workflows/npm-publish.yml` builds and checks both packages, publishes with npm OIDC, and attaches them to the GitHub release. A new unscoped package requires one authenticated first publication before its own trusted publisher can be configured. Subsequent releases can publish both names through the same workflow.
 
-**Web:** Run this on the computer hosting the service. Stop the corresponding Web profile before updating and restart it after success. Web and Desktop installations are separate.
+## Verification boundary
 
-```sh
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.3'
-```
-
-Alternatively, replace the source in the command with the `.tgz` URL above or the downloaded file's absolute path.
-
-## Verification boundaries
-The changes in this release are documentation and package metadata corrections; model and tool behavior are unchanged. Earlier Windows checks covered conversations, skills, compaction, question selection and DSH tool-write approvals. That does not imply every native command/file approval case was tested. There is no new macOS live-testing claim, and Windows helper maintenance does not promise to fix every screenshot timeout.
-
-Detailed implementation and historical test evidence remain in the [repository engineering records](https://github.com/Tests4gptplay/dsh-codex-native/tree/main/docs).
+Focused automated tests cover capacity discovery, exact model matching, refresh, explicit user limits, native account/model discovery and adapter behavior. Typechecking, build and TGZ reread/parity checks are included. This release does not claim new macOS testing or a real-account long-history compaction run.
 
 ## 中文
-0.2.3 修正安装包内中英文版本说明和安装地址，补全插件管理器功能介绍，并随包提供发行说明。实际模型、工具与运行代码沿用已测版本，不因本次文档修正而改变。Desktop 在“插件 → 添加插件”的“包名或地址”填入上方固定版本来源，TGZ为备用；按实际安装结果和重启提示操作。Web 使用上方命令，保留已有配置和账号存储。
 
-既有实测覆盖范围与未覆盖项保持区分：Host 写入审批成功不冒充原生命令/文件协议审批实测，Windows 辅助程序维护不等于提供桌面控制引擎；不新增 macOS 实机通过声明。
+修复切换到 Codex Native 时因缺少上下文容量而失败的问题。优先保留用户手动配置，其次采用 App Server 返回的容量；当前接口未提供时，自动读取同一 `CODEX_HOME` 下官方模型目录中的默认容量。新模型不需要硬编码名称，但官方接口和目录均无容量时不会随意猜值。
+
+同时提供带 `@tests4gptplay` 和不带作用域的两个 npm/TGZ 包，不要同时启用。原署名、版权、图标许可和发布配置保留。无作用域包完成首次发布后单独配置 OIDC；工作流文件名统一为 `npm-publish.yml`。

@@ -2,7 +2,7 @@
 
 使用 ChatGPT 账号在 DeepSeek Harness 中调用 Codex 模型。直接在 DSH 里聊天、使用图片、调用工具与技能，并持续完成较长的任务。
 
-[English](README.md) · [0.2.3 更新说明](RELEASE_NOTES.md)
+[English](README.md) · [0.2.4 更新说明](RELEASE_NOTES.md)
 
 ## 可以用它做什么
 
@@ -18,15 +18,19 @@
 
 ## 安装与升级
 
-当前版本：**0.2.3**。安装包与固定标签均已包含运行文件，无需编译。
+当前版本：**0.2.4**。安装包与固定标签均已包含运行文件，无需编译。
 
 **首次安装（Desktop）：** 打开侧栏 **插件 → 添加插件**（箭头菜单的 **安装第三方插件** 也可进入），把下面一整行填入 **包名或地址**，点击 **安装**，核对版本后点击 **立即启用**。
 
 ```text
-github:Tests4gptplay/dsh-codex-native#v0.2.3
+github:Tests4gptplay/dsh-codex-native#v0.2.4
 ```
 
-**npm 安装：** 也可在 **包名或地址** 中填入 `@tests4gptplay/dsh-codex-native@0.2.3`。
+**npm 安装：** 也可在 **包名或地址** 中填入 `@tests4gptplay/dsh-codex-native@0.2.4`。
+
+无作用域的同版包为 `dsh-codex-native@0.2.4`。两者提供同一个 `codex-local` 路由，不要同时启用。
+
+**上下文容量自动适配：** 显式配置的模型 `contextWindow` 优先；否则采用 App Server 提供的容量，接口未提供时读取同一 `CODEX_HOME` 的官方 `models_cache.json`。模型列表刷新后会重新读取目录，新模型无需手工加入名称表。官方目录也没有匹配容量时不会猜值，仍需明确配置。
 
 **升级已有插件：** 同样填写上面的新版来源，成功后核对版本并启用；已有设置与用户文件保留。若宿主提示已安装或要求先卸载，再按提示仅卸载该插件条目并安装新版，不清除 DSH 数据或手工删除插件目录。是否需要重启以 DSH 提示为准；需要时完全退出并重新打开（Desktop 包括托盘）。
 
@@ -35,13 +39,13 @@ github:Tests4gptplay/dsh-codex-native#v0.2.3
 **备用安装包：** 将下面的 `.tgz` 直链填入同一个 **包名或地址**；也可下载后填写文件的完整绝对路径，无需解压。该路径应属于运行 DSH 的电脑。
 
 ```text
-https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.3/dsh-codex-native-0.2.3.tgz
+https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.4/dsh-codex-native-0.2.4.tgz
 ```
 
 **Web：** 在运行服务的环境中执行。升级前停止对应 Web profile，成功后重新启动；Web 与 Desktop 分别安装。
 
 ```sh
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.3'
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.4'
 ```
 
 备用时将命令中的来源换成上面的 `.tgz` 直链或下载文件的完整绝对路径。

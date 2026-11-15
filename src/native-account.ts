@@ -1,5 +1,7 @@
 /** Native Codex account bridge. OAuth credentials remain owned by official Codex. */
 import { homedir } from 'node:os'
+import { readFile } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
 import { abortable } from './abort.ts'
 import { diagnosticText } from './process-connection.ts'
 import type { SubprocessHandle, SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
@@ -35,6 +37,28 @@ interface AccountOptions {
   disposeGraceMs?: number
   maxStderrBytes?: number
   maxJsonRpcLineBytes?: number
+}
+
+function modelContextWindow(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : undefined
+}
+
+/** Read metadata only, from the same home used by the official query process. */
+async function cachedModelContextWindows(env?: Readonly<Record<string, string>>): Promise<Map<string, number>> {
+  const windows = new Map<string, number>()
+  const home = env?.CODEX_HOME ?? process.env.CODEX_HOME ?? join(homedir(), '.codex')
+  try {
+    const cache: unknown = JSON.parse(await readFile(join(resolve(homedir(), home), 'models_cache.json'), 'utf8'))
+    if (cache === null || typeof cache !== 'object' || !('models' in cache) || !Array.isArray(cache.models)) return windows
+    for (const entry of cache.models as unknown[]) {
+      if (entry === null || typeof entry !== 'object' || !('slug' in entry) || typeof entry.slug !== 'string') continue
+      const capacity = modelContextWindow('context_window' in entry ? entry.context_window : undefined)
+      if (capacity !== undefined) windows.set(entry.slug, capacity)
+    }
+  } catch {
+    // A missing or incomplete optional catalog must not hide the live models.
+  }
+  return windows
 }
 
 export class NativeCodexAccount {
@@ -155,10 +179,12 @@ export class NativeCodexAccount {
             ? model.supportedReasoningEfforts.map(value => object(value, 'model reasoning').reasoningEffort)
               .filter((value): value is string => typeof value === 'string')
             : []
+          const contextWindow = modelContextWindow(model.contextWindow)
           models.push({
             id: model.id,
             name: typeof model.displayName === 'string' ? model.displayName : model.id,
             ...(typeof model.description === 'string' ? { description: model.description } : {}),
+            ...(contextWindow === undefined ? {} : { contextWindow }),
             inputModalities: modalities,
             reasoningEfforts: efforts,
             ...(typeof model.defaultReasoningEffort === 'string'
@@ -172,7 +198,12 @@ export class NativeCodexAccount {
           seenCursors.add(cursor)
         }
       } while (cursor !== null)
-      return models
+      // model/list refreshes Codex's catalog, but current servers omit capacity.
+      const capacities = await cachedModelContextWindows(this.options.env)
+      return models.map(model => {
+        const contextWindow = model.contextWindow ?? capacities.get(model.id)
+        return { ...model, ...(contextWindow === undefined ? {} : { contextWindow }) }
+      })
     }, signal)
   }
   async quota(signal?: AbortSignal): Promise<unknown> {
