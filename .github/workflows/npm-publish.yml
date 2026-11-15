@@ -60,7 +60,7 @@ jobs:
           if npm view "@tests4gptplay/dsh-codex-native@$VERSION" version --registry=https://registry.npmjs.org/ >/dev/null 2>&1; then
             echo 'Exact scoped version already exists; retaining immutable release.'
           else
-            npm publish "dist/tests4gptplay-dsh-codex-native-$VERSION.tgz" --access public --provenance
+            npm publish "./dist/tests4gptplay-dsh-codex-native-$VERSION.tgz" --access public --provenance
           fi
       - name: Publish unscoped package with npm OIDC
         if: github.event_name == 'push' || inputs.publish_unscoped
@@ -70,7 +70,7 @@ jobs:
           if npm view "dsh-codex-native@$VERSION" version --registry=https://registry.npmjs.org/ >/dev/null 2>&1; then
             echo 'Exact unscoped version already exists; retaining immutable release.'
           else
-            npm publish "dist/dsh-codex-native-$VERSION.tgz" --access public --provenance
+            npm publish "./dist/dsh-codex-native-$VERSION.tgz" --access public --provenance
           fi
       - name: Publish GitHub release and both packages
         env:
