@@ -96,7 +96,7 @@ jobs:
             return statSync(p).isDirectory() ? files(p) : [relative(dir,p).replaceAll('\\','/')]
           })
           const items = files(dir)
-          const allowed = new Set(['package.json','LICENSE','cordis.patch.yml','README.md','README.zh.md','RELEASE_NOTES.md','assets/chatgpt-auth.png','assets/LOBE-ICONS-LICENSE.txt','locale/en.json','locale/zh.json'])
+          const allowed = new Set(['lib/computer-use-profile-0.7.21.d.ts','package.json','LICENSE','cordis.patch.yml','README.md','README.zh.md','RELEASE_NOTES.md','assets/chatgpt-auth.png','assets/LOBE-ICONS-LICENSE.txt','locale/en.json','locale/zh.json'])
           for (const p of items) assert(p.startsWith('skills/windows-computer-use-recovery/')||allowed.has(p)||/^lib\/(?:index\.js|client\.js|(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.d\.ts)$/.test(p),'Unexpected file: '+p)
           assert(!manifest.scripts && !manifest.devDependencies)
           assert(Object.values(manifest.peerDependencies ?? {}).every(range => range === '*'), 'Installed package must retain unrestricted host peer ranges')
