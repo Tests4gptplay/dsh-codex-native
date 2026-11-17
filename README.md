@@ -62,7 +62,7 @@ Community integration; DeepSeek Harness is developed by DeepSeek and Codex by Op
 
 ## 支持项目 / Support
 
-[GitHub Sponsors](https://github.com/sponsors/Tests4gptplay) · [Ko-fi](https://ko-fi.com/kou392350) · [支付宝 / Alipay](SPONSOR.md)
+[GitHub Sponsors](https://github.com/sponsors/Tests4gptplay) · [Ko-fi](https://ko-fi.com/kou392350) · [支付宝 / Alipay](https://github.com/Tests4gptplay/dsh-codex-native/blob/main/SPONSOR.md)
 
 ## Bundled recovery skill
 
