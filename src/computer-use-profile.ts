@@ -1,5 +1,6 @@
 // Tested @oai/sky 0.7.13 Win10 patch. Source attribution retained below.
 export const profile = {
+  patchedSha256: '1071e8cc945eddfc466637cf096852e670d21afa396fe7cca70b107c3de3efc5',
   "skyVersion": "0.7.13",
   "originalSha256": "11825cb78575d9099aed8f13d16f78b03c20a1a0ebc809cf78b406fb2f25f5f8",
   "referenceSource": "https://github.com/chen0416ccc-cpu/codex-windows-fast-patch-skill/blob/main/scripts/patch-computer-use-helper-win10.ps1",
@@ -86,3 +87,9 @@ export const profile = {
     }
   ]
 } as const
+
+import { profile21 } from './computer-use-profile-0.7.21.ts'
+export const profiles = [profile, profile21] as const
+export function profileForHash(digest: string) {
+  return profiles.find(item => item.originalSha256 === digest || item.patchedSha256 === digest)
+}

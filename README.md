@@ -2,7 +2,7 @@
 
 Use your ChatGPT account to work with Codex models inside DeepSeek Harness. Chat, share images, use tools and skills, and continue longer tasks without leaving DSH.
 
-[简体中文](README.zh.md) · [What's new in 0.2.4](RELEASE_NOTES.md)
+[简体中文](README.zh.md) · [What's new in 0.2.5](RELEASE_NOTES.md)
 
 ## What you can do
 
@@ -18,17 +18,17 @@ Use your ChatGPT account to work with Codex models inside DeepSeek Harness. Chat
 
 ## Install or update
 
-Current version: **0.2.4**. The fixed tag and installation package include runtime files; no build is needed.
+Current version: **0.2.5**. The fixed tag and installation package include runtime files; no build is needed.
 
 **First installation (Desktop):** Open **Plugins → Add plugin** in the sidebar (or **Install a third-party plugin** in the arrow menu). Paste the complete line below into **Package name or address**, click **Install**, check the version and click **Enable now**.
 
 ```text
-github:Tests4gptplay/dsh-codex-native#v0.2.4
+github:Tests4gptplay/dsh-codex-native#v0.2.5
 ```
 
-**npm installation:** You can also enter `@tests4gptplay/dsh-codex-native@0.2.4` in **Package name or address**.
+**npm installation:** You can also enter `@tests4gptplay/dsh-codex-native@0.2.5` in **Package name or address**.
 
-The matching unscoped package is `dsh-codex-native@0.2.4`. Both provide the same `codex-local` route; do not enable both at once.
+The matching unscoped package is `dsh-codex-native@0.2.5`. Both provide the same `codex-local` route; do not enable both at once.
 
 **Automatic context capacity:** An explicit model `contextWindow` takes priority. Otherwise use capacity returned by App Server, then the exact matching default in the official `models_cache.json` under the same `CODEX_HOME`. The catalog is reread after model-list refreshes, so newly advertised models need no hardcoded name table. If neither official source provides capacity, configure it explicitly rather than relying on a guessed value.
 
@@ -39,13 +39,13 @@ After enabling, sign in through the plugin settings if needed and select a model
 **Alternative package:** Paste this `.tgz` URL into the same **Package name or address** field, or download it and enter its full absolute path. No extraction is needed. The path must be on the computer running DSH.
 
 ```text
-https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.4/dsh-codex-native-0.2.4.tgz
+https://github.com/Tests4gptplay/dsh-codex-native/releases/download/v0.2.5/dsh-codex-native-0.2.5.tgz
 ```
 
 **Web:** Run this on the computer hosting the service. Stop the corresponding Web profile before updating and restart it after success. Web and Desktop installations are separate.
 
 ```sh
-dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.4'
+dsh plugin --profile web add 'github:Tests4gptplay/dsh-codex-native#v0.2.5'
 ```
 
 Alternatively, replace the source in the command with the `.tgz` URL above or the downloaded file's absolute path.
@@ -63,3 +63,7 @@ Community integration; DeepSeek Harness is developed by DeepSeek and Codex by Op
 ## 支持项目 / Support
 
 [GitHub Sponsors](https://github.com/sponsors/Tests4gptplay) · [Ko-fi](https://ko-fi.com/kou392350) · [支付宝 / Alipay](SPONSOR.md)
+
+## Bundled recovery skill
+
+[Windows Computer Use recovery](skills/windows-computer-use-recovery/SKILL.md). AI entry: `codex_computer_use_recovery(action="guide")`.

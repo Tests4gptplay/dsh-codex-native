@@ -1,3 +1,23 @@
+# Codex Native 0.2.5
+
+## Windows Computer Use recovery
+
+- Bundle the repair skill, readable patch profiles and compatibility evidence. The existing recovery tool guide loads the skill for the AI, including diagnosis, release/repair, screenshot verification, rollback and future-version adaptation/solidification.
+
+- Add the exact tested @oai/sky 0.7.21 Windows 10 helper patch while retaining 0.7.13 support. Select repair, status and rollback by the original/patched SHA-256 pair, not by a version-string override.
+- Retain the separate `release` action, signature-change consent, original backup checks and rollback without a pre-existing backup. Unknown binaries are not modified.
+- No helper executable, Sky runtime, account data or credentials are bundled. Only the compatibility patch data and plugin code are included. This does not provide a standalone Computer Use engine.
+- DSH reported successful Windows screenshot capture and plugin-dialog navigation after applying the same 0.7.21 patch. The plugin transaction regression tests use synthetic region fixtures, not real runtime executables. This release does not claim a new real-account or desktop test of the integrated plugin.
+- The 0.2.4 model-capacity fixes remain intact.
+
+## 中文
+
+新增已验证的 0.7.21 Windows 10 截图修复配置，同时保留 0.7.13。根据原始/修复后完整哈希选择修复与回滚配置，不是取消版本检查后盲打旧补丁。release 解除占用独立于修补；仍需同意签名失效并保留原件校验。不随包分发专有 helper、运行时或账号资料。
+
+DSH 已报告相同 0.7.21 补丁的实机截图和插件页面操作成功；插件自动化回归使用合成测试数据验证文件事务，不冒充实机执行。本次未操作用户 Codex，也未重启 DSH。
+
+---
+
 # Codex Native 0.2.4
 
 ## Fixed

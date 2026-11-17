@@ -36,7 +36,7 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm run typecheck
       - name: Verify changed capacity discovery and package metadata
-        run: pnpm exec vitest run tests/model-capacity-discovery.spec.ts tests/native-account.spec.ts tests/adapter.spec.ts tests/package-metadata.spec.ts
+        run: pnpm exec vitest run tests/computer-use-recovery.spec.ts tests/computer-use-profiles.spec.ts tests/model-capacity-discovery.spec.ts tests/native-account.spec.ts tests/adapter.spec.ts tests/package-metadata.spec.ts
       - run: pnpm run build
       - run: node scripts/package-release.mjs
       - name: Sign unscoped first-publication bundle without uploading an npm token

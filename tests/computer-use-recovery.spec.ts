@@ -48,3 +48,14 @@ it.runIf(Boolean(process.env.DSH_CU_ORIGINAL))('patches and rolls back the known
   expect(await replaceHelper(target, 'rollback', signal)).toMatchObject({ changed: true })
   expect((await readFile(target)).equals(original)).toBe(true)
 }, 30_000)
+it('loads the packaged actionable recovery skill and exact profiles', async () => {
+  const { readRecoverySkill } = await import('../src/computer-use-recovery.ts')
+  const { profiles } = await import('../src/computer-use-profile.ts')
+  const skill = await readRecoverySkill()
+  expect(skill).toContain('codex_computer_use_recovery(action="guide")')
+  expect(skill).toContain('Concrete plugin extension checklist')
+  expect(skill).toContain('src/computer-use-profile-<version>.ts')
+  expect(skill).toContain('unknown hash') // unknown version is diagnosis, not a terminal refusal
+  const data = JSON.parse(await readFile(new URL('../skills/windows-computer-use-recovery/references/patch-profiles.json', import.meta.url), 'utf8'))
+  expect(data).toEqual(profiles)
+})

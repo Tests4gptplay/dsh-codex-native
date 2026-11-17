@@ -1,6 +1,6 @@
 {
   "name": "@tests4gptplay/dsh-codex-native",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Use your ChatGPT account to bring Codex models into DSH: choose models and thinking effort, chat with images, use tools and skills, approve local tasks, answer interactive questions, continue and compact long conversations, check quota and Token history, and maintain a supported Windows screenshot helper.",
   "type": "module",
   "icon": "assets/chatgpt-auth.png",
@@ -37,7 +37,8 @@
     "locale/*.json",
     "assets/chatgpt-auth.png",
     "assets/LOBE-ICONS-LICENSE.txt",
-    "RELEASE_NOTES.md"
+    "RELEASE_NOTES.md",
+    "skills/windows-computer-use-recovery/**"
   ],
   "scripts": {
     "build": "tsdown && tsc --project tsconfig.build.json --emitDeclarationOnly",
